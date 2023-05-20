@@ -1,4 +1,4 @@
-# 10clouds-gpt README
+# CodeMind: GPT-4 Powered Coding Assistant (VSCode Extension) README
 
 This is the README for your extension "10clouds-gpt". After writing up a brief description, we recommend including the following sections.
 
