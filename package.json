@@ -1,0 +1,72 @@
+{
+  "name": "codemind",
+  "displayName": "CodeMind",
+  "description": "CodeMind: GPT-4 Powered Coding Assistant (VSCode Extension)",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.78.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codemind.fix",
+        "title": "CodeMind: Fix"
+      },
+      {
+        "command": "codemind.setApiKey",
+        "title": "CodeMind: Set API key"
+      }
+    ],
+    "configuration": {
+      "title": "CodeMind",
+      "type": "object",
+      "properties": {
+        "codemind.apiKey": {
+          "type": "string",
+          "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
+          "order": 0
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/async-lock": "^1.4.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.78.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.39.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
+    "webpack": "^5.81.0",
+    "webpack-cli": "^5.0.2"
+  },
+  "dependencies": {
+    "async-lock": "^1.4.0",
+    "langchain": "^0.0.77",
+    "node-fetch": "^3.3.1",
+    "openai": "^3.2.1"
+  }
+}
