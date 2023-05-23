@@ -1,16 +1,44 @@
 {
   "name": "codemind",
-  "displayName": "CodeMind",
-  "description": "CodeMind: GPT-4 Powered Coding Assistant (VSCode Extension)",
+  "displayName": "10Clouds CodeMind",
+  "description": "10Clouds CodeMind: GPT-4 Powered Coding Assistant (VSCode Extension)",
+  "publisher": "10Clouds",
+  "icon": "resources/ext-icon.png",
+  "license": "MIT",
+
+  "repository": {
+    "url": "https://github.com/10clouds/codemind"
+  },
+  
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
   },
+  "keywords": [
+    "chatgpt",
+    "openai",
+    "gpt",
+    "gpt-4",
+    "copilot",
+    "ai",
+    "explain",
+    "find bugs",
+    "explain ",
+    "refactor"
+  ],
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onView:codemind.chatView",
+    "onCommand:codemind.ask",
+    "onCommand:codemind.explain",
+    "onCommand:codemind.refactor",
+    "onCommand:codemind.optimize",
+    "onCommand:codemind.findProblems",
+    "onCommand:codemind.documentation"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -21,6 +49,34 @@
       {
         "command": "codemind.setApiKey",
         "title": "CodeMind: Set API key"
+      },
+      {
+        "command": "codemind.ask",
+        "title": "Ask CodeMind"
+      },
+      {
+        "command": "codemind.explain",
+        "title": "CodeMind: Explain selection"
+      },
+      {
+        "command": "codemind.refactor",
+        "title": "CodeMind: Refactor selection"
+      },
+      {
+        "command": "codemind.findProblems",
+        "title": "CodeMind: Find problems"
+      },
+      {
+        "command": "codemind.optimize",
+        "title": "CodeMind: Optimize selection"
+      },
+      {
+        "command": "codemind.documentation",
+        "title": "CodeMind: Write documentation"
+      },
+      {
+        "command": "codemind.resetSession",
+        "title": "Reset OpenAI API session"
       }
     ],
     "configuration": {
@@ -31,8 +87,147 @@
           "type": "string",
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
+        },
+
+        "codemind.model": {
+          "type": "string",
+          "enum": [
+            "gpt-4",
+            "gpt-3.5-turbo"
+          ],
+          "default": "gpt-4",
+          "description": "Which GPT model to use",
+          "order": 1
+        },
+        "codemind.maxTokens": {
+          "type": "number",
+          "default": 1024,
+          "description": "Maximum number of tokens inside response per request",
+          "order": 2
+        },
+        "codemind.temperature": {
+          "type": "number",
+          "default": 0.5,
+          "description": "Temperature to use for the GPT3 (between 0 (conservative) and 1 (creative))",
+          "order": 3
+        },
+        "codemind.promptPrefix.explain": {
+          "type": "string",
+          "default": "Explain what this code does: ",
+          "description": "The prompt prefix used for explaining the selected code",
+          "order": 5
+        },
+        "codemind.promptPrefix.refactor": {
+          "type": "string",
+          "default": "Refactor this code and then explain what's changed: ",
+          "description": "The prompt prefix used for refactoring the selected code",
+          "order": 6
+        },
+        "codemind.promptPrefix.findProblems": {
+          "type": "string",
+          "default": "Find problems with the following code, fix them and explain what was wrong (Do not change anything else, if there are no problems say so): ",
+          "description": "The prompt prefix used for finding problems in the selected code",
+          "order": 7
+        },
+        "codemind.promptPrefix.optimize": {
+          "type": "string",
+          "default": "Optimize the following code if there is anything to improve, if not say so: ",
+          "description": "The prompt prefix used for optimizing the selected code",
+          "order": 8
+        },
+        "codemind.promptPrefix.documentation": {
+          "type": "string",
+          "default": "Write documentation for the following code: ",
+          "description": "The prompt prefix used for writing documentation for the selected code",
+          "order": 9
+        },
+        "codemind.selectedInsideCodeblock": {
+          "type": "boolean",
+          "default": true,
+          "description": "Append selected code as a codeblock (```...code...```) instead of plain text",
+          "order": 10
         }
       }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codemind.ask",
+          "when": "editorTextFocus",
+          "group": "codemind-menu-group@1"
+        },
+        {
+          "command": "codemind.explain",
+          "when": "editorHasSelection",
+          "group": "codemind-menu-group@2"
+        },
+        {
+          "command": "codemind.refactor",
+          "when": "editorHasSelection",
+          "group": "codemind-menu-group@3"
+        },
+        {
+          "command": "codemind.findProblems",
+          "when": "editorHasSelection",
+          "group": "codemind-menu-group@4"
+        },
+        {
+          "command": "codemind.optimize",
+          "when": "editorHasSelection",
+          "group": "codemind-menu-group@5"
+        },
+        {
+          "command": "codemind.documentation",
+          "when": "editorHasSelection",
+          "group": "codemind-menu-group@6"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codemind.ask"
+        },
+        {
+          "command": "codemind.explain",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codemind.refactor",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codemind.findProblems",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codemind.optimize",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codemind.documentation",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codemind.resetSession"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codemind",
+          "title": "CodeMind",
+          "icon": "resources/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "codemind": [
+        {
+          "type": "webview",
+          "id": "codemind.chatView",
+          "name": "CodeMind"
+        }
+      ]
     }
   },
   "scripts": {
