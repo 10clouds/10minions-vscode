@@ -361,7 +361,7 @@ Your code should be simple, consise, maintainable, readable and ready for produc
           <h3 class="text-xl font-semibold text-center mb-6">GPT-4 Powered Coding Assistant</h3>
           <p class="text-base mb-4">Describe what you want to do with the selected code. Keep in mind that GPT will know only about the context of what is in this file alone.</p>
           <textarea style="height: 26rem" class="w-full h-96 text-white bg-gray-700 p-4 text-sm resize-none mb-4" placeholder="Ask something" id="prompt-input">${DEFAULT_PROMPT}</textarea>
-          <div class="text-base mb-4" id="token-count"></div>
+          <div class="text-base mb-4 text-center" id="token-count"></div>
           <button style="background-color: #602ae0" class="w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit" id="prompt-submit">Fix</button>
         </div>
 
