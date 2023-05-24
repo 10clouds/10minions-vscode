@@ -1,22 +1,14 @@
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import * as AsyncLock from "async-lock";
+import { encode } from "gpt-tokenizer";
 
 const editorLock = new AsyncLock();
 
-type Settings = {
-  selectedInsideCodeblock?: boolean;
-  model?: string;
-  maxTokens?: number;
-  temperature?: number;
-};
-
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "10clouds-gpt" is now active!');
+  console.log("CodeMind is now active");
 
-  const config = vscode.workspace.getConfiguration("codemind");
-  // Create a new CodeGPTViewProvider instance and register it with the extension's context
-  const provider = new CodeGPTViewProvider(context.extensionUri);
+  const provider = new CodeMindViewProvider(context.extensionUri);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.setApiKey", async () => {
@@ -39,17 +31,10 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  provider.setSettings({
-    selectedInsideCodeblock: config.get("selectedInsideCodeblock") || false,
-    maxTokens: config.get("maxTokens") || 1500,
-    temperature: config.get("temperature") || 0.5,
-    model: config.get("model") || "gpt-4",
-  });
-
   // Register the provider with the extension's context
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      CodeGPTViewProvider.viewType,
+      CodeMindViewProvider.viewType,
       provider,
       {
         webviewOptions: { retainContextWhenHidden: true },
@@ -131,7 +116,7 @@ async function processResponseStream(
       const goodContent = parsedLines
         .map((l) => l.choices[0].delta.content)
         .filter((c) => c)
-        .join("\n");
+        .join("");
 
       await updateNewDocument(newDocument, goodContent);
     });
@@ -170,9 +155,7 @@ async function updateNewDocument(
         content
       );
       await vscode.workspace.applyEdit(edit).then(
-        (value) => {
-          console.log("OK");
-        },
+        (value) => {},
         (reason) => {
           console.log("REASON", reason);
         }
@@ -194,26 +177,12 @@ function handleError(error: Error, signal: AbortSignal) {
 
 export function deactivate() {}
 
-class CodeGPTViewProvider implements vscode.WebviewViewProvider {
+class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
   private _view?: vscode.WebviewView;
 
-  private _settings: Settings = {
-    selectedInsideCodeblock: false,
-    maxTokens: 500,
-    temperature: 0.5,
-  };
-
   // In the constructor, we store the URI of the extension
   constructor(private readonly _extensionUri: vscode.Uri) {}
-
-  public setSettings(settings: Settings) {
-    this._settings = { ...this._settings, ...settings };
-  }
-
-  public getSettings() {
-    return this._settings;
-  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -232,30 +201,65 @@ class CodeGPTViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     // add an event listener for messages received by the webview
-    webviewView.webview.onDidReceiveMessage((data) => {
+    webviewView.webview.onDidReceiveMessage(async (data) => {
+      console.log("CMD", data);
+
       switch (data.type) {
-        case "codeSelected": {
-          let code = data.value;
-          //code = code.replace(/([^\\])(\$)([^{0-9])/g, "$1\\$$$3");
-          const snippet = new vscode.SnippetString();
-          snippet.appendText(code);
-          // insert the code as a snippet into the active text editor
-          vscode.window.activeTextEditor?.insertSnippet(snippet);
+        case "getTokenCount": {
+          let prompt = data.value;
+          let tokenCount = encode(await this.fullPrompt(prompt)).length;
+
+          this._view?.webview.postMessage({
+            type: "tokenCount",
+            value: tokenCount,
+          });
+
           break;
         }
         case "prompt": {
           this.executeGPT(data.value);
+
+          break;
         }
       }
     });
   }
 
+  public async fullPrompt(prompt: string) {
+    let selectedText = await getSelectedText();
+    const activeEditor = vscode.window.activeTextEditor;
+    if (!activeEditor) {
+      return "";
+    }
+    const document = activeEditor.document;
+    const content = document.getText();
+
+    let showSelectedText = selectedText.length > 0 && selectedText !== content;
+
+    let contextSections = `
+===== CODE ====
+${selectedText}
+
+===== CONTEXT OF A FILE THE CODE IS IN (${document.fileName}) ====
+${content}
+`.trim();
+
+    if (!showSelectedText) {
+      contextSections = `
+===== CODE ====
+${content}
+`.trim();
+    }
+
+    let finalPrompt = `${prompt}\n\n${contextSections}`;
+
+    console.log("finalPrompt", finalPrompt);
+    return finalPrompt;
+  }
+
   private async fetchResponse(
     apiUrl: string,
-    document: vscode.TextDocument,
-    content: string,
-    selectedText: string,
-    prompt: string,
+    fullPrompt: string,
     signal: AbortSignal
   ) {
     const config = vscode.workspace.getConfiguration("codemind");
@@ -275,13 +279,7 @@ class CodeGPTViewProvider implements vscode.WebviewViewProvider {
         messages: [
           {
             role: "user",
-            content: `${prompt}
-
-  ===== CODE ====
-  ${selectedText}
-
-  ===== CONTEXT OF A FILE THE CODE IS IN (${document.fileName}) ====
-  ${content}`,
+            content: fullPrompt,
           },
         ],
         // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -292,43 +290,23 @@ class CodeGPTViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  public async focus() {
-    // focus gpt activity from activity bar
-    if (!this._view) {
-      await vscode.commands.executeCommand("codemind.chatView.focus");
-    } else {
-      this._view?.show?.(true);
-    }
-
-    // Show the view and send a message to the webview with the response
-    // if (this._view) {
-    // 	this._view.show?.(true);
-    // 	this._view.webview.postMessage({ type: 'addResponse', value: response });
-    // }
-  }
-
   public async executeGPT(prompt: string) {
-    const selectedText = await getSelectedText();
-
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
       return;
     }
 
     const document = activeEditor.document;
-    const content = document.getText();
+    const fullPrompt = await this.fullPrompt(prompt);
 
     const newDocument = await createNewDocument(document);
     await showDocumentComparison(document, newDocument);
 
-    this.generateCode(document, content, selectedText, prompt, newDocument);
+    this.generateCode(fullPrompt, newDocument);
   }
 
   public async generateCode(
-    document: vscode.TextDocument,
-    content: string,
-    selectedText: string,
-    prompt: string,
+    fullPrompt: string,
     newDocument: vscode.TextDocument
   ) {
     const API_URL = "https://api.openai.com/v1/chat/completions";
@@ -337,14 +315,7 @@ class CodeGPTViewProvider implements vscode.WebviewViewProvider {
     const signal = controller.signal;
 
     try {
-      const response = await this.fetchResponse(
-        API_URL,
-        document,
-        content,
-        selectedText,
-        prompt,
-        signal
-      );
+      const response = await this.fetchResponse(API_URL, fullPrompt, signal);
 
       await processResponseStream(response, newDocument);
     } catch (error) {
@@ -389,7 +360,8 @@ Your code should be simple, consise, maintainable, readable and ready for produc
           <h1 style="color: #602ae0" class="text-4xl font-bold text-center mb-4">CodeMind</h1>
           <h3 class="text-xl font-semibold text-center mb-6">GPT-4 Powered Coding Assistant</h3>
           <p class="text-base mb-4">Describe what you want to do with the selected code. Keep in mind that GPT will know only about the context of what is in this file alone.</p>
-          <textarea style="height: 26rem" class="w-full h-96 text-white bg-gray-700 p-4 text-sm resize-none mb-4" placeholder="Ask GPT3 something" id="prompt-input">${DEFAULT_PROMPT}</textarea>
+          <textarea style="height: 26rem" class="w-full h-96 text-white bg-gray-700 p-4 text-sm resize-none mb-4" placeholder="Ask something" id="prompt-input">${DEFAULT_PROMPT}</textarea>
+          <div class="text-base mb-4" id="token-count"></div>
           <button style="background-color: #602ae0" class="w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit" id="prompt-submit">Fix</button>
         </div>
 
@@ -398,14 +370,39 @@ Your code should be simple, consise, maintainable, readable and ready for produc
 
           document
             .getElementById("prompt-submit")
-            .addEventListener("click", handlePromptSubmission);
+            .addEventListener("click", function (e) {
+              vscode.postMessage({
+                type: "getTokenCount",
+                value: document.getElementById("prompt-input").value,
+              });
 
-          function handlePromptSubmission(e) {
-            vscode.postMessage({
-              type: "prompt",
-              value: document.getElementById("prompt-input").value,
-            });
-          }
+              vscode.postMessage({
+                type: "prompt",
+                value: document.getElementById("prompt-input").value,
+              });
+          });
+
+          document
+            .getElementById("prompt-input")
+            .addEventListener("change", function (e) {
+              vscode.postMessage({
+                type: "getTokenCount",
+                value: document.getElementById("prompt-input").value,
+              });
+          });
+          
+          // Handle messages sent from the extension to the webview
+          window.addEventListener("message", (event) => {
+            const message = event.data;
+            console.log("WEB", message);
+
+            switch (message.type) {
+              case "tokenCount": {
+                document.getElementById("token-count").innerHTML = "Tokens: " + message.value;
+                break;
+              }
+            }
+          });
         </script>
 			</body>
 			</html>`;

@@ -5,11 +5,9 @@
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
   "license": "MIT",
-
   "repository": {
     "url": "https://github.com/10clouds/codemind"
   },
-  
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.78.0",
@@ -88,7 +86,6 @@
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
         },
-
         "codemind.model": {
           "type": "string",
           "enum": [
@@ -140,12 +137,6 @@
           "default": "Write documentation for the following code: ",
           "description": "The prompt prefix used for writing documentation for the selected code",
           "order": 9
-        },
-        "codemind.selectedInsideCodeblock": {
-          "type": "boolean",
-          "default": true,
-          "description": "Append selected code as a codeblock (```...code...```) instead of plain text",
-          "order": 10
         }
       }
     },
@@ -260,6 +251,7 @@
   },
   "dependencies": {
     "async-lock": "^1.4.0",
+    "gpt-tokenizer": "^2.0.0",
     "langchain": "^0.0.77",
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1"
