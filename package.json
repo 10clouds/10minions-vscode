@@ -78,28 +78,6 @@
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
         },
-        "codemind.model": {
-          "type": "string",
-          "enum": [
-            "gpt-4",
-            "gpt-3.5-turbo"
-          ],
-          "default": "gpt-4",
-          "description": "Which GPT model to use",
-          "order": 1
-        },
-        "codemind.maxTokens": {
-          "type": "number",
-          "default": 1024,
-          "description": "Maximum number of tokens inside response per request",
-          "order": 2
-        },
-        "codemind.temperature": {
-          "type": "number",
-          "default": 0.5,
-          "description": "Temperature to use for the GPT3 (between 0 (conservative) and 1 (creative))",
-          "order": 3
-        },
         "codemind.promptPrefix.explain": {
           "type": "string",
           "default": "Explain what this code does: ",

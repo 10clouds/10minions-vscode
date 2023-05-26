@@ -1,8 +1,5 @@
 import * as vscode from "vscode";
-import * as AsyncLock from "async-lock";
 import { CodeMindViewProvider } from "./CodeMindViewProvider";
-
-const editorLock = new AsyncLock();
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("CodeMind is now active");
@@ -72,7 +69,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-
 export function extractParsedLines(chunk: string) {
   const lines = chunk.split("\n");
   return lines
@@ -80,32 +76,5 @@ export function extractParsedLines(chunk: string) {
     .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
     .map((line) => JSON.parse(line));
 }
-
-export async function updateNewDocument(
-  newDocument: vscode.TextDocument,
-  content: string
-) {
-  await editorLock.acquire("streamLock", async () => {
-    try {
-      console.log(content);
-      const edit = new vscode.WorkspaceEdit();
-      edit.insert(
-        newDocument.uri,
-        newDocument.positionAt(newDocument.getText().length),
-        content
-      );
-      await vscode.workspace.applyEdit(edit).then(
-        (value) => {},
-        (reason) => {
-          console.log("REASON", reason);
-        }
-      );
-    } catch (e) {
-      console.error("ERRROR", e);
-    }
-  });
-}
-
-
 
 export function deactivate() {}
