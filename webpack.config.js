@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const webpack = require('webpack')
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -45,4 +46,50 @@ const extensionConfig = {
     level: "log", // enables logging required for problem matchers
   },
 };
-module.exports = [ extensionConfig ];
+
+
+/** @type WebpackConfig */
+const sideBarConfig = {
+  target: "web",
+  mode: 'none',
+  entry: "./src/sideBar.tsx", // the entry point of this extension, 📖 -> https://webpack.js.org/configuration/entry-context/
+  output: {
+    // the bundle is stored in the "dist" folder (check package.json), 📖 -> https://webpack.js.org/configuration/output/
+    path: path.resolve(__dirname, "dist"),
+    filename: "sideBar.js",
+  },
+  resolve: {
+    // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
+    extensions: [".ts", ".tsx", ".js"]
+  },
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+            presets: [
+              '@babel/preset-env',
+              '@babel/preset-typescript',
+              '@babel/preset-react',
+            ],
+          },
+          }
+        ]
+      }
+    ]
+  },
+  plugins: [
+    // fix "process is not defined" error:
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    }),
+  ],
+  devtool: "nosources-source-map",
+};
+
+
+module.exports = [ extensionConfig, sideBarConfig ];
