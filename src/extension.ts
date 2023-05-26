@@ -27,7 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Register the provider with the extension's context
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       CodeMindViewProvider.viewType,
@@ -38,43 +37,13 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  const commandHandler = (command: string) => {
-    const config = vscode.workspace.getConfiguration("codemind");
-    const prompt = config.get(command) as string;
-    provider.executeGPT(prompt);
-  };
-
-  // Register the commands that can be called from the extension's package.json
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.ask", () =>
       vscode.window
         .showInputBox({ prompt: "What do you want to do?" })
-        .then((value) => provider.executeGPT(value || ""))
-    ),
-    vscode.commands.registerCommand("codemind.explain", () =>
-      commandHandler("promptPrefix.explain")
-    ),
-    vscode.commands.registerCommand("codemind.refactor", () =>
-      commandHandler("promptPrefix.refactor")
-    ),
-    vscode.commands.registerCommand("codemind.optimize", () =>
-      commandHandler("promptPrefix.optimize")
-    ),
-    vscode.commands.registerCommand("codemind.findProblems", () =>
-      commandHandler("promptPrefix.findProblems")
-    ),
-    vscode.commands.registerCommand("codemind.documentation", () =>
-      commandHandler("promptPrefix.documentation")
+        .then((value) => provider.executeFullGPTProcedure(value || ""))
     )
   );
-}
-
-export function extractParsedLines(chunk: string) {
-  const lines = chunk.split("\n");
-  return lines
-    .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
-    .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
-    .map((line) => JSON.parse(line));
 }
 
 export function deactivate() {}

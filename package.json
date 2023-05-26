@@ -116,59 +116,11 @@
           "command": "codemind.ask",
           "when": "editorTextFocus",
           "group": "codemind-menu-group@1"
-        },
-        {
-          "command": "codemind.explain",
-          "when": "editorHasSelection",
-          "group": "codemind-menu-group@2"
-        },
-        {
-          "command": "codemind.refactor",
-          "when": "editorHasSelection",
-          "group": "codemind-menu-group@3"
-        },
-        {
-          "command": "codemind.findProblems",
-          "when": "editorHasSelection",
-          "group": "codemind-menu-group@4"
-        },
-        {
-          "command": "codemind.optimize",
-          "when": "editorHasSelection",
-          "group": "codemind-menu-group@5"
-        },
-        {
-          "command": "codemind.documentation",
-          "when": "editorHasSelection",
-          "group": "codemind-menu-group@6"
         }
       ],
       "commandPalette": [
         {
           "command": "codemind.ask"
-        },
-        {
-          "command": "codemind.explain",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "codemind.refactor",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "codemind.findProblems",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "codemind.optimize",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "codemind.documentation",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "codemind.resetSession"
         }
       ]
     },

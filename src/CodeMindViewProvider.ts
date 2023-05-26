@@ -1,6 +1,13 @@
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import { generateFullPrompt, processOpenAIResponseStream, queryOpenAI } from "./generateCode";
+import {
+  ContextData,
+  createFixedCodeUsingPrompt,
+  createPromptWithContext,
+  processOpenAIResponseStream,
+  queryOpenAI,
+  translateUserQuery,
+} from "./generateCode";
 import * as AsyncLock from "async-lock";
 
 const editorLock = new AsyncLock();
@@ -30,7 +37,6 @@ async function createNewDocument(document: vscode.TextDocument) {
   });
 }
 
-
 async function updateNewDocument(
   newDocument: vscode.TextDocument,
   content: string
@@ -56,7 +62,6 @@ async function updateNewDocument(
   });
 }
 
-
 async function showDocumentComparison(
   document: vscode.TextDocument,
   newDocument: vscode.TextDocument
@@ -65,10 +70,9 @@ async function showDocumentComparison(
     "vscode.diff",
     document.uri,
     newDocument.uri,
-    "Refactored → Original"
+    "GPT → " + document.fileName
   );
 }
-
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
@@ -96,11 +100,14 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     // add an event listener for messages received by the webview
     webviewView.webview.onDidReceiveMessage(async (data) => {
       console.log("CMD", data);
+      const activeEditor = vscode.window.activeTextEditor;
 
       switch (data.type) {
         case "getTokenCount": {
           let prompt = data.value;
-          let tokenCount = encode(await generateFullPrompt(prompt, await getSelectedText())).length;
+          let tokenCount = activeEditor ? encode(
+            activeEditor.document.getText() + "\n" + prompt
+          ).length : 0;
 
           this._view?.webview.postMessage({
             type: "tokenCount",
@@ -110,37 +117,39 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "prompt": {
-          this.executeGPT(data.value);
-
+          this.executeFullGPTProcedure(data.value);
           break;
         }
       }
     });
   }
 
-  public async executeGPT(prompt: string) {
+  public async executeFullGPTProcedure(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
       return;
     }
 
     const document = activeEditor.document;
-    const fullPrompt = await generateFullPrompt(prompt, await getSelectedText());
+
+    const context: ContextData = {
+      selectedText: await getSelectedText(),
+      fileName: document.fileName,
+      fullFileContent: document.getText(),
+    };
 
     const newDocument = await createNewDocument(document);
     await showDocumentComparison(newDocument, document);
 
-    try {
-      const response = await queryOpenAI(fullPrompt);
-  
-      await processOpenAIResponseStream(response, (goodContent) => {
-        updateNewDocument(newDocument, goodContent);
-      }).catch((error) => {
-        handleError(error);
-      });
-    } catch (error) {
-      console.error("Error:", error);
+    function onChunk(chunk: string) {
+      updateNewDocument(newDocument, chunk);
     }
+
+    let { prompt } = await translateUserQuery(userQuery, context, onChunk);
+
+    updateNewDocument(newDocument, "\n ====== \n");
+
+    await createFixedCodeUsingPrompt(prompt, context, onChunk);
   }
 
   private _getHtmlForWebview(webview: vscode.Webview) {
@@ -162,3 +171,4 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     </html>`;
   }
 }
+
