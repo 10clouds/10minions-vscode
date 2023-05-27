@@ -9,22 +9,7 @@ export type ContextData = {
   selectedText: string;
 };
 
-
-const DEFAULT_PROMPTS = [
-  {
-    label: "Refactor",
-    value: ``,
-  },
-  {
-    label: "Fix",
-    value: `You are an expert senior coder with IQ of 200, you are about to get a request from a simpleton layman. Figure out what is his intention and creativelly and proactivelly propose a solution to fix the CODE: 
-
-`,
-  },
-  // Add more predefined prompts here
-];
-
-export async function translateUserQuery(userQuery: string, context: ContextData, onChunk: (chunk: string) => void): Promise<{ prompt: string }> {
+export async function translateUserQuery(userQuery: string, context: ContextData, onChunk: (chunk: string) => Promise<void>): Promise<{ prompt: string }> {
   const userQueryToActualCodePrompt = `
 Translate the given user query to a prompt for an LLM. The LLM will then generate a code based on the prompt. Rewrite the user query, to expand on it given the examples below. In other words, detect the intention of the user ba and translate it according to examples. Try to stick to specific example text as much as possible.
 
@@ -42,7 +27,7 @@ Prompt: "As an expert senior coder, critically review the given code and propose
 
 Example 4:
 User Intent: "Identify and fix any bugs or issues in the provided code."
-Prompt: "As an expert senior coder, you've been tasked with debugging a code. Thoroughly examine the provided code, identify any bugs or issues, and proactively propose and implement solutions to rectify them. Address the specific issues or bugs the user pointed out: <specific issues or bugs details>"
+Prompt: "As an expert senior coder, you've been tasked with debugging a code. Thoroughly examine the provided code, identify any bugs or issues, and proactively fix code to rectify them. Address the specific issues or bugs the user pointed out: <specific issues or bugs details>"
 
 Example 5:
 User Intent: "Streamline the code to enhance its readability and simplicity."
@@ -64,7 +49,7 @@ ${context.selectedText.length > 0 ? context.selectedText : context.fullFileConte
   return { prompt: await processOpenAIResponseStream(response, onChunk) };
 }
 
-export async function createFixedCodeUsingPrompt(prompt: string, context: ContextData, onChunk: (chunk: string) => void) {
+export async function createFixedCodeUsingPrompt(userQuery: string, prompt: string, context: ContextData, onChunk: (chunk: string) => Promise<void>) {
   const fullPrompt = await createPromptWithContext(prompt, context);
   const response = await queryOpenAI(fullPrompt);
 
@@ -90,6 +75,10 @@ export async function createPromptWithContext(prompt: string, context: ContextDa
   //TODO: if file + selection is too long, we should not include file content
 
   let contextSections = `
+
+===== USER COMMAND ====
+${prompt}
+
 ===== CODE ====
 ${context.selectedText}
 
@@ -153,7 +142,7 @@ export async function queryOpenAI(fullPrompt: string) {
 
 export async function processOpenAIResponseStream(
   response: Response,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => Promise<void>
 ) {
   const stream = response.body!;
   const decoder = new TextDecoder("utf-8");
@@ -169,7 +158,7 @@ export async function processOpenAIResponseStream(
         .filter((c) => c)
         .join("");
 
-      onChunk(tokens);
+      await onChunk(tokens);
       fullContent += tokens;
     });
 

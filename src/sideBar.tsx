@@ -10,6 +10,7 @@ const vscode = acquireVsCodeApi();
 export const CodeMindChat: React.FC = () => {
   let [prompt, setPrompt] = React.useState('Refactor this code');
   let [tokenCount, setTokenCount] = React.useState(0);
+  let [executionRunning, setExecutionRunning] = React.useState(false);
 
   function handlePromptSubmit(e: any) {
     vscode.postMessage({
@@ -21,6 +22,8 @@ export const CodeMindChat: React.FC = () => {
       type: "prompt",
       value: prompt,
     });
+
+    setExecutionRunning(true);
   }
 
   function handlePromptChange(e: any) {
@@ -31,6 +34,12 @@ export const CodeMindChat: React.FC = () => {
     });
   }
 
+  function handleStop(e: any) {
+    vscode.postMessage({
+      type: "stopExecution",
+    });
+  }
+
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
     const message = event.data;
@@ -38,6 +47,10 @@ export const CodeMindChat: React.FC = () => {
     switch (message.type) {
       case "tokenCount": {
         setTokenCount(message.value);
+        break;
+      }
+      case "executionStopped": {
+        setExecutionRunning(false);
         break;
       }
     }
@@ -71,14 +84,25 @@ export const CodeMindChat: React.FC = () => {
       <div className="text-base mb-4 text-center" id="token-count">
         Tokens: {tokenCount}
       </div>
-      <button
-        style={{ backgroundColor: "#602ae0" }}
-        className="w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        type="submit"
-        onClick={handlePromptSubmit}
-      >
-        {'Go!'}
-      </button>
+      { executionRunning ? 
+        <button
+          style={{ backgroundColor: "#72C7A8" }}
+          className="w-full bg-blue-700 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          type="submit"
+          onClick={handleStop}
+        >
+          Stop
+        </button>
+        
+          : <button
+          style={{ backgroundColor: "#602ae0" }}
+          className="w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          type="submit"
+          onClick={handlePromptSubmit}
+        >
+          Go!
+        </button>
+        }
     </div>
   );
 };

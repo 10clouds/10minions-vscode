@@ -33,40 +33,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "codemind.fix",
-        "title": "CodeMind: Fix"
-      },
-      {
         "command": "codemind.setApiKey",
         "title": "CodeMind: Set API key"
       },
       {
         "command": "codemind.ask",
-        "title": "Ask CodeMind"
+        "title": "CodeMind: Ask CodeMind"
       },
       {
-        "command": "codemind.explain",
-        "title": "CodeMind: Explain selection"
-      },
-      {
-        "command": "codemind.refactor",
-        "title": "CodeMind: Refactor selection"
-      },
-      {
-        "command": "codemind.findProblems",
-        "title": "CodeMind: Find problems"
-      },
-      {
-        "command": "codemind.optimize",
-        "title": "CodeMind: Optimize selection"
-      },
-      {
-        "command": "codemind.documentation",
-        "title": "CodeMind: Write documentation"
-      },
-      {
-        "command": "codemind.resetSession",
-        "title": "Reset OpenAI API session"
+        "command": "codemind.test",
+        "title": "CodeMind: Testing of various things"
       }
     ],
     "configuration": {
