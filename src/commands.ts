@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as vscode from "vscode";
 import { AICursor } from "./AICursor";
-import { MappedContent } from "./MappedContent";
+import { MappedContent, indentifyLine } from "./MappedContent";
 import { editDocument } from "./editDocument";
 
 import * as ts from 'typescript';
@@ -35,7 +35,7 @@ function getDeclarationRange(sourceCode: string, identifier: string): ts.TextRan
 }
 
 export const COMMANDS = {
-  /*"#UP": {
+  "#UP": {
     description: "#UP - move the cursor up one line (clears selection)",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       if (aiCursor.position === undefined) {
@@ -48,9 +48,9 @@ export const COMMANDS = {
         aiCursor.position = newPosition;
       }
     },
-  },*/
+  },
 
-  /*"#DOWN": {
+  "#DOWN": {
     description: "#DOWN - move the cursor down one line (clears selection)",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       if (aiCursor.position === undefined) {
@@ -66,9 +66,9 @@ export const COMMANDS = {
         aiCursor.position = newPosition;
       }
     },
-  },*/
+  },
 
-  /*"#HOME": {
+  "#HOME": {
     description: "#HOME - move the cursor to the beginning of the line",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       if (aiCursor.position === undefined) {
@@ -77,9 +77,9 @@ export const COMMANDS = {
 
       aiCursor.position = new vscode.Position(aiCursor.position.line, 0);
     },
-  },*/
+  },
 
-  /*"#END": {
+  "#END": {
     description: "#END - move the cursor to the end of the line",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       if (aiCursor.document === undefined) { 
@@ -97,9 +97,9 @@ export const COMMANDS = {
         actualLine.text.length
       );
     },
-  },*/
+  },
 
-  /*"#IN-COMMENT": { 
+  "#IN-COMMENT": { 
     description: "#IN-COMMENT - create a comment block at the current cursor position and move the cursor inside it, so if you output text it will be inside the comment. It creates 3 lines in total, the first and last line are the comment delimiters, and the middle line is empty.",
 
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
@@ -130,17 +130,17 @@ export const COMMANDS = {
 
       aiCursor.position = new vscode.Position(aiCursor.position.line - 1, 0);
     },
-  },*/
+  },
 
-  /*"#MESSAGE": {
+  "#MESSAGE": {
     description: "#MESSAGE <text> - output the text to a user as a toast message, use this to avoid syntax errors and unnecessary comments in the resulting CODE.",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       let message = command.split(" ").slice(1).join(" ").trim();
       vscode.window.showInformationMessage(message);
     },
-  },*/
+  },
 
-  /*"#DELETE-ONE-LINE": {
+  "#DELETE-ONE-LINE": {
     description: "#DELETE-ONE-LINE <line id> - delete the contents of the specified line (by line id), and move the cursor to the beginning of the next line after the deleted one, the remaining line ids ill not be affected.",
 
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
@@ -154,9 +154,9 @@ export const COMMANDS = {
 
       COMMANDS["#DELETE-LINES"].execute(aiCursor, `#DELETE-LINES ${startLineId} ${startLineId}`, mappedContent);
     },
-  },*/
+  },
 
-  /*"#DELETE-LINES": {
+  "#DELETE-LINES": {
     description: "#DELETE-LINES <start line id> <end line id> - delete all the contents of the lines between the start and end lines, including both of them. The remaining line ids ill not be affected. Use this to delete blocks of rewriten code / comments.",
 
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
@@ -203,7 +203,7 @@ export const COMMANDS = {
 
       aiCursor.position = lineToDeletePosition;
     },
-  },*/
+  },
 
   "#DELETE": {
     description: "#DELETE - press the delete button, which, if something is selected, erases it, or erases the character before the cursor.",
@@ -375,7 +375,7 @@ export const COMMANDS = {
     },
   },
 
-  /*"#DELETE-TEXT": {
+  "#DELETE-TEXT": {
     description: "#DELETE-TEXT <plain ext> - find and delete the nearest instance of text, cursor will be set in place of the removed text, so you can continue writing from there as this would replace the previous text.",
 
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
@@ -427,9 +427,9 @@ export const COMMANDS = {
         aiCursor.position = startPosition;
       });
     },
-  },*/
+  },
 
-  /*"#GO-TO-BEGINING-OF-LINE": {
+  "#GO-TO-BEGINING-OF-LINE": {
     description: "#GO-TO-BEGINING-OF-LINE <line id> - move the cursor to the begining of a specified line  (by line id). This is useful to write comments and code in specific places. It's not nessesary for deleting lines.",
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
       let lineId = command.split(" ")[1].trim();
@@ -452,9 +452,9 @@ export const COMMANDS = {
         aiCursor.position = new vscode.Position(aiCursor.position.line, 0);
       }
     },
-  },*/
+  },
 
-  /*"#GO-TO-TEXT": {
+  "#GO-TO-TEXT": {
     description: "#GO-TO-TEXT <plain text> - find the nearest occurence of the text and move the cursor to the beginning of it.",
 
     execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
@@ -497,9 +497,9 @@ export const COMMANDS = {
         );
       });
     },
-  },*/
+  },
 
-  /*"#GO-TO-AFTER-TEXT": {
+  "#GO-TO-AFTER-TEXT": {
     description:
       "#GO-TO-AFTER-TEXT <plain text> - find the nearest occurence of the text and move the cursor to the beginning of the next line after it. For multiline you can use '\n' character to specify the line break.",
 
@@ -554,5 +554,27 @@ export const COMMANDS = {
         );
       });
     },
-  },*/
+  },
+
+  "#CLEAR-ALL": {
+    description: "#CLEAR-ALL - clear the whole editor window, so you can start writing from scratch. Use this if you want to provide a full replacement for the CODE.",
+    execute: async (aiCursor: AICursor, command: string, mappedContent: MappedContent) => {
+      editDocument(async (edit) => {
+        if (aiCursor.document === undefined) {
+          throw new Error("Document is not set");
+        }
+
+        edit.delete(
+          aiCursor.document.uri,
+          new vscode.Range(
+            new vscode.Position(0, 0),
+            new vscode.Position(
+              aiCursor.document.lineCount - 1,
+              aiCursor.document.lineAt(aiCursor.document.lineCount - 1).text.length
+            )
+          )
+        );
+      });
+    }
+  },
 };

@@ -12,14 +12,13 @@ export async function processLine(
 
   let matchingCommands = Object.entries(COMMANDS).filter(([key, value]) => potentialCommand.startsWith(key));
 
-  if (matchingCommands.length > 1) {
-    throw new Error(`Ambiguous command: ${potentialCommand}`);
-  }
+  //pick the shortest command
+  matchingCommands.sort((a, b) => a[0].length - b[0].length);
 
-  if (matchingCommands.length === 1) {
+  if (matchingCommands.length >= 1) {
     let [key, value] = matchingCommands[0];
-
-    console.log("COMMAND", potentialCommand);
+  
+    console.log(`COMMAND ${potentialCommand} (${key})`);
 
     await value.execute(aiCursor, potentialCommand, mappedContent);
   } else {

@@ -5,8 +5,9 @@ import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { AICursor } from "./AICursor";
 import { MappedContent, mapFileContents } from "./MappedContent";
-import { fixCodeInEditor } from "./fixCodeInEditor";
+import { applyModification } from "./applyModification";
 import { processLine } from "./processLine";
+import { planAndWrite } from "./planAndWrite";
 
 export const editorLock = new AsyncLock();
 
@@ -96,7 +97,6 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     }
 
     let selectedText = activeEditor.document.getText(activeEditor.selection);
-    let fileName = this.document.fileName;
     let fullFileContent = this.document.getText();
 
     let mappedContent: MappedContent = mapFileContents(fullFileContent);
@@ -137,16 +137,16 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       }
     };
 
-    /*let { prompt } = await translateUserQuery(
+    let modification = await planAndWrite(
       userQuery,
-      context,
-      async (chunk) => {}
+      this.aiCursor.selection?.start || new vscode.Position(0, 0),
+      selectedText,
+      fullFileContent,
+      async (chunk: string) => {}
     );
 
-    console.log("PROMPT", prompt);*/
-
-    await fixCodeInEditor(
-      userQuery,
+    await applyModification(
+      modification,
       this.aiCursor.selection?.start || new vscode.Position(0, 0),
       selectedText,
       mappedContent,

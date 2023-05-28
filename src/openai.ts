@@ -7,10 +7,17 @@ let openAILock = new AsyncLock();
 
 function extractParsedLines(chunk: string) {
   const lines = chunk.split("\n");
-  return lines
-    .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
-    .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
-    .map((line) => JSON.parse(line));
+  try {
+    return lines
+      .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
+      .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
+      .map((line) => JSON.parse(line));
+  } catch (e) {
+    console.error(`Error parsing chunk: ${chunk}`)
+    console.error(e);
+    console.error(chunk);
+    throw e;
+  }
 }
 
 async function queryOpenAI(fullPrompt: string) {
@@ -19,7 +26,8 @@ async function queryOpenAI(fullPrompt: string) {
   const controller = new AbortController();
   const signal = controller.signal;
 
-  console.log("Querying OpenAI", fullPrompt);
+  console.log("Querying OpenAI");
+  console.log(fullPrompt);
 
   let numTokens = encode(fullPrompt).length;
   let model = "gpt-4";
@@ -94,7 +102,10 @@ async function processOpenAIResponseStream(
   });
 }
 
-export async function gptExecute(fullPrompt: string, onChunk: (chunk: string) => Promise<void>) {
+export async function gptExecute(
+  fullPrompt: string,
+  onChunk: (chunk: string) => Promise<void>
+) {
   const response = await queryOpenAI(fullPrompt);
   return processOpenAIResponseStream(response, onChunk);
 }
