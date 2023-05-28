@@ -1,84 +1,25 @@
 import * as AsyncLock from "async-lock";
 
+import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import {
-  ContextData,
-  createFixedCodeUsingPrompt,
-  translateUserQuery
-} from "./gpt";
-import path = require("path");
-import { randomUUID } from "crypto";
+import { AICursor } from "./AICursor";
+import { MappedContent, mapFileContents } from "./MappedContent";
+import { fixCodeInEditor } from "./fixCodeInEditor";
+import { processLine } from "./processLine";
 
-const editorLock = new AsyncLock();
-
-function handleError(error: Error, signal?: AbortSignal) {
-  if (signal?.aborted) {
-    console.log("Request aborted.");
-  } else {
-    console.error("Error:", error);
-    console.log("Error occurred while generating.");
-  }
-}
-
-async function createNewDocument(document: vscode.TextDocument) {
-  return await vscode.workspace.openTextDocument({
-    content: "",
-    language: document.languageId,
-  });
-}
-
-async function updateNewDocument(
-  newDocument: vscode.TextDocument,
-  position: vscode.Position,
-  content: string,
-) {
-  return await editorLock.acquire("streamLock", async () => {
-    try {
-      console.log(content);
-      const edit = new vscode.WorkspaceEdit();
-      edit.insert(
-        newDocument.uri,
-        position,
-        content
-      );
-      await vscode.workspace.applyEdit(edit).then(
-        (value) => {},
-        (reason) => {
-          console.log("REASON", reason);
-        }
-      );
-    } catch (e) {
-      console.error("ERRROR", e);
-    }
-
-    //return new injection point
-    let character = content.split("\n").length > 1 ? content.split("\n")[content.split("\n").length - 1].length : position.character + content.length;
-    return new vscode.Position(position.line + content.split("\n").length - 1, character);
-  });
-}
-
-async function showDocumentComparison(
-  document: vscode.TextDocument,
-  newDocument: vscode.TextDocument
-) {
-  await vscode.commands.executeCommand(
-    "vscode.diff",
-    document.uri,
-    newDocument.uri,
-    "GPT → " + path.basename(newDocument.fileName)
-  );
-}
+export const editorLock = new AsyncLock();
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
   runningExecutionId: string = "";
+  document: vscode.TextDocument | undefined;
+  aiCursor = new AICursor();
+
   private _view?: vscode.WebviewView;
 
   // In the constructor, we store the URI of the extension
-  constructor(private readonly _extensionUri: vscode.Uri) {
-    
-  }
+  constructor(private readonly _extensionUri: vscode.Uri) {}
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -103,10 +44,9 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
       switch (data.type) {
         case "getTokenCount": {
-          let prompt = data.value;
-          let tokenCount = activeEditor ? encode(
-            activeEditor.document.getText() + "\n" + prompt
-          ).length : 0;
+          let tokenCount = activeEditor
+            ? encode(activeEditor.document.getText()).length
+            : 0;
 
           this._view?.webview.postMessage({
             type: "tokenCount",
@@ -129,6 +69,10 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
   public stopExecution() {
     this.runningExecutionId = "";
+    if (this.document) {
+      this.aiCursor.selection = undefined;
+      this.document = undefined;
+    }
     this._view?.webview.postMessage({
       type: "executionStopped",
     });
@@ -144,74 +88,79 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const document = activeEditor.document;
+    this.document = activeEditor.document;
+    this.aiCursor.setDocument(activeEditor.document, activeEditor.selection);
 
-    const context: ContextData = {
-      selectedText: activeEditor.document.getText(activeEditor.selection),
-      fileName: document.fileName,
-      fullFileContent: document.getText(),
-    };
+    if (!this.document) {
+      return;
+    }
 
-    let injectionPoint = (activeEditor.selection.start.line !== activeEditor.selection.end.line || activeEditor.selection.start.character !== activeEditor.selection.end.character) ? activeEditor.selection.start : new vscode.Position(0, 0);
+    let selectedText = activeEditor.document.getText(activeEditor.selection);
+    let fileName = this.document.fileName;
+    let fullFileContent = this.document.getText();
 
-    //const newDocument = await createNewDocument(document);
-    //await showDocumentComparison(newDocument, document);
+    let mappedContent: MappedContent = mapFileContents(fullFileContent);
 
-    let line = "";
-    let previouslyAddedText = "";
+    if (
+      activeEditor.selection.start.line !== activeEditor.selection.end.line ||
+      activeEditor.selection.start.character !==
+        activeEditor.selection.end.character
+    ) {
+      this.aiCursor.selection = activeEditor.selection;
+    } else {
+      this.aiCursor.selection = new vscode.Selection(
+        new vscode.Position(0, 0),
+        new vscode.Position(0, 0)
+      );
+    }
+
+    let buffer = "";
     const onChunk = async (chunk: string) => {
       if (executionId !== this.runningExecutionId) {
         return;
       }
-      line += chunk;
+      buffer += chunk;
 
-      while (line.includes("\n")) {
-
-        //check whenever we are still just after the previously added text in the document
-        let offset = document.offsetAt(injectionPoint);
-        if (document.getText().substring(offset - previouslyAddedText.length, offset) !== previouslyAddedText) {
-          console.log(`INJECTION POINT DISRUPTED "${previouslyAddedText}" "${document.getText().substring(offset - previouslyAddedText.length, offset)}"`);
-
-          //find all indexes of previously added text
-          let indexes = [];
-          let i = -1;
-          while ((i = document.getText().indexOf(previouslyAddedText, i + 1)) >= 0) {
-            indexes.push(i);
-          }
-
-          console.log("INDEXES", indexes);
-
-          //get the one which is the closest to the current offset
-          let newOffset = indexes.reduce((prev, curr) => {
-            return (Math.abs(curr - offset) < Math.abs(prev - offset) ? curr : prev);
-          }, -10000000);
-
-          if (newOffset === -10000000) {
-            console.log(`ERROR: INJECTION POINT NOT FOUND "${previouslyAddedText}"`);
-            if (executionId === this.runningExecutionId) {
-              this.stopExecution();
-            }
-            return;
-          }
-
-          injectionPoint = new vscode.Position(document.positionAt(newOffset).line, document.positionAt(newOffset).character + previouslyAddedText.length);
+      while (buffer.includes("\n")) {
+        if (!buffer.includes("\n")) {
+          return;
         }
 
-        previouslyAddedText = line.substring(0, line.indexOf("\n") + 1);
-        injectionPoint = await updateNewDocument(document, injectionPoint, previouslyAddedText);
-        line = line.substring(line.indexOf("\n") + 1);
+        let line = buffer.substring(0, buffer.indexOf("\n") + 1);
+
+        await processLine(this.aiCursor, line, mappedContent).catch((e) => {
+          console.error(e);
+          this.stopExecution();
+        });
+
+        buffer = buffer.substring(buffer.indexOf("\n") + 1);
       }
     };
 
-    injectionPoint = await updateNewDocument(document, injectionPoint, "/*\n");
-    await updateNewDocument(document, injectionPoint, "\n*/\n");
+    /*let { prompt } = await translateUserQuery(
+      userQuery,
+      context,
+      async (chunk) => {}
+    );
 
-    let { prompt } = await translateUserQuery(userQuery, context, onChunk);
+    console.log("PROMPT", prompt);*/
 
-    onChunk("\n\n================\n\n");
+    await fixCodeInEditor(
+      userQuery,
+      this.aiCursor.selection?.start || new vscode.Position(0, 0),
+      selectedText,
+      mappedContent,
+      onChunk
+    );
 
-    await createFixedCodeUsingPrompt(userQuery, prompt, context, onChunk);
+    if (buffer.length > 0) {
+      await processLine(this.aiCursor, buffer, mappedContent).catch((e) => {
+        console.error(e);
+        this.stopExecution();
+      });
+    }
 
+    this.aiCursor.position = undefined;
     this.stopExecution();
   }
 
@@ -234,4 +183,3 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     </html>`;
   }
 }
-

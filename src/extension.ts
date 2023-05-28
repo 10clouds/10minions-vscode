@@ -6,6 +6,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   const provider = new CodeMindViewProvider(context.extensionUri);
 
+  
+  /*
+  editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+  */
+  
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.setApiKey", async () => {
       try {
@@ -23,40 +28,6 @@ export function activate(context: vscode.ExtensionContext) {
         }
       } catch (e) {
         console.error(e);
-      }
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("codemind.test", () => {
-      // Create a new decoration type for modified code
-      const modifiedDecorationType =
-        vscode.window.createTextEditorDecorationType({
-          backgroundColor: "rgba(255, 0, 0, 0.3)", // Red background with 30% opacity
-        });
-
-      // Get the active text editor
-      const activeEditor = vscode.window.activeTextEditor;
-
-      if (activeEditor) {
-        // Define the range of the code segment to modify
-        const codeSegmentRange = new vscode.Range(1, 0, 1, 10); // Example: from line 0, column 0 to line 0, column 10
-
-        // Get the text within the code segment
-        const codeSegmentText = activeEditor.document.getText(codeSegmentRange);
-
-        // Modify the code segment (example: add a comment)
-        const modifiedCodeSegmentText = `// Modified code: ${codeSegmentText}`;
-
-        // Create a decoration object for the modified code
-        const modifiedDecoration = {
-          range: codeSegmentRange,
-        };
-
-        // Apply the modified code decoration to the active text editor
-        activeEditor.setDecorations(modifiedDecorationType, [
-          modifiedDecoration,
-        ]);
       }
     })
   );
