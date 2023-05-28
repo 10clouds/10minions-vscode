@@ -7,8 +7,8 @@ declare const acquireVsCodeApi: any;
 const vscode = acquireVsCodeApi();
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const CodeMindChat: React.FC = () => {
-  let [prompt, setPrompt] = React.useState('Refactor this code');
+export const SideBarWebViewInnerComponent: React.FC = () => {
+  let [prompt, setPrompt] = React.useState('');
   let [tokenCount, setTokenCount] = React.useState(0);
   let [executionRunning, setExecutionRunning] = React.useState(false);
 
@@ -86,7 +86,7 @@ export const CodeMindChat: React.FC = () => {
       </div>
       { executionRunning ? 
         <button
-          style={{ backgroundColor: "#72C7A8" }}
+          style={{ backgroundColor: "#602ae0", opacity: 0.5 }}
           className="w-full bg-blue-700 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
           type="submit"
           onClick={handleStop}
@@ -109,4 +109,4 @@ export const CodeMindChat: React.FC = () => {
 
 const container = document.getElementById("root");
 const root = createRoot(container!);
-root.render(<CodeMindChat />);
+root.render(<SideBarWebViewInnerComponent />);
