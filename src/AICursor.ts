@@ -1,4 +1,7 @@
 import * as vscode from "vscode";
+import AsyncLock = require("async-lock");
+
+export const editorLock = new AsyncLock();
 
 export class AICursor implements vscode.Disposable {
   public document?: vscode.TextDocument;
@@ -99,11 +102,9 @@ export class AICursor implements vscode.Disposable {
   }
 
   public setDocument(
-    document: vscode.TextDocument,
-    selection: vscode.Selection
+    document: vscode.TextDocument
   ) {
     this.document = document;
-    this.aiSelection = selection;
   }
 
   private toggleBlink() {
@@ -141,13 +142,13 @@ export class AICursor implements vscode.Disposable {
       );
       const selectionEndOffset = editor.document.offsetAt(this.aiSelection.end);
 
-      if (changeEndOffset <= selectionStartOffset) {
+      if (changeStartOffset >= selectionEndOffset) {
+        //no effects
+      } else if (changeEndOffset <= selectionStartOffset) {
         this.aiSelection = new vscode.Selection(
           editor.document.positionAt(selectionStartOffset + diff),
           editor.document.positionAt(selectionEndOffset + diff)
         );
-      } else if (changeStartOffset >= selectionEndOffset) {
-        // no effects on selection
       } else {
         this.aiSelection = undefined;
       }
@@ -170,4 +171,91 @@ export class AICursor implements vscode.Disposable {
       }
     }
   }
+}
+
+export async function editDocument(
+  edit: (edit: vscode.WorkspaceEdit) => Promise<void>
+) {
+  await editorLock.acquire("streamLock", async () => {
+    const workspaceEdit = new vscode.WorkspaceEdit();
+    await edit(workspaceEdit);
+    await vscode.workspace.applyEdit(workspaceEdit).then(
+      (value) => { },
+      (reason) => {
+        console.log("REASON", reason);
+      }
+    );
+  });
+}
+
+export async function insertIntoNewDocument(
+  aiCursor: AICursor,
+  content: string) {
+  return await editorLock.acquire("streamLock", async () => {
+    try {
+      const edit = new vscode.WorkspaceEdit();
+
+      if (!aiCursor.selection || !aiCursor.document) {
+        throw new Error("No selection");
+      }
+
+      if (aiCursor.selection.isEmpty) {
+        edit.insert(
+          aiCursor.document.uri,
+          aiCursor.selection.start,
+          content
+        );
+      } else {
+        edit.replace(
+          aiCursor.document.uri,
+          new vscode.Range(
+            aiCursor.selection.start,
+            aiCursor.selection.end
+          ),
+          content
+        );
+      }
+
+      await vscode.workspace.applyEdit(edit).then(
+        (value) => {
+          aiCursor.position = aiCursor.document!.positionAt(aiCursor.document!.offsetAt(aiCursor.position!) + content.length);
+
+        },
+        (reason) => {
+          console.log("REASON", reason);
+        }
+      );
+    } catch (e) {
+      console.error("ERRROR", e);
+    }
+  });
+}
+
+export async function startWritingComment(aiCursor: AICursor) {
+  if (aiCursor.isInComment) {
+    console.log("Already in comment");
+    return;
+  }
+  
+  if (aiCursor.position === undefined) {
+    throw new Error("Position is not set");
+  }
+
+  await editDocument(async (edit) => {
+    if (aiCursor.document === undefined) { 
+      throw new Error("Document is not set");
+    }
+
+    if (aiCursor.position === undefined) {
+      throw new Error("Position is not set");
+    }
+
+    edit.insert(
+      aiCursor.document.uri,
+      new vscode.Position(aiCursor.position.line, 0),
+      `/*\n\n*\/\n\n`
+    );
+  });
+
+  aiCursor.position = new vscode.Position(aiCursor.position!.line + 1, 0);
 }

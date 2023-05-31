@@ -1,21 +1,46 @@
-import * as AsyncLock from "async-lock";
-
 import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
+import * as os from "os";
+import * as path from "path";
+import * as fs from "fs";
 import * as vscode from "vscode";
-import { AICursor } from "./AICursor";
-import { MappedContent, mapFileContents } from "./MappedContent";
-import { applyModification } from "./applyModification";
-import { processLine } from "./processLine";
+import {
+  AICursor,
+  editDocument,
+  insertIntoNewDocument,
+  startWritingComment,
+} from "./AICursor";
+import { applyModificationLLM } from "./applyModificationLLM";
 import { planAndWrite } from "./planAndWrite";
-
-export const editorLock = new AsyncLock();
+import { getRandomProgressMessage, lockDocument } from "./progress";
+import { closeAllTmpEditorsFor } from "./closeAllTmpEditorsFor";
+import { replaceContent } from "./replaceContent";
+import { createWorkingdocument } from "./createWorkingdocument";
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
+  aiCursor = new AICursor();
+  unlockDocument?: () => void;
+  gptProcedureSubscriptions: vscode.Disposable[] = [];
+
+  rejectProgress?: (error: string) => void;
+  resolveProgress?: () => void;
+
+  async preFillPrompt(prompt: string) {
+    //make sure that our extension bar is visible
+    if (!this._view) {
+      await vscode.commands.executeCommand("codemind.chatView.focus");
+    } else {
+      this._view?.show?.(true);
+    }
+
+    this._view?.webview.postMessage({
+      type: "preFillPrompt",
+      value: prompt,
+    });
+  }
   public static readonly viewType = "codemind.chatView";
   runningExecutionId: string = "";
   document: vscode.TextDocument | undefined;
-  aiCursor = new AICursor();
 
   private _view?: vscode.WebviewView;
 
@@ -61,107 +86,253 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "stopExecution": {
-          this.stopExecution();
+          this.stopExecution("Canceled by user");
           break;
         }
       }
     });
   }
 
-  public stopExecution() {
+  public stopExecution(error?: string) {
     this.runningExecutionId = "";
+    this.aiCursor.selection = undefined;
+
+    this.gptProcedureSubscriptions.forEach((subscription) => {
+      subscription.dispose();
+    });
+
+    this.gptProcedureSubscriptions = [];
+
+    if (this.unlockDocument) this.unlockDocument();
+
+    this.unlockDocument = undefined;
+
+    if (this.rejectProgress && error) this.rejectProgress(error);
+    else if (this.resolveProgress) this.resolveProgress();
+
+    this.rejectProgress = undefined;
+    this.resolveProgress = undefined;
+
+    //delete tmp file
+    //vscode.workspace.fs.delete(refDocument.uri);
+
     if (this.document) {
-      this.aiCursor.selection = undefined;
       this.document = undefined;
     }
+
     this._view?.webview.postMessage({
       type: "executionStopped",
     });
   }
 
   public async executeFullGPTProcedure(userQuery: string) {
-    const executionId = randomUUID();
-
-    this.runningExecutionId = executionId;
-
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
+      vscode.window.showErrorMessage(
+        "Please open a file before running CodeMind"
+      );
       return;
     }
 
     this.document = activeEditor.document;
-    this.aiCursor.setDocument(activeEditor.document, activeEditor.selection);
 
-    if (!this.document) {
-      return;
-    }
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `🧠 ${userQuery} (${path.basename(this.document?.fileName)})`,
+        cancellable: true,
+      },
+      async (progress, token) => {
+        return new Promise<void>(async (resolve, reject) => {
+          this.resolveProgress = resolve;
+          this.rejectProgress = reject;
 
-    let selectedText = activeEditor.document.getText(activeEditor.selection);
-    let fullFileContent = this.document.getText();
+          let workingDocument = await createWorkingdocument(
+            this.document!.fileName
+          );
 
-    let mappedContent: MappedContent = mapFileContents(fullFileContent);
+          //on closed documents
+          this.gptProcedureSubscriptions.push(
+            vscode.workspace.onDidCloseTextDocument((document) => {
+              if (
+                document.uri.toString() === workingDocument.uri.toString() ||
+                document.uri.toString() === this.document?.uri.toString()
+              ) {
+                this.stopExecution("Canceled by user");
+              }
+            })
+          );
 
-    if (
-      activeEditor.selection.start.line !== activeEditor.selection.end.line ||
-      activeEditor.selection.start.character !==
-        activeEditor.selection.end.character
-    ) {
-      this.aiCursor.selection = activeEditor.selection;
-    } else {
-      this.aiCursor.selection = new vscode.Selection(
-        new vscode.Position(0, 0),
-        new vscode.Position(0, 0)
-      );
-    }
+          // Generate a unique filename
+          const tempFileName = `tempfile_${Date.now()}.txt`;
 
-    let buffer = "";
-    const onChunk = async (chunk: string) => {
-      if (executionId !== this.runningExecutionId) {
-        return;
-      }
-      buffer += chunk;
+          // Get the system's temporary directory
+          const tempDir = os.tmpdir();
 
-      while (buffer.includes("\n")) {
-        if (!buffer.includes("\n")) {
-          return;
-        }
+          // Create the full path to the temporary file
+          const tempFilePath = path.join(tempDir, tempFileName);
 
-        let line = buffer.substring(0, buffer.indexOf("\n") + 1);
+          this.aiCursor.setDocument(workingDocument);
 
-        await processLine(this.aiCursor, line, mappedContent).catch((e) => {
-          console.error(e);
+          const TOTAL_BIG_TASKS = 3;
+          const TOTAL_PROGRESS_FOR_BIG = 95 / TOTAL_BIG_TASKS;
+          let currentProgressInBigTask = 0;
+
+          this.unlockDocument = lockDocument(this.document!);
+
+          let justRelocked = false;
+          let pendingRelock = false;
+
+          /*let progressMessage = getRandomProgressMessage();
+
+          progress.report({
+            message: progressMessage,
+            increment: 0,
+          });*/
+
+          const markJustRelocked = () => {
+            if (!justRelocked) {
+              justRelocked = true;
+
+              this.unlockDocument = lockDocument(this.document!);
+
+              setTimeout(() => {
+                justRelocked = false;
+
+                if (pendingRelock) {
+                  pendingRelock = false;
+                  markJustRelocked();
+                }
+              }, 1000);
+            } else {
+              pendingRelock = true;
+            }
+          };
+
+          const reportSmallProgress = () => {
+            const totalPending =
+              TOTAL_PROGRESS_FOR_BIG - currentProgressInBigTask;
+            let increment = totalPending * 0.01;
+            progress.report({
+              //message: progressMessage,
+              increment,
+            });
+
+            markJustRelocked();
+
+            currentProgressInBigTask += increment;
+          };
+
+          const reportBigTaskFinished = () => {
+            //progressMessage = getRandomProgressMessage();
+
+            progress.report({
+              //message: progressMessage,
+
+              increment: TOTAL_PROGRESS_FOR_BIG - currentProgressInBigTask,
+            });
+
+            markJustRelocked();
+
+            currentProgressInBigTask = 0;
+          };
+
+          reportSmallProgress();
+
+          token.onCancellationRequested(() => {
+            this.stopExecution("Canceled by user");
+          });
+
+          const executionId = randomUUID();
+
+          this.runningExecutionId = executionId;
+
+          reportSmallProgress();
+
+          if (!this.document) {
+            return;
+          }
+
+          let selectedText = activeEditor.document.getText(
+            activeEditor.selection
+          );
+
+          this.aiCursor.position = new vscode.Position(0, 0);
+
+          reportSmallProgress();
+
+          let fullFileContent = this.document.getText();
+
+          reportSmallProgress();
+
+          await startWritingComment(this.aiCursor);
+
+          await insertIntoNewDocument(
+            this.aiCursor,
+            "User: " + userQuery + "\n\n"
+          );
+
+          let modification = await planAndWrite(
+            userQuery,
+            activeEditor.selection?.start || new vscode.Position(0, 0),
+            selectedText,
+            fullFileContent,
+            async (chunk: string) => {
+              reportSmallProgress();
+
+              //escape */ in chunk
+              chunk = chunk.replace(/\*\//g, "*\\/");
+
+              await insertIntoNewDocument(this.aiCursor, chunk);
+            },
+            () => {
+              return this.runningExecutionId !== executionId;
+            }
+          );
+
+          reportBigTaskFinished();
+
+          this.aiCursor.position = new vscode.Position(
+            this.aiCursor.position!.line + 2,
+            0
+          );
+
+          let finalCode = await applyModificationLLM(
+            fullFileContent,
+            modification,
+            async (chunk: string) => {
+              await editDocument(async (edit) => {
+                reportSmallProgress();
+
+                if (this.document) {
+                  insertIntoNewDocument(this.aiCursor, chunk);
+                }
+              });
+            }
+          );
+
+          /*await vscode.commands.executeCommand(
+            "vscode.diff",
+            refDocument.uri,
+            this.document.uri,
+            `Old → Codemind` //${path.basename(this.document.fileName)}
+          );*/
+
+          reportBigTaskFinished();
+
+          vscode.window.showInformationMessage(
+            `Finished processing ${path.basename(this.document?.fileName)}`
+          );
+
+          //move the contents from the tmp file to the original file
+          await replaceContent(this.document, finalCode || "???");
+
+          closeAllTmpEditorsFor(workingDocument);
+
           this.stopExecution();
         });
-
-        buffer = buffer.substring(buffer.indexOf("\n") + 1);
       }
-    };
-
-    let modification = await planAndWrite(
-      userQuery,
-      this.aiCursor.selection?.start || new vscode.Position(0, 0),
-      selectedText,
-      fullFileContent,
-      async (chunk: string) => {}
     );
-
-    await applyModification(
-      modification,
-      this.aiCursor.selection?.start || new vscode.Position(0, 0),
-      selectedText,
-      mappedContent,
-      onChunk
-    );
-
-    if (buffer.length > 0) {
-      await processLine(this.aiCursor, buffer, mappedContent).catch((e) => {
-        console.error(e);
-        this.stopExecution();
-      });
-    }
-
-    this.aiCursor.position = undefined;
-    this.stopExecution();
   }
 
   private _getHtmlForWebview(webview: vscode.Webview) {

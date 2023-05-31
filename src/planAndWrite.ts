@@ -1,13 +1,13 @@
 import * as vscode from "vscode";
-import { COMMANDS } from "./commands";
 import { gptExecute } from "./openai";
 
 export async function planAndWrite(
   userQuery: string,
   selectionPosition: vscode.Position,
   selectedText: string,
-  code: string,
-  onChunk: (chunk: string) => Promise<void>
+  fullFileContents: string,
+  onChunk: (chunk: string) => Promise<void>,
+  isCancelled: () => boolean
 ) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
@@ -17,6 +17,11 @@ export async function planAndWrite(
   let finishingInfoAboutSelectedText = (selectedText
   ? "Keep in mind that this applies only to SELECTED TEXT as the SELECTED TEXT should be your focus."
   : "");
+
+  let fileContext = selectedText ? `
+===== FILE CONTEXT (code starts on line: ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} )====
+${fullFileContents}  
+` : "";
 
   let promptWithContext = `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -34,21 +39,22 @@ If asked to refactor code, critically analyze the provided code and propose a re
 If asked to write documentation, write nice comment at the top and consise to the point JSdocs above the signatures of each function.
 If asked to remove comments, don't add your own comments as this is probably not what your college wants.
 
-===== SELECTED TEXT (starts on line: ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} )====
-${selectedText
-      ? selectedText
-      : "User did not select any text, so the command applies to the whole CODE."}
-
 ===== CODE ====
-${code}
+${selectedText ? selectedText : fullFileContents}
+
+${fileContext}
 
 ===== TASK ====
-The task that you have been given: ${userQuery}
+${userQuery}
 
 ${finishingInfoAboutSelectedText}
 
 Let's take it step by step.
 `.trim();
 
-  return gptExecute(promptWithContext, onChunk);
+  return gptExecute({
+    fullPrompt: promptWithContext,
+    onChunk,
+    isCancelled,
+  });
 }

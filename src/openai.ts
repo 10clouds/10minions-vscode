@@ -13,14 +13,14 @@ function extractParsedLines(chunk: string) {
       .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
       .map((line) => JSON.parse(line));
   } catch (e) {
-    console.error(`Error parsing chunk: ${chunk}`)
+    console.error(`Error parsing chunk: ${chunk}`);
     console.error(e);
     console.error(chunk);
     throw e;
   }
 }
 
-async function queryOpenAI(fullPrompt: string) {
+async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4") {
   const API_URL = "https://api.openai.com/v1/chat/completions";
 
   const controller = new AbortController();
@@ -28,15 +28,6 @@ async function queryOpenAI(fullPrompt: string) {
 
   console.log("Querying OpenAI");
   console.log(fullPrompt);
-
-  let numTokens = encode(fullPrompt).length;
-  let model = "gpt-4";
-  let maxTokens = 2000;
-
-  if (numTokens < 3000) {
-    model = "gpt-3.5-turbo";
-    maxTokens = 1000;
-  }
 
   return await fetch(API_URL, {
     method: "POST",
@@ -65,16 +56,26 @@ async function queryOpenAI(fullPrompt: string) {
   });
 }
 
-async function processOpenAIResponseStream(
+async function processOpenAIResponseStream({
+  response,
+  onChunk,
+  isCancelled,
+} : {
   response: Response,
-  onChunk: (chunk: string) => Promise<void>
-) {
+  onChunk: (chunk: string) => Promise<void>,
+  isCancelled: () => boolean
+}) {
   const stream = response.body!;
   const decoder = new TextDecoder("utf-8");
   let fullContent = "";
 
   return await new Promise<string>((resolve, reject) => {
     stream.on("data", async (value) => {
+      if (isCancelled()) {
+        stream.removeAllListeners();
+        reject();
+        return;
+      }
       const chunk = decoder.decode(value);
 
       const parsedLines = extractParsedLines(chunk);
@@ -91,7 +92,11 @@ async function processOpenAIResponseStream(
     });
 
     stream.on("end", () => {
-      console.log("end");
+      if (isCancelled()) {
+        stream.removeAllListeners();
+        reject();
+        return;
+      }
       resolve(fullContent);
     });
 
@@ -102,10 +107,19 @@ async function processOpenAIResponseStream(
   });
 }
 
-export async function gptExecute(
+export async function gptExecute({
+  fullPrompt,
+  onChunk,
+  isCancelled = () => false,
+  maxTokens = 2000,
+  model = "gpt-4",
+} : {
   fullPrompt: string,
-  onChunk: (chunk: string) => Promise<void>
-) {
-  const response = await queryOpenAI(fullPrompt);
-  return processOpenAIResponseStream(response, onChunk);
+  onChunk: (chunk: string) => Promise<void>,
+  isCancelled?: () => boolean,
+  maxTokens?: number,
+  model?: string,
+}) {
+  const response = await queryOpenAI(fullPrompt, maxTokens, model);
+  return processOpenAIResponseStream({response, onChunk, isCancelled});
 }

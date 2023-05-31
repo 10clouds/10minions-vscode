@@ -53,6 +53,14 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         setExecutionRunning(false);
         break;
       }
+      case "preFillPrompt": {
+        setPrompt(message.value);
+        //focus on the go button
+        const goButton = document.querySelector("button");
+        goButton?.focus();
+        
+        break;
+      }
     }
   });
 
@@ -65,7 +73,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         style={{ color: "#602ae0" }}
         className="text-4xl font-bold text-center mb-4"
       >
-        CodeMind
+        🧠 CodeMind
       </h1>
       <h3 className="text-xl font-semibold text-center mb-6">
         GPT-4 Powered Coding Assistant

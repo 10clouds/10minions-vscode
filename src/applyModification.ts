@@ -1,75 +1,65 @@
 import * as vscode from "vscode";
-import { COMMANDS } from "./commands";
 import { gptExecute } from "./openai";
-import { formatMappedContent } from "./MappedContent";
+import { executeCode } from "./codeExecution";
 
 export async function applyModification(
+  document: vscode.TextDocument,
   modification: string,
-  selectionPosition: vscode.Position,
-  selectedText: string,
-  mappedContent: {
-    id: string;
-    lastKnownPosition: number;
-    line: string;
-  }[],
-  onChunk: (chunk: string) => Promise<void>
+  onChunk: (chunk: string) => Promise<void>, 
+  isCancelled: () => boolean
 ) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
     return "";
   }
 
-  let startingInfo = `You start with ${selectedText
-    ? "the selected text selected, so if you want to preserve it, do something that clears the selection first"
-    : "the cursor at the top of the CODE"
-  }, and the CODE is already open in the editor.`.trim();
-
   let promptWithContext = `
-You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to in the VS Code  editor environment.
-Keep in mind that the editor already contains provided code and by the end of your operation it needs to contain the modified code.
-${startingInfo}
-While you might be writing code, the thing that you write will not be executed and will not help you witn your task - this needs to be done manually by you.
-Every character and word you say will be put be inserted into the editor at the current cursor position. Keep in mind that empty lines will also be inserted, so do not add extra new lines in the output.
+You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to the code.
+
+Your job is to create a javascript function applyModification with this signature:
+
+\`\`\`typescript
+/**
+ * Applies the modification to the code
+ * @param {string} code - the code that needs to be modified
+ * @returns {string} - the modified code
+ */
+function applyModification(code: string): string
+\`\`\`
+
+This function must perform the requested modification to the code and return the modified code.
+
 Never generate a syntax error, so any remarks should be outputted as in comment blocks or line comments.
-Besides just outputing code at the cursor, you can use the following commands (output them as seperate lines of plain text, they will not be written to the editor):
 
-${Object.values(COMMANDS)
-      .map((c) => c.description)
-      .join("\n")}
+The modification code should be written in a way that it can be executed multiple times, and it will always produce the same result.
 
-Keep in mind that the commands must be exactly as specified, with a leading #, always at the beigning of a line and in this exact format.
+Keep the code consise and short, but in a way that still generates the requested modification. No comments are needed.
 
-Make sure that the provided modification is executed preciselly and in full.
+Do not invoke the function, just write the function body.
 
-Rememeber to clean up the code from things which were superceeded by new code, remove any old unnecessary identifiers and old function implementation.
+Modification code should not have any side effects, only string processing and modifications.
 
-If you provide new updated implementations, after that, perform a series of #SELECT-IDENTIFIER commands followed by #DELETE commands:
-#SELECT-IDENTIFIER <functionThatWasImplementedByYou>
-#DELETE
-#SELECT-IDENTIFIER <anotherFunctionThatYouimplmented>
-#DELETE
-etc
-
-If asked to remove comments, don't add your own comments as this is probably not what your college wants.
-
-===== SELECTED TEXT (starts on line: ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} )====
-${selectedText
-      ? selectedText
-      : "User did not select any text, so the command applies to the whole CODE."}
+The modification code should be written in plain javascript, NOT typescript.
 
 ===== CODE ====
-${formatMappedContent(mappedContent)}
+${document.getText()}
 
 ===== REQUESTED MODIFICATION ====
 ${modification}
 
-
 ===== FINAL SUMMARY ====
-You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to in the VS Code  editor environment.
+You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to the code.
 
-Keep in mind that the editor already contains provided code and by the end of your operation it needs to contain the modified code.
+Your job is to create a javascript function applyModification.
 
 `.trim();
 
-  return gptExecute(promptWithContext, onChunk);
+  let result = await gptExecute({fullPrompt: promptWithContext, onChunk, isCancelled});
+
+  console.log("Javascript intermidiate code");
+  console.log(result);
+  
+  return executeCode(result, document.getText());
 }
+
+
