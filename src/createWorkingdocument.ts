@@ -3,7 +3,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export async function createWorkingdocument(fileName: string) {
-  let tmpFileName = path.join(os.tmpdir(), "🧠 " + path.basename(fileName));
+  let tmpFileName = path.join(os.tmpdir(), "🧠 " + path.basename(fileName, path.extname(fileName)))  + ".txt";
 
   vscode.window.setStatusBarMessage("CodeMind is working...", 1000);
 

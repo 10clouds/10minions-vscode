@@ -14,10 +14,6 @@ export async function planAndWrite(
     return "";
   }
 
-  let finishingInfoAboutSelectedText = (selectedText
-  ? "Keep in mind that this applies only to SELECTED TEXT as the SELECTED TEXT should be your focus."
-  : "");
-
   let fileContext = selectedText ? `
 ===== FILE CONTEXT (code starts on line: ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} )====
 ${fullFileContents}  
@@ -47,7 +43,7 @@ ${fileContext}
 ===== TASK ====
 ${userQuery}
 
-${finishingInfoAboutSelectedText}
+Keep in mind that this applies only to CODE and it should be your focus.
 
 Let's take it step by step.
 `.trim();

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { gptExecute } from "./openai";
 import { encode } from "gpt-tokenizer";
 
-export async function applyModificationLLM(
+export async function convertToDiff(
   refCode: string,
   modification: string,
   onChunk: (chunk: string) => Promise<void>
@@ -15,9 +15,9 @@ export async function applyModificationLLM(
   let promptWithContext = `
 You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to the code.
 
-Your job is to output only the cosnilidated modified code. If the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inject approprirate sections from the original code.
+Your job is to output a diff file that will produce modified code when applied to the original code.
 
-Start your answer with the first line of consilidated code.
+If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inject appropriate sections from the original code.
 
 ===== CODE ====
 ${refCode}
@@ -28,9 +28,14 @@ ${modification}
 ===== FINAL SUMMARY ====
 You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to the code.
 
-Your job is to output only the cosnilidated modified code.
+Your job is to output a diff file that will produce modified code when applied to the original code.
 
-Start your answer with the first line of consilidated code.
+If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inject appropriate sections from the original code.
+
+Start your answer with:
+
+--- original
++++ modified
 
 `.trim();
 

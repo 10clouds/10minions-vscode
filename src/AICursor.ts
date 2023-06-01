@@ -225,6 +225,8 @@ export async function insertIntoNewDocument(
           console.log("REASON", reason);
         }
       );
+
+      await aiCursor.document!.save();
     } catch (e) {
       console.error("ERRROR", e);
     }

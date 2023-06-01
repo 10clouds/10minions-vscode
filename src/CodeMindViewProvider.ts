@@ -1,21 +1,13 @@
 import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
-import * as os from "os";
 import * as path from "path";
-import * as fs from "fs";
 import * as vscode from "vscode";
-import {
-  AICursor,
-  editDocument,
-  insertIntoNewDocument,
-  startWritingComment,
-} from "./AICursor";
-import { applyModificationLLM } from "./applyModificationLLM";
-import { planAndWrite } from "./planAndWrite";
-import { getRandomProgressMessage, lockDocument } from "./progress";
-import { closeAllTmpEditorsFor } from "./closeAllTmpEditorsFor";
-import { replaceContent } from "./replaceContent";
+import { AICursor, editDocument, insertIntoNewDocument } from "./AICursor";
+import { convertToDiff } from "./convertToDiff";
 import { createWorkingdocument } from "./createWorkingdocument";
+import { planAndWrite } from "./planAndWrite";
+import { lockDocument } from "./progress";
+import { replaceContentWithDiff } from "./replaceContent";
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   aiCursor = new AICursor();
@@ -125,6 +117,36 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  async handleDiffAndReplace(
+    fullFileContent: string,
+    modification: string,
+    reportSmallProgress: () => void
+  ) {
+    const maxRetries = 3;
+    for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
+      try {
+        let diff = await convertToDiff(
+          fullFileContent,
+          modification,
+          async (chunk: string) => {
+            reportSmallProgress();
+
+            if (this.document) {
+              await insertIntoNewDocument(this.aiCursor, chunk);
+            }
+          }
+        );
+      } catch (error) {
+        // Log the error
+        console.error(`Error in retry attempt #${retryAttempt}:`, error);
+        // If we reached the maximum number of retries, rethrow the error
+        if (retryAttempt === maxRetries) {
+          throw error;
+        }
+      }
+    }
+  }
+
   public async executeFullGPTProcedure(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
@@ -147,30 +169,27 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           this.resolveProgress = resolve;
           this.rejectProgress = reject;
 
+          let starTime = Date.now();
+
+          vscode.window.showTextDocument(this.document!, { preview: false });
+
           let workingDocument = await createWorkingdocument(
             this.document!.fileName
           );
 
+          await vscode.window.showTextDocument(workingDocument);
+
           //on closed documents
           this.gptProcedureSubscriptions.push(
-            vscode.workspace.onDidCloseTextDocument((document) => {
+            vscode.workspace.onDidCloseTextDocument((cloedDoc) => {
               if (
-                document.uri.toString() === workingDocument.uri.toString() ||
-                document.uri.toString() === this.document?.uri.toString()
+                cloedDoc.uri.toString() === workingDocument.uri.toString() ||
+                cloedDoc.uri.toString() === this.document?.uri.toString()
               ) {
                 this.stopExecution("Canceled by user");
               }
             })
           );
-
-          // Generate a unique filename
-          const tempFileName = `tempfile_${Date.now()}.txt`;
-
-          // Get the system's temporary directory
-          const tempDir = os.tmpdir();
-
-          // Create the full path to the temporary file
-          const tempFilePath = path.join(tempDir, tempFileName);
 
           this.aiCursor.setDocument(workingDocument);
 
@@ -194,7 +213,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
             if (!justRelocked) {
               justRelocked = true;
 
-              this.unlockDocument = lockDocument(this.document!);
+              //this.unlockDocument = lockDocument(this.document!);
 
               setTimeout(() => {
                 justRelocked = false;
@@ -265,8 +284,6 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
           reportSmallProgress();
 
-          await startWritingComment(this.aiCursor);
-
           await insertIntoNewDocument(
             this.aiCursor,
             "User: " + userQuery + "\n\n"
@@ -297,37 +314,24 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
             0
           );
 
-          let finalCode = await applyModificationLLM(
-            fullFileContent,
-            modification,
-            async (chunk: string) => {
-              await editDocument(async (edit) => {
-                reportSmallProgress();
+          await insertIntoNewDocument(this.aiCursor, "\n\n");
 
-                if (this.document) {
-                  insertIntoNewDocument(this.aiCursor, chunk);
-                }
-              });
-            }
-          );
-
-          /*await vscode.commands.executeCommand(
-            "vscode.diff",
-            refDocument.uri,
-            this.document.uri,
-            `Old → Codemind` //${path.basename(this.document.fileName)}
-          );*/
+          // Replace the relevant code with the call to the new function
+          await handleDiffAndReplace(this.document, userQuery, starTime);
 
           reportBigTaskFinished();
+
+          await replaceContentWithDiff(
+            this.document,
+            prepareModificationInfo(userQuery, starTime),
+            diff || "???"
+          );
 
           vscode.window.showInformationMessage(
             `Finished processing ${path.basename(this.document?.fileName)}`
           );
 
-          //move the contents from the tmp file to the original file
-          await replaceContent(this.document, finalCode || "???");
-
-          closeAllTmpEditorsFor(workingDocument);
+          //closeAllTmpEditorsFor(workingDocument);
 
           this.stopExecution();
         });
@@ -354,3 +358,37 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     </html>`;
   }
 }
+
+function prepareModificationInfo(userQuery: string, startTime: number) {
+  let seconds = (Date.now() - startTime) / 1000;
+
+  //format time to 00:00:00
+  let hours = Math.floor(seconds / 3600);
+  seconds = seconds % 3600;
+  let minutes = Math.floor(seconds / 60);
+  seconds = seconds % 60;
+
+  let formatted = `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toFixed(0).padStart(2, "0")}`;
+  let userQueryPreview = userQuery.split("\n")[0].substring(0, 500);
+
+  let prefix = `
+/*
+ * 10Clouds CodeMind AI
+ *
+ * ${userQueryPreview}
+ * Duration: ${formatted}
+ * Time: ${new Date().toISOString().replace(/T/, " ").replace(/\..+/, "")}
+ *\/
+`.trim();
+  return prefix;
+}
+
+/*
+ * 10Clouds CodeMind AI
+ *
+ * How to handle rejection here? I want to retry convertion to diff and try to replace content again.
+ * Duration: 00:04:14
+ * Time: 2023-06-01 05:55:27
+ */
