@@ -1,64 +1,48 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { Logo } from "./Logo";
+import { useTemporaryFlag } from "./useTemporaryFlag";
+import { ExecutionInfo } from "./ExecutionInfo";
+import { Execution } from "./Execution";
 
 declare const acquireVsCodeApi: any;
 
-const vscode = acquireVsCodeApi();
+export const vscode = acquireVsCodeApi();
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const SideBarWebViewInnerComponent: React.FC = () => {
-  let [prompt, setPrompt] = React.useState('');
-  let [tokenCount, setTokenCount] = React.useState(0);
-  let [executionRunning, setExecutionRunning] = React.useState(false);
-
-  function handlePromptSubmit(e: any) {
-    vscode.postMessage({
-      type: "getTokenCount",
-      value: prompt,
-    });
-
-    vscode.postMessage({
-      type: "prompt",
-      value: prompt,
-    });
-
-    setExecutionRunning(true);
-  }
-
-  function handlePromptChange(e: any) {
-    setPrompt(e.target.value);
-    vscode.postMessage({
-      type: "getTokenCount",
-      value: prompt,
-    });
-  }
-
-  function handleStop(e: any) {
-    vscode.postMessage({
-      type: "stopExecution",
-    });
-  }
+  let [prompt, setPrompt] = React.useState("");
+  let [infoMessage, setInfoMessage] = React.useState("");
+  let [executions, setExecutions] = React.useState<ExecutionInfo[]>([]);
+  let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
 
   // Handle messages sent from the extension to the webview
   window.addEventListener("message", (event) => {
     const message = event.data;
+    console.log("message received", message.type);
 
     switch (message.type) {
-      case "tokenCount": {
-        setTokenCount(message.value);
+      case "infoMessage": {
+        setInfoMessage(message.value);
         break;
       }
-      case "executionStopped": {
-        setExecutionRunning(false);
+      case "clearAndfocusOnInput": {
+        setPrompt("");
+        const input = document.querySelector("textarea");
+        input?.focus();
         break;
       }
       case "preFillPrompt": {
         setPrompt(message.value);
+
         //focus on the go button
         const goButton = document.querySelector("button");
         goButton?.focus();
-        
+
+        break;
+      }
+      case "executionsUpdated": {
+        setExecutions(message.executions);
         break;
       }
     }
@@ -79,38 +63,44 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         GPT-4 Powered Coding Assistant
       </h3>
       <p className="text-base mb-4">
-        Describe, in simple terms, what you want to do with the selected code. Keep in mind that I will know only about the context of
-        what is in this file alone.
+        Describe, in simple terms, what you want to do with the selected code.
+        Keep in mind that I will know only about the context of what is in this
+        file alone.
       </p>
       <textarea
-        style={{ height: "26rem" }}
+        style={{ height: "13rem" }}
         className="w-full h-96 text-white bg-gray-700 p-4 text-sm resize-none mb-4"
         placeholder="Ask something"
         value={prompt}
-        onChange={handlePromptChange}
+        onChange={(e) => setPrompt(e.target.value)}
       />
-      <div className="text-base mb-4 text-center" id="token-count">
-        Tokens: {tokenCount}
+      {infoMessage && (
+        <div className="text-base mb-4 text-center" id="token-count">
+          {infoMessage}
+        </div>
+      )}
+      <button
+        style={{ backgroundColor: "#602ae0" }}
+        className={"w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
+        type="submit"
+        onClick={() => {
+          vscode.postMessage({
+            type: "newExecution",
+            value: prompt,
+          });
+
+          markJustClickedGo();
+        }}
+        disabled={justClickedGo}
+      >
+        Go!
+      </button>
+
+      <div className="mt-4">
+        {executions.map((execution) => (
+          <Execution key={execution.id} execution={execution} />
+        ))}
       </div>
-      { executionRunning ? 
-        <button
-          style={{ backgroundColor: "#602ae0", opacity: 0.5 }}
-          className="w-full bg-blue-700 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-          type="submit"
-          onClick={handleStop}
-        >
-          Stop
-        </button>
-        
-          : <button
-          style={{ backgroundColor: "#602ae0" }}
-          className="w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          type="submit"
-          onClick={handlePromptSubmit}
-        >
-          Go!
-        </button>
-        }
     </div>
   );
 };

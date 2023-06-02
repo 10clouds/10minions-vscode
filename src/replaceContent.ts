@@ -110,15 +110,9 @@ function calculateSimilarity(code1: string, code2: string) {
   return combinedSimilarity;
 }
 
-export async function replaceContentWithDiff(
-  document: vscode.TextDocument,
-  postfix: string,
-  diff: string
-) {
-  return new Promise<void>(async (resolve, reject) => {
+export async function applyDiffToContent(content: string, diff: string) {
+  return new Promise<string>(async (resolve, reject) => {
     try {
-      let content = document.getText();
-
       let modifiedContent = Diff.applyPatch(content, diff, {
         fuzzFactor: 5,
         compareLine: (
@@ -138,9 +132,7 @@ export async function replaceContentWithDiff(
       if (!modifiedContent) {
         reject("Unable to apply diff.");
       } else {
-        modifiedContent = modifiedContent + "\n\n" + postfix;
-        await replaceContent(document, modifiedContent);
-        resolve();
+        resolve(modifiedContent);
       }
     } catch (err) {
       vscode.window.showErrorMessage("Error applying diff: " + err);

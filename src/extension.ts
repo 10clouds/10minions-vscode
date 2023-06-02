@@ -87,14 +87,12 @@ export function activate(context: vscode.ExtensionContext) {
       }
     )
   );
-
   context.subscriptions.push(
-    vscode.commands.registerCommand("codemind.ask", () =>
-      vscode.window
-        .showInputBox({ prompt: "What do you want to do?" })
-        .then((value) => provider.executeFullGPTProcedure(value || ""))
-    )
-  );
+    vscode.commands.registerCommand("codemind.ask", async () => {
+      await provider.clearAndfocusOnInput()
+      console.log("codemind.ask running");
+    }
+  ));
 }
 
 export function deactivate() {}

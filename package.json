@@ -38,11 +38,7 @@
       },
       {
         "command": "codemind.ask",
-        "title": "CodeMind: Ask CodeMind"
-      },
-      {
-        "command": "codemind.test",
-        "title": "CodeMind: Testing of various things"
+        "title": "CodeMind: Ask CodeMind to do something"
       }
     ],
     "configuration": {
@@ -157,6 +153,7 @@
     "webpack-cli": "^5.0.2"
   },
   "dependencies": {
+    "@heroicons/react": "^2.0.18",
     "async-lock": "^1.4.0",
     "diff": "^5.1.0",
     "gpt-tokenizer": "^2.0.0",

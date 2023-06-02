@@ -3,7 +3,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 
 export async function createWorkingdocument(fileName: string) {
-  let tmpFileName = path.join(os.tmpdir(), "🧠 " + path.basename(fileName, path.extname(fileName)))  + ".txt";
+  let tmpFileName = path.join(os.tmpdir(), "🧠 " + path.basename(fileName, path.extname(fileName)))  + ".log";
 
   vscode.window.setStatusBarMessage("CodeMind is working...", 1000);
 
@@ -16,9 +16,6 @@ export async function createWorkingdocument(fileName: string) {
   await vscode.workspace.fs.writeFile(uri, contentBuffer);
 
   let workingDocument = await vscode.workspace.openTextDocument(uri);
-
-  // Save the document under the desired name
-  await workingDocument.save();
 
   return workingDocument;
 }

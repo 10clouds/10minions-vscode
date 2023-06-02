@@ -27,7 +27,7 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
   const signal = controller.signal;
 
   console.log("Querying OpenAI");
-  console.log(fullPrompt);
+  console.log(JSON.stringify(fullPrompt.split("\n")));
 
   return await fetch(API_URL, {
     method: "POST",
