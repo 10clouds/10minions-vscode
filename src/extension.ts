@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.ask", async () => {
-      await provider.clearAndfocusOnInput()
+      await provider.clearAndfocusOnInput();
       console.log("codemind.ask running");
     }
   ));

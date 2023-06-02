@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { editDocument } from "./AICursor";
 import * as Diff from "diff";
+import { editDocument } from "./editDocument";
 
 export async function replaceContent(
   document: vscode.TextDocument,

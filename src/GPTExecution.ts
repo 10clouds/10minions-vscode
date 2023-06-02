@@ -2,14 +2,12 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import {
-  editDocument
-} from "./AICursor";
 import { convertToDiff } from "./convertToDiff";
 import { planAndWrite } from "./planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
 import { getRandomProgressMessage } from "./progress";
 import { applyDiffToContent } from "./replaceContent";
+import { editDocument } from "./editDocument";
 
 async function appendToFile(uri: string, content: string) {
   const filePath = vscode.Uri.parse(uri).fsPath;
