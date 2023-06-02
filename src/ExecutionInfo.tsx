@@ -8,11 +8,3 @@ export type ExecutionInfo = {
   progress: number;
   stopped: boolean;
 };
-
-/*
- * 10Clouds CodeMind AI
- *
- * Refactor this code
- * Duration: 00:01:06
- * Time: 2023-06-02 06:54:36
- */

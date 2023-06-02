@@ -3,11 +3,12 @@ import * as vscode from "vscode";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./createWorkingdocument";
+import { randomUUID } from "crypto";
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
 
-  private executions: { [fileUri: string]: GPTExecution } = {};
+  private executions: GPTExecution[] = [];
   private _view?: vscode.WebviewView;
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
@@ -71,7 +72,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
         }
         case "stopExecution": {
           let executionId = data.executionId;
-          let execution = Object.values(this.executions).find(
+          let execution = this.executions.find(
             (e) => e.id === executionId
           );
 
@@ -86,12 +87,15 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
         case "closeExecution": {
           let executionId = data.executionId;
 
-          let execution = Object.values(this.executions).find(
+          let execution = this.executions.find(
             (e) => e.id === executionId
           );
 
           if (execution) {
-            delete this.executions[execution.documentURI];
+            //remove
+            this.executions = this.executions.filter(
+              (e) => e.id !== executionId
+            );
           } else {
             vscode.window.showErrorMessage(
               "No execution found for id",
@@ -109,7 +113,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   }
 
   notifyExecutionsUpdated() {
-    let executionInfo: ExecutionInfo[] = Object.values(this.executions).map(
+    let executionInfo: ExecutionInfo[] = this.executions.map(
       (e) => ({
         id: e.id,
         fullContent: e.fullContent,
@@ -172,18 +176,13 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    if (this.executions[activeEditor.document.uri.toString()]) {
-      vscode.window.showErrorMessage(
-        "I'm already working on this file."
-      );
-      return;
-    }
-    
-
     const document = activeEditor.document;
-    const workingDocument = await createWorkingdocument(document.fileName);
+    const executionId = randomUUID();
+    const workingDocument = await createWorkingdocument(executionId);
+
     const execution = new GPTExecution({
-      fullContent: document.getText(),
+      id: executionId,
+      fullContent: document.getText(),//.replace(/\n{2,}/g, '\n\n'), //Remove extra empty lines, this really helps with the AI
       documentURI: document.uri.toString(),
       workingDocumentURI: workingDocument.uri.toString(),
       userQuery,
@@ -199,7 +198,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       },
     });
 
-    this.executions[execution.documentURI] = execution;
+    this.executions.push(execution);
     this.notifyExecutionsUpdated();
 
     await execution.run();

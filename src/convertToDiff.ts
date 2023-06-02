@@ -17,13 +17,13 @@ You are an AI Tool, that helps developers write code. You have been provided an 
 
 Your job is to output a unified diff file that will produce modified code when applied to the original code.
 
-===== CODE ====
+### CODE
 ${refCode}
 
-===== REQUESTED MODIFICATION ====
+### REQUESTED MODIFICATION
 ${modification}
 
-===== UNIFIED FILE CREATION GUIDELINES ====
+### UNIFIED FILE CREATION GUIDELINES
 
 A unified diff file consists of one or more hunk headers, each followed by two sections: the first showing lines removed from the first file, and the second showing lines added to the second file.
 
@@ -47,13 +47,15 @@ The lines that follow the hunk header show the changes between the original and 
 When creating a unified diff manually:
 
 * Make sure to include the original and modified file names and timestamps at the beginning of the diff.
+* Make sure to exactly match the structure of the original and modified files. Including the number of empty lines between sections.
+* If the original file contains multiple consequitive newlines, make sure to reflect that in the diff file and do not omit them.
 * For each set of changes, include a hunk header with the line numbers and counts in the original and modified files.
 * Mark changed lines appropriately with - and +. Include enough unchanged lines for context.
 * Be careful to ensure that line numbers, counts, and changes align correctly between the original and modified files.
 * Keep the context lines (lines that will not change) to a minimum (around 2-3) that allows the diff to be applied correctly.
 * If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inline appropriate sections from the original code.
 
-===== FINAL SUMMARY ====
+### FINAL SUMMARY
 You are an AI Tool, that helps developers write code. You have been provided an exact modification that needs to be applied to the code.
 
 Your job is to output a unified diff (also known as a unidiff) file that will produce modified code when applied to the original code.

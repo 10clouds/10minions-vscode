@@ -15,7 +15,7 @@ async function appendToFile(uri: string, content: string) {
   try {
     await fs.appendFile(filePath, content);
   } catch (err) {
-    console.error('An error occurred while appending to the file:', err);
+    console.error("An error occurred while appending to the file:", err);
   }
 }
 
@@ -37,8 +37,9 @@ export class GPTExecution {
   resolveProgress?: () => void;
   progress: number;
   executionStage: string;
-  
+
   constructor({
+    id,
     fullContent,
     documentURI,
     workingDocumentURI,
@@ -48,20 +49,21 @@ export class GPTExecution {
     onStopped = () => {},
     onChanged = () => {},
   }: {
+    id: string;
     fullContent: string;
-    documentURI: string,
-    workingDocumentURI: string,
-    userQuery: string,
-    selection: vscode.Selection,
-    selectedText: string,
-    onStopped?: () => void,
-    onChanged?: () => void,
+    documentURI: string;
+    workingDocumentURI: string;
+    userQuery: string;
+    selection: vscode.Selection;
+    selectedText: string;
+    onStopped?: () => void;
+    onChanged?: () => void;
   }) {
+    this.id = id;
     this.fullContent = fullContent;
     this.documentURI = documentURI;
     this.workingDocumentURI = workingDocumentURI;
     this.userQuery = userQuery;
-    this.id = randomUUID();
     this.selection = selection;
     this.selectedText = selectedText;
     this.onStopped = onStopped;
@@ -76,6 +78,7 @@ export class GPTExecution {
     }
 
     this.stopped = true;
+    this.executionStage = "Canceled";
 
     this.gptProcedureSubscriptions.forEach((subscription) => {
       subscription.dispose();
@@ -106,67 +109,21 @@ export class GPTExecution {
 
       let startTime = Date.now();
 
+      let currentStageIndex = 0;
+      let modification = "";
+      let diffApplied = false;
 
-      const TOTAL_BIG_TASKS = 3;
-      const TOTAL_PROGRESS_FOR_BIG = 95 / TOTAL_BIG_TASKS;
-      let currentProgressInBigTask = 0;
 
-
-      /*let progressMessage = getRandomProgressMessage();
- 
-          progress.report({
-            message: progressMessage,
-            increment: 0,
-          });*/
-      const reportSmallProgress = () => {
-        const totalPending = TOTAL_PROGRESS_FOR_BIG - currentProgressInBigTask;
-        let increment = totalPending * 0.01;
-        this.progress = this.progress + increment / 100;
-
-        currentProgressInBigTask += increment;
-        this.onChanged();
-      };
-
-      const reportBigTaskFinished = () => {
-        this.executionStage = getRandomProgressMessage();
-        this.progress = this.progress + (TOTAL_PROGRESS_FOR_BIG - currentProgressInBigTask)  / 100;
-        currentProgressInBigTask = 0;
-        this.onChanged();
-      };
-
-      reportSmallProgress();
-
-      reportSmallProgress();
-
-      appendToFile(this.workingDocumentURI, "User: " + this.userQuery + "\n\n");
-
-      let modification = await planAndWrite(
-        this.userQuery,
-        this.selection.start,
-        this.selectedText,
-        this.fullContent,
-        async (chunk: string) => {
-          reportSmallProgress();
-
-          //escape */ in chunk
-          chunk = chunk.replace(/\*\//g, "*\\/");
-
-          appendToFile(this.workingDocumentURI, chunk);
-        },
-        () => {
-          return this.stopped;
+      const tryToApplyDiff = async (retryAttempt: number) => {
+        if (diffApplied) {
+          return;
         }
-      );
 
-      reportBigTaskFinished();
-
-      appendToFile(this.workingDocumentURI, "\n\n");
-
-      const maxAttempts = 1;
-      for (let retryAttempt = 1; retryAttempt <= maxAttempts; retryAttempt++) {
         try {
-
-          appendToFile(this.workingDocumentURI, `\n\nGENERATING DIFF (ATTEMPT #${retryAttempt})\n\n`);
+          await appendToFile(
+            this.workingDocumentURI,
+            `\nGENERATING DIFF (ATTEMPT #${retryAttempt})\n\n`
+          );
 
           let diff = await convertToDiff(
             this.fullContent,
@@ -174,12 +131,17 @@ export class GPTExecution {
             async (chunk: string) => {
               reportSmallProgress();
 
-              appendToFile(this.workingDocumentURI, chunk);
+              await appendToFile(this.workingDocumentURI, chunk);
             }
           );
 
+          let document = await vscode.workspace.openTextDocument(
+            vscode.Uri.parse(this.documentURI)
+          );
+          let currentContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
+
           let modifiedContent = await applyDiffToContent(
-            this.fullContent,
+            currentContent,
             diff || "???"
           );
 
@@ -189,49 +151,182 @@ export class GPTExecution {
             prepareModificationInfo(this.userQuery, startTime);
 
           await editDocument(async (edit) => {
-            let document = await vscode.workspace.openTextDocument(vscode.Uri.parse(this.documentURI));
+            let document = await vscode.workspace.openTextDocument(
+              vscode.Uri.parse(this.documentURI)
+            );
 
             edit.replace(
               document.uri,
-              new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length - 1)),
+              new vscode.Range(
+                new vscode.Position(0, 0),
+                document.positionAt(document.getText().length - 1)
+              ),
               modifiedContent
             );
           });
+
+          diffApplied = true;
         } catch (error) {
-          // Log the error
-          console.error(`Error in retry attempt #${retryAttempt}:`, error);
+          appendToFile(
+            this.workingDocumentURI,
+            `\n\nError in applying diff: ${error}\n`
+          );
+        }
+      };
 
-          // If we reached the maximum number of retries, fall back to comment with modification
-          if (retryAttempt === maxAttempts) {
-            appendToFile(this.workingDocumentURI, `\nPLAIN COMMENT FALLBACK\n`);
+      const STAGES = [
+        {
+          name: "Starting ...",
+          weight: 10,
+          execution: async () => {
+            reportSmallProgress();
 
-            let document = await vscode.workspace.openTextDocument(vscode.Uri.parse(this.documentURI));
+            appendToFile(
+              this.workingDocumentURI,
+              "File: " + this.baseName + "\n\n"
+            );
+
+            appendToFile(
+              this.workingDocumentURI,
+              "User: " + this.userQuery + "\n\n"
+            );
+
+          },
+        },
+        {
+          name: "Planning ...",
+          weight: 100,
+          execution: async () => {
+            modification = await planAndWrite(
+              this.userQuery,
+              this.selection.start,
+              this.selectedText,
+              this.fullContent,
+              async (chunk: string) => {
+                reportSmallProgress();
+
+                //escape */ in chunk
+                chunk = chunk.replace(/\*\//g, "*\\/");
+
+                appendToFile(this.workingDocumentURI, chunk);
+
+                
+              },
+              () => {
+                return this.stopped;
+              }
+            );
+
+            reportSmallProgress();
+            appendToFile(this.workingDocumentURI, "\n\n");
+          },
+        },
+        {
+          name: "Applying (1st attempt) ...", 
+          weight: 33,
+          execution: async () => {
+            await tryToApplyDiff(1);
+          }
+        },
+        {
+          name: "Applying (2nd attempt) ...", 
+          weight: 33,
+          execution: async () => {
+            await tryToApplyDiff(2);
+          }
+        },
+        {
+          name: "Falling back to comment ...", 
+          weight: 10,
+          execution: async () => {
+            if (diffApplied) {
+              return;
+            }
+
+            appendToFile(
+              this.workingDocumentURI,
+              `\nPLAIN COMMENT FALLBACK\n`
+            );
+
+            let document = await vscode.workspace.openTextDocument(
+              vscode.Uri.parse(this.documentURI)
+            );
 
             await editDocument(async (edit) => {
               edit.insert(
                 vscode.Uri.parse(this.documentURI),
-                new vscode.Position(document.lineCount - 1, document.lineAt(document.lineCount - 1).text.length),
-                `\n\n${prepareModificationInfo(this.userQuery, startTime)}`
+                new vscode.Position(
+                  document.lineCount - 1,
+                  document.lineAt(document.lineCount - 1).text.length
+                ),
+                `\n\n${prepareModificationInfo(
+                  this.userQuery,
+                  startTime
+                )}`
               );
 
               edit.insert(
                 vscode.Uri.parse(this.documentURI),
                 new vscode.Position(0, 0),
-                `/*\n${modification}\n*\/\n\n`
+                `/*\n10Clouds CodeMind: I was unable to modify the code myself, but you can do it yourself based on my remarks below:\n\n${modification}\n*\/\n\n`
               );
             });
+
+            diffApplied = true;
           }
-        }
+        },
+        {
+          name: "Finishing ...",
+          weight: 10,
+          execution: async () => {
+            vscode.window.showInformationMessage(
+              `Finished processing ${this.baseName}`
+            );
+
+            this.stopExecution();
+          },
+        },
+      ];
+
+      const TOTAL_WEIGHTS = STAGES.reduce((acc, stage) => {
+        return acc + stage.weight;
+      }, 0);
+      
+      const reportSmallProgress = (fractionOfBigTask: number = 0.005) => {
+        const weigtsNextStepTotal = STAGES.reduce((acc, stage, index) => {
+          if (index > currentStageIndex) {
+            return acc;
+          }
+          return acc + stage.weight;
+        }, 0);
+        
+        const remainingProgress = 1.0 * weigtsNextStepTotal / TOTAL_WEIGHTS;
+        const currentProgress = this.progress;
+
+        const totalPending = remainingProgress - currentProgress;
+        let increment = totalPending * fractionOfBigTask;
+        this.progress = this.progress + increment;
+        this.onChanged();
+      };
+
+      while (currentStageIndex < STAGES.length) {
+        this.executionStage = STAGES[currentStageIndex].name; // getRandomProgressMessage();
+
+        await STAGES[currentStageIndex].execution();
+
+
+        const weigtsNextStepTotal = STAGES.reduce((acc, stage, index) => {
+          if (index > currentStageIndex) {
+            return acc;
+          }
+          return acc + stage.weight;
+        }, 0);
+
+        this.progress = weigtsNextStepTotal / TOTAL_WEIGHTS;
+        this.onChanged();
+        currentStageIndex++;
       }
-
-      reportBigTaskFinished();
-
-      vscode.window.showInformationMessage(
-        `Finished processing ${this.baseName}`
-      );
-
-      //closeAllTmpEditorsFor(workingDocument);
-      this.stopExecution();
+      this.executionStage = "Finished";
     });
   }
 

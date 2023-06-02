@@ -2,8 +2,11 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 
-export async function createWorkingdocument(fileName: string) {
-  let tmpFileName = path.join(os.tmpdir(), "🧠 " + path.basename(fileName, path.extname(fileName)))  + ".log";
+export async function createWorkingdocument(id: string) {
+  //sanitize id for file name
+  let sanitizedId = id.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+
+  let tmpFileName = path.join(os.tmpdir(), "🧠 " + sanitizedId  + ".log");
 
   vscode.window.setStatusBarMessage("CodeMind is working...", 1000);
 
