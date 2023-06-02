@@ -190,7 +190,8 @@ export async function editDocument(
 
 export async function insertIntoNewDocument(
   aiCursor: AICursor,
-  content: string) {
+  content: string,
+  autoSave: boolean) {
   return await editorLock.acquire("streamLock", async () => {
     try {
       const edit = new vscode.WorkspaceEdit();
@@ -219,14 +220,17 @@ export async function insertIntoNewDocument(
       await vscode.workspace.applyEdit(edit).then(
         (value) => {
           aiCursor.position = aiCursor.document!.positionAt(aiCursor.document!.offsetAt(aiCursor.position!) + content.length);
-
         },
         (reason) => {
-          console.log("REASON", reason);
+          console.log("REASON", reason); 
         }
       );
 
-      await aiCursor.document!.save();
+      if (autoSave) {
+        // Write the content buffer to the target file
+        const contentBuffer = Buffer.from("", "utf8");
+        await vscode.workspace.fs.writeFile(aiCursor.document.uri, contentBuffer);
+      }
     } catch (e) {
       console.error("ERRROR", e);
     }
