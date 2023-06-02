@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import * as Diff from "diff";
-import { editDocument } from "./editDocument";
+import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
 
 export async function replaceContent(
   document: vscode.TextDocument,
   newContent: string
 ) {
-  await editDocument(async (edit) => {
+  await applyWorkspaceEdit(async (edit) => {
     if (document) {
       edit.replace(
         document.uri,

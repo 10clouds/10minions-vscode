@@ -7,7 +7,7 @@ import { planAndWrite } from "./planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
 import { getRandomProgressMessage } from "./progress";
 import { applyDiffToContent } from "./replaceContent";
-import { editDocument } from "./editDocument";
+import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
 
 async function appendToFile(uri: string, content: string) {
   const filePath = vscode.Uri.parse(uri).fsPath;
@@ -78,7 +78,7 @@ export class GPTExecution {
     }
 
     this.stopped = true;
-    this.executionStage = "Canceled";
+    this.executionStage = error? error : "Finished";
 
     this.gptProcedureSubscriptions.forEach((subscription) => {
       subscription.dispose();
@@ -150,7 +150,7 @@ export class GPTExecution {
             "\n\n" +
             prepareModificationInfo(this.userQuery, startTime);
 
-          await editDocument(async (edit) => {
+          await applyWorkspaceEdit(async (edit) => {
             let document = await vscode.workspace.openTextDocument(
               vscode.Uri.parse(this.documentURI)
             );
@@ -252,7 +252,7 @@ export class GPTExecution {
               vscode.Uri.parse(this.documentURI)
             );
 
-            await editDocument(async (edit) => {
+            await applyWorkspaceEdit(async (edit) => {
               edit.insert(
                 vscode.Uri.parse(this.documentURI),
                 new vscode.Position(
@@ -326,7 +326,6 @@ export class GPTExecution {
         this.onChanged();
         currentStageIndex++;
       }
-      this.executionStage = "Finished";
     });
   }
 

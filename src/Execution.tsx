@@ -4,8 +4,7 @@ import { StopIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export function Execution({ execution }: { execution: ExecutionInfo; }) {
+export function Execution({ execution }: { execution: ExecutionInfo }) {
   let userQueryLines = execution.userQuery.split("\n");
   let userQueryPreview = userQueryLines[0].substring(0, 100);
 
@@ -43,7 +42,8 @@ export function Execution({ execution }: { execution: ExecutionInfo; }) {
                 executionId: execution.id,
               });
             }}
-            className="stop-button  h-6 w-6 cursor-pointer" />
+            className="stop-button  h-6 w-6 cursor-pointer"
+          />
         ) : (
           <XMarkIcon
             onClick={() => {
@@ -52,7 +52,8 @@ export function Execution({ execution }: { execution: ExecutionInfo; }) {
                 executionId: execution.id,
               });
             }}
-            className="stop-button h-6 w-6 cursor-pointer" />
+            className="stop-button h-6 w-6 cursor-pointer"
+          />
         )}
       </div>
       <div className="mb-2">{userQueryPreview}</div>
