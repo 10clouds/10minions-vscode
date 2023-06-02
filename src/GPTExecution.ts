@@ -172,7 +172,7 @@ export class GPTExecution {
             `\nDIFF SUCCESFULY APPLIED\n\n`
           );
         } catch (error) {
-          appendToFile(
+          await appendToFile(
             this.workingDocumentURI,
             `\n\nError in applying diff: ${error}\n`
           );
@@ -186,12 +186,12 @@ export class GPTExecution {
           execution: async () => {
             reportSmallProgress();
 
-            appendToFile(
+            await appendToFile(
               this.workingDocumentURI,
               "File: " + this.baseName + "\n\n"
             );
 
-            appendToFile(
+            await appendToFile(
               this.workingDocumentURI,
               "User: " + this.userQuery + "\n\n"
             );
@@ -213,7 +213,7 @@ export class GPTExecution {
                 //escape */ in chunk
                 chunk = chunk.replace(/\*\//g, "*\\/");
 
-                appendToFile(this.workingDocumentURI, chunk);
+                await appendToFile(this.workingDocumentURI, chunk);
 
                 
               },
@@ -223,7 +223,7 @@ export class GPTExecution {
             );
 
             reportSmallProgress();
-            appendToFile(this.workingDocumentURI, "\n\n");
+            await appendToFile(this.workingDocumentURI, "\n\n");
           },
         },
         {
@@ -248,7 +248,7 @@ export class GPTExecution {
               return;
             }
 
-            appendToFile(
+            await appendToFile(
               this.workingDocumentURI,
               `\nPLAIN COMMENT FALLBACK\n`
             );
