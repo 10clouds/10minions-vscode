@@ -16,6 +16,9 @@ export function Execution({ execution }: { execution: ExecutionInfo; }) {
     <div
       key={execution.id}
       className="mb-2 p-4 bg-gray-700 rounded flex flex-col"
+      style={{
+        animation: "bounce-half 0.3s",
+      }}
     >
       <div className="flex justify-between">
         <div className="font-semibold mb-2">

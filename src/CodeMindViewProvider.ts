@@ -214,6 +214,11 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       <script src="${webview.asWebviewUri(
         vscode.Uri.joinPath(this._extensionUri, "resources", "tailwind.min.js")
       )}"></script>
+
+      /styles.css
+      <link rel="stylesheet" href="${webview.asWebviewUri(
+        vscode.Uri.joinPath(this._extensionUri, "resources", "global.css")
+      )}" />
     </head>
     <body>
       <div id="root"></div>
