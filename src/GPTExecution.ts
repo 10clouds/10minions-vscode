@@ -166,6 +166,11 @@ export class GPTExecution {
           });
 
           diffApplied = true;
+
+          await appendToFile(
+            this.workingDocumentURI,
+            `\nDIFF SUCCESFULY APPLIED\n\n`
+          );
         } catch (error) {
           appendToFile(
             this.workingDocumentURI,

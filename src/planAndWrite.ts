@@ -14,10 +14,14 @@ export async function planAndWrite(
     return "";
   }
 
-  let fileContext = selectedText ? `
-===== FILE CONTEXT (code starts on line: ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} )====
+  let fileContext = selectedText
+    ? `
+===== FILE CONTEXT (code starts on line: ${
+        selectionPosition.line + 1
+      } column: ${selectionPosition.character + 1} )====
 ${fullFileContents}  
-` : "";
+`
+    : "";
 
   let promptWithContext = `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.

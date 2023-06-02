@@ -2,11 +2,11 @@ import * as vscode from "vscode";
 import { gptExecute } from "./openai";
 import { executeCode } from "./codeExecution";
 
-export async function applyModification(
+export async function applyCodeModification(
   document: vscode.TextDocument,
   modification: string,
-  onChunk: (chunk: string) => Promise<void>, 
-  isCancelled: () => boolean
+  onChunk: (chunk: string) => Promise<void>,
+  isCancelled?: () => boolean
 ) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
@@ -54,12 +54,14 @@ Your job is to create a javascript function applyModification.
 
 `.trim();
 
-  let result = await gptExecute({fullPrompt: promptWithContext, onChunk, isCancelled});
+  let result = await gptExecute({
+    fullPrompt: promptWithContext,
+    onChunk,
+    isCancelled,
+  });
 
   console.log("Javascript intermidiate code");
   console.log(result);
-  
+
   return executeCode(result, document.getText());
 }
-
-
