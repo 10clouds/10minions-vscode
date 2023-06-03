@@ -281,7 +281,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       },
     });
 
-    this.executions.push(execution);
+    this.executions = [execution, ... this.executions];
     this.notifyExecutionsUpdatedImmediate();
 
     await execution.run();

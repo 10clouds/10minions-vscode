@@ -58,6 +58,7 @@ If the REQUESTED MODIFICATION modifies only a given line range which is less tha
 * Your job is to output a full consolidated final, production ready, code, described in REQUESTED MODIFICATION.
 * Make sure to exactly match the structure of the original and exactly the intention of the modification.
 * If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inline appropriate sections from the original code, you are producting final production ready code.
+* If in the REQUESTED MODIFICATION section there are only comments, and user asked something that does not requrie modification of the code. Write the answer as a code comment in appropriate spot.
 
 ==== ORIGINAL CODE ====
 ${refCode}
