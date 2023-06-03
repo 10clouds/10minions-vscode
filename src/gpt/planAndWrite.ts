@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { gptExecute } from "./openai";
+import { gptExecute } from "../openai";
 
 export async function planAndWrite(
   userQuery: string,

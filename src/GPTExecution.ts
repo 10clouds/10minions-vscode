@@ -2,11 +2,11 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
-import { planAndWrite } from "./planAndWrite";
+import { planAndWrite } from "./gpt/planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
 import { FINISHED_STAGE_NAME } from "./ui/ExecutionInfo";
 import { playNotificationSound } from "./playSound";
-import { applyConsolidated, createConsolidated } from "./createConsilidated";
+import { applyConsolidated, createConsolidated } from "./gpt/createConsilidated";
 
 async function clearFile(uri: string, content: string = "") {
   const filePath = vscode.Uri.parse(uri).fsPath;

@@ -1,6 +1,6 @@
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import { gptExecute } from "./openai";
+import { gptExecute } from "../openai";
 
 export async function createConsolidated(
   refCode: string,
