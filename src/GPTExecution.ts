@@ -2,10 +2,8 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
-import { convertToDiff } from "./convertToDiff";
 import { planAndWrite } from "./planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
-import { applyDiffToContent } from "./replaceContent";
 import { FINISHED_STAGE_NAME } from "./ExecutionInfo";
 import { playNotificationSound } from "./playSound";
 import { applyConsolidated, createConsolidated } from "./createConsilidated";
@@ -132,69 +130,6 @@ export class GPTExecution {
 
       this.fullContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
 
-      const tryToApplyDiff = async (retryAttempt: number) => {
-        if (diffApplied) {
-          return;
-        }
-
-        try {
-          await appendToFile(
-            this.workingDocumentURI,
-            `\nGENERATING DIFF (ATTEMPT #${retryAttempt})\n\n`
-          );
-
-          let diff = await convertToDiff(
-            this.fullContent,
-            modification,
-            async (chunk: string) => {
-              reportSmallProgress();
-
-              await appendToFile(this.workingDocumentURI, chunk);
-            }
-          );
-
-          //Update full content
-          this.fullContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
-
-          let modifiedContent = await applyDiffToContent(
-            this.fullContent,
-            diff || "???"
-          );
-
-          modifiedContent =
-            modifiedContent +
-            "\n\n" +
-            prepareModificationInfo(this.userQuery, startTime);
-
-          await applyWorkspaceEdit(async (edit) => {
-            let document = await vscode.workspace.openTextDocument(
-              vscode.Uri.parse(this.documentURI)
-            );
-
-            edit.replace(
-              document.uri,
-              new vscode.Range(
-                new vscode.Position(0, 0),
-                document.positionAt(document.getText().length - 1)
-              ),
-              modifiedContent
-            );
-          });
-
-          diffApplied = true;
-
-          await appendToFile(
-            this.workingDocumentURI,
-            `\nDIFF SUCCESFULY APPLIED\n\n`
-          );
-        } catch (error) {
-          await appendToFile(
-            this.workingDocumentURI,
-            `\n\nError in applying diff: ${error}\n`
-          );
-        }
-      };
-
       const STAGES = [
         {
           name: "Starting ...",
@@ -301,20 +236,6 @@ export class GPTExecution {
                 `\n\nError in applying consolidation: ${error}\n`
               );
             }
-          }
-        },
-        {
-          name: "Applying (1st attempt) ...", 
-          weight: 33,
-          execution: async () => {
-            await tryToApplyDiff(1);
-          }
-        },
-        {
-          name: "Applying (2nd attempt) ...", 
-          weight: 33,
-          execution: async () => {
-            await tryToApplyDiff(2);
           }
         },
         {
