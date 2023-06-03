@@ -81,7 +81,10 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       )}
       <button
         style={{ backgroundColor: "#602ae0" }}
-        className={"w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
+        className={
+          "w-full hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " +
+          (justClickedGo ? "opacity-50" : "")
+        }
         type="submit"
         onClick={() => {
           vscode.postMessage({

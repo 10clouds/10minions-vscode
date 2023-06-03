@@ -1,10 +1,11 @@
-import { encode } from "gpt-tokenizer";
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
 
 let openAILock = new AsyncLock();
 
+/* The extractParsedLines function takes a chunk string as input and returns
+ * an array of parsed JSON objects. */
 function extractParsedLines(chunk: string) {
   const lines = chunk.split("\n");
   try {
@@ -20,21 +21,19 @@ function extractParsedLines(chunk: string) {
   }
 }
 
+/* The queryOpenAI function takes a fullPrompt and other optional parameters to
+ * send a request to OpenAI's API. It returns a response object. */
 async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4", temperature = 1) {
-  const API_URL = "https://api.openai.com/v1/chat/completions";
-
   const controller = new AbortController();
   const signal = controller.signal;
 
   console.log("Querying OpenAI");
   fullPrompt.split("\n").forEach((line) => console.log(`> ${line}`));
 
-  return await fetch(API_URL, {
+  return await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       "Content-Type": "application/json",
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       Authorization: `Bearer ${vscode.workspace
         .getConfiguration("codemind")
         .get("apiKey")}`,
@@ -47,7 +46,6 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
           content: fullPrompt,
         },
       ],
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       max_tokens: maxTokens,
       temperature,
       stream: true,
@@ -56,11 +54,13 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
   });
 }
 
+/* The processOpenAIResponseStream function processes the response from the
+ * API and extracts tokens from the response stream. */
 async function processOpenAIResponseStream({
   response,
   onChunk,
   isCancelled,
-} : {
+}: {
   response: Response,
   onChunk: (chunk: string) => Promise<void>,
   isCancelled: () => boolean
@@ -107,6 +107,8 @@ async function processOpenAIResponseStream({
   });
 }
 
+/* The gptExecute function is the main exported function, which combines all the
+ * other functions to send a GPT-4 query and receive and process the response. */
 export async function gptExecute({
   fullPrompt,
   onChunk,
@@ -114,7 +116,7 @@ export async function gptExecute({
   maxTokens = 2000,
   model = "gpt-4",
   temperature,
-} : {
+}: {
   fullPrompt: string,
   onChunk: (chunk: string) => Promise<void>,
   isCancelled?: () => boolean,

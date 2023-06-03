@@ -44,6 +44,7 @@ Do not provide the entire file or any bigger chunks than necessary.
 If asked to refactor code, critically analyze the provided code and propose a refactoring plan focusing on improving readability and maintainability. Your revised code should remain functional with no change in output or side effects. Suggest renaming functions, creating subroutines, or modifying types as needed, to achieve the aim of simplicity and readability. Ensure your code and any documentation meet the quality standards of a top open source project.  
 If asked to write documentation, write nice comment at the top and consise to the point JSdocs above the signatures of each function.
 If asked to remove comments, don't add your own comments as this is probably not what your college wants.
+If asked a question, answer it, as If I would ask to put an answer in the in a comment.${selectedText ? 'Put that comment just above the selected text (from the CODE section)' : 'Put that comment in a relevant place.'}. Provide edited vicinity of added comment so it's obvious where to add and what comment.
 
 ===== CODE ${
     selectedText

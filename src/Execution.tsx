@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
-import { ArrowPathIcon, StopIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { ArrowPathIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
 
@@ -47,15 +47,17 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
         )}
 
         {!execution.stopped ? (
-          <StopIcon
+          <span
             onClick={() => {
               vscode.postMessage({
                 type: "stopExecution",
                 executionId: execution.id,
               });
             }}
-            className="stop-button  h-6 w-6 cursor-pointer"
-          />
+            className="cursor-pointer"
+          >
+            Stop
+          </span>
         ) : (
           <XMarkIcon
             onClick={() => {

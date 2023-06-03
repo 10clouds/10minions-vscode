@@ -4,7 +4,7 @@ import { initPlayingSounds } from "./playSound";
 
 class MyCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [
-    vscode.CodeActionKind.QuickFix
+    vscode.CodeActionKind.QuickFix,
   ];
 
   private fixCommandId: string;
@@ -13,19 +13,36 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
     this.fixCommandId = fixCommandId;
   }
 
-  private createCommandCodeAction(diagnostic: vscode.Diagnostic, uri: vscode.Uri): vscode.CodeAction {
-    const action = new vscode.CodeAction('🧠 CodeMind AI Fix', MyCodeActionProvider.providedCodeActionKinds[0]);
-    action.command = { command: this.fixCommandId, title: 'Let AI fix this', arguments: [uri, diagnostic] };
+  private createCommandCodeAction(
+    diagnostic: vscode.Diagnostic,
+    uri: vscode.Uri
+  ): vscode.CodeAction {
+    const action = new vscode.CodeAction(
+      "🧠 CodeMind AI Fix",
+      MyCodeActionProvider.providedCodeActionKinds[0]
+    );
+    action.command = {
+      command: this.fixCommandId,
+      title: "Let AI fix this",
+      arguments: [uri, diagnostic],
+    };
     action.diagnostics = [diagnostic];
     return action;
   }
 
-  public provideCodeActions(document: vscode.TextDocument, range: vscode.Range, context: vscode.CodeActionContext, token: vscode.CancellationToken): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
+  public provideCodeActions(
+    document: vscode.TextDocument,
+    range: vscode.Range,
+    context: vscode.CodeActionContext,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
     return context.diagnostics
-      .filter(diagnostic => this.canFixDiagnostic(diagnostic))
-      .map(diagnostic => this.createCommandCodeAction(diagnostic, document.uri));
+      .filter((diagnostic) => this.canFixDiagnostic(diagnostic))
+      .map((diagnostic) =>
+        this.createCommandCodeAction(diagnostic, document.uri)
+      );
   }
-  
+
   private canFixDiagnostic(diagnostic: vscode.Diagnostic): boolean {
     return true;
   }
@@ -34,36 +51,46 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
 export function activate(context: vscode.ExtensionContext) {
   console.log("CodeMind is now active");
 
-
   //Code actions
   initPlayingSounds(context);
 
-  const diagnostics = vscode.languages.createDiagnosticCollection('codemind');
+  const diagnostics = vscode.languages.createDiagnosticCollection("codemind");
   context.subscriptions.push(diagnostics);
 
-  const fixCommandId = 'codemind.fixError';
-  context.subscriptions.push(vscode.commands.registerCommand(fixCommandId, (uri: vscode.Uri, diagnostic: vscode.Diagnostic) => {
-    let range = diagnostic.range;
-    let start = range.start;
-    let line = start.line;
-    let column = start.character;
-    let message = diagnostic.message;
-    let lineAndColumn = `Line: ${line} Column: ${column}`;
+  const fixCommandId = "codemind.fixError";
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      fixCommandId,
+      (uri: vscode.Uri, diagnostic: vscode.Diagnostic) => {
+        let range = diagnostic.range;
+        let start = range.start;
+        let line = start.line;
+        let column = start.character;
+        let message = diagnostic.message;
+        let lineAndColumn = `Line: ${line} Column: ${column}`;
 
-    provider.preFillPrompt(`Fix this error:\n\n${message}\n${lineAndColumn}`);
-  }));
+        provider.preFillPrompt(
+          `Fix this error:\n\n${message}\n${lineAndColumn}`
+        );
+      }
+    )
+  );
 
-  context.subscriptions.push(vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, new MyCodeActionProvider(fixCommandId), {
-    providedCodeActionKinds: MyCodeActionProvider.providedCodeActionKinds
-  }));
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      { scheme: "file" },
+      new MyCodeActionProvider(fixCommandId),
+      {
+        providedCodeActionKinds: MyCodeActionProvider.providedCodeActionKinds,
+      }
+    )
+  );
 
   const provider = new CodeMindViewProvider(context.extensionUri);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.setApiKey", async () => {
       try {
-        console.log("10clouds-gpt.setApiKey running");
-
         const apiKey = await vscode.window.showInputBox({
           prompt: "Enter your OpenAI API key",
           value: "",
@@ -92,9 +119,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("codemind.ask", async () => {
       await provider.clearAndfocusOnInput();
-      console.log("codemind.ask running");
-    }
-  ));
+    })
+  );
 }
 
 export function deactivate() {}

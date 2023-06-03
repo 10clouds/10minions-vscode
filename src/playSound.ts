@@ -1,18 +1,21 @@
 import { ExtensionContext } from "vscode";
-import * as path from 'path';
+import * as path from "path";
 
-const ps = require('play-sound')();
+const ps = require("play-sound")();
 
 let CONTEXT: ExtensionContext;
 
 export function initPlayingSounds(context: ExtensionContext) {
-    CONTEXT = context;
+  CONTEXT = context;
 }
 
 export function playNotificationSound() {
-    ps.play(path.join(CONTEXT.extensionPath, "resources", 'notification.wav'), (err: any) => {
-        if (err) {
-          console.log('Error occurred while playing sound:', err);
-        }
-      });
+  ps.play(
+    path.join(CONTEXT.extensionPath, "resources", "notification.wav"),
+    (err: any) => {
+      if (err) {
+        console.log("Error occurred while playing sound:", err);
+      }
+    }
+  );
 }

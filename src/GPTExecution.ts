@@ -37,7 +37,7 @@ export class GPTExecution {
   readonly selection: vscode.Selection;
   readonly selectedText: string;
   readonly onStopped: () => void;
-  readonly onChanged: () => void;
+  readonly onChanged: (important: boolean) => void;
   readonly STAGES: any[];
   readonly TOTAL_WEIGHTS: number;
 
@@ -60,7 +60,7 @@ export class GPTExecution {
     selection,
     selectedText,
     onStopped = () => {},
-    onChanged = () => {},
+    onChanged = (important: boolean) => {},
   }: {
     id: string;
     documentURI: string;
@@ -69,7 +69,7 @@ export class GPTExecution {
     selection: vscode.Selection;
     selectedText: string;
     onStopped?: () => void;
-    onChanged?: () => void;
+    onChanged?: (important: boolean) => void;
   }) {
     this.id = id;
     this.fullContent = "";
@@ -131,7 +131,7 @@ export class GPTExecution {
     //delete tmp file
     //vscode.workspace.fs.delete(refDocument.uri);
     this.onStopped();
-    this.onChanged();
+    this.onChanged(true);
   }
 
   public async run() {
@@ -156,7 +156,7 @@ export class GPTExecution {
         }, 0);
 
         this.progress = weigtsNextStepTotal / this.TOTAL_WEIGHTS;
-        this.onChanged();
+        this.onChanged(false);
       }
       console.log("Finished");
     });
@@ -288,14 +288,14 @@ export class GPTExecution {
     let document = await this.document();
 
     await applyWorkspaceEdit(async (edit) => {
-      edit.insert(
+      /*edit.insert(
         vscode.Uri.parse(this.documentURI),
         new vscode.Position(
           document.lineCount - 1,
           document.lineAt(document.lineCount - 1).text.length
         ),
         `\n\n${prepareModificationInfo(this.userQuery, this.startTime)}`
-      );
+      );*/
 
       edit.insert(
         vscode.Uri.parse(this.documentURI),
@@ -337,7 +337,7 @@ export class GPTExecution {
     const totalPending = remainingProgress - currentProgress;
     let increment = totalPending * fractionOfBigTask;
     this.progress = this.progress + increment;
-    this.onChanged();
+    this.onChanged(false);
   }
 
   get baseName() {

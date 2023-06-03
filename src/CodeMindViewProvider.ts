@@ -1,13 +1,9 @@
+import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./createWorkingdocument";
-import { randomUUID } from "crypto";
-import { exec } from "child_process";
-import * as path from "path";
-import * as fs from "fs";
-
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
@@ -29,6 +25,29 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
       localResourceRoots: [this._extensionUri],
     };
+
+    const extractTextKey = (uri: vscode.Uri): string =>
+      uri.path.match(/^text\/([a-z\d\-]+)/)![1];
+
+    const self = this;
+
+    class ContentProvider implements vscode.TextDocumentContentProvider {
+      constructor() {}
+
+      provideTextDocumentContent(uri: vscode.Uri): string {
+        console.log("CONTENT", uri);
+        const textKey = extractTextKey(uri);
+        const originalContent = self.executions.find(
+          (e) => e.id === textKey
+        )?.fullContent;
+        return originalContent || "";
+      }
+    }
+
+    vscode.workspace.registerTextDocumentContentProvider(
+      "codemind",
+      new ContentProvider()
+    );
 
     // set the HTML for the webview
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -52,7 +71,6 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "newExecution": {
-          
           let prompt = data.value ? data.value : "Refactor this code";
 
           this.executeFullGPTProcedure(prompt);
@@ -77,25 +95,16 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
         }
         case "showDiff": {
           let executionId = data.executionId;
-          let execution = this.executions.find(
-            (e) => e.id === executionId
-          );
+          let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            //create document with content
-            let documentURI = vscode.Uri.parse(execution.documentURI);
-            
-            let document = await vscode.workspace.openTextDocument(documentURI);
-
-            let originalDoc = await vscode.workspace.openTextDocument({
-              language: document.languageId,
-              content: execution.fullContent || "",
-            });
+            const makeUriString = (textKey: string): string =>
+              `codemind:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
 
             await vscode.commands.executeCommand(
               "vscode.diff",
-              originalDoc.uri,
-              document.uri,
+              vscode.Uri.parse(makeUriString(executionId)),
+              vscode.Uri.parse(execution.documentURI),
               `(original) ↔ (generated)`
             );
           }
@@ -103,9 +112,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
         }
         case "reRunExecution": {
           let executionId = data.executionId;
-          let execution = this.executions.find(
-            (e) => e.id === executionId
-          );
+          let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
             if (!execution.stopped) {
@@ -117,7 +124,8 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
             }
 
             execution.stopped = false;
-            
+            this.notifyExecutionsUpdatedImmediate();
+
             await execution.run();
           } else {
             vscode.window.showErrorMessage(
@@ -131,9 +139,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
         case "stopExecution": {
           let executionId = data.executionId;
-          let execution = this.executions.find(
-            (e) => e.id === executionId
-          );
+          let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
             execution.stopExecution("Canceled by user");
@@ -146,9 +152,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
         case "closeExecution": {
           let executionId = data.executionId;
 
-          let execution = this.executions.find(
-            (e) => e.id === executionId
-          );
+          let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
             //remove
@@ -163,7 +167,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           }
 
           //notify webview
-          this.notifyExecutionsUpdated();
+          this.notifyExecutionsUpdatedImmediate();
 
           break;
         }
@@ -171,20 +175,37 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  private _isThrottled = false;
+  private _pendingUpdate = false;
+
   notifyExecutionsUpdated() {
-    let executionInfo: ExecutionInfo[] = this.executions.map(
-      (e) => ({
-        id: e.id,
-        fullContent: e.fullContent,
-        userQuery: e.userQuery,
-        executionStage: e.executionStage,
-        documentName: e.baseName,
-        documentURI: e.documentURI,
-        logFileURI: e.workingDocumentURI,
-        progress: e.progress,
-        stopped: e.stopped,
-      })
-    );
+    if (this._isThrottled) {
+      this._pendingUpdate = true;
+      return;
+    }
+
+    this._isThrottled = true;
+    this.notifyExecutionsUpdatedImmediate();
+
+    setTimeout(() => {
+      this._isThrottled = false;
+      if (this._pendingUpdate) this.notifyExecutionsUpdatedImmediate();
+      this._pendingUpdate = false;
+    }, 500);
+  }
+
+  notifyExecutionsUpdatedImmediate() {
+    const executionInfo: ExecutionInfo[] = this.executions.map((e) => ({
+      id: e.id,
+      fullContent: e.fullContent,
+      userQuery: e.userQuery,
+      executionStage: e.executionStage,
+      documentName: e.baseName,
+      documentURI: e.documentURI,
+      logFileURI: e.workingDocumentURI,
+      progress: e.progress,
+      stopped: e.stopped,
+    }));
 
     this._view?.webview.postMessage({
       type: "executionsUpdated",
@@ -251,13 +272,17 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           type: "executionStopped",
         });
       },
-      onChanged: () => {
-        this.notifyExecutionsUpdated();
+      onChanged: (important) => {
+        if (important) {
+          this.notifyExecutionsUpdatedImmediate();
+        } else {
+          this.notifyExecutionsUpdated();
+        }
       },
     });
 
     this.executions.push(execution);
-    this.notifyExecutionsUpdated();
+    this.notifyExecutionsUpdatedImmediate();
 
     await execution.run();
   }
@@ -271,8 +296,6 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
       <script src="${webview.asWebviewUri(
         vscode.Uri.joinPath(this._extensionUri, "resources", "tailwind.min.js")
       )}"></script>
-
-      /styles.css
       <link rel="stylesheet" href="${webview.asWebviewUri(
         vscode.Uri.joinPath(this._extensionUri, "resources", "global.css")
       )}" />

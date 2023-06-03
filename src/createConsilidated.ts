@@ -12,6 +12,11 @@ export async function createConsolidated(
     return "";
   }
 
+  //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER 
+  modification = modification.replace(/^(====+)([^=]+)(====+)$/gm, (match, p1, p2, p3) => {
+    return `#${p2}`;
+  });
+
   let promptWithContext = `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
@@ -37,6 +42,12 @@ WITH
 
 Followed by the code you are replacing with.
 
+You can then start with the next REPLACE line to repeat this sequence, or finish the output. Keep in mind that all lines between REPLACE and WITH will be used, even the empty ones.
+
+You MUST end the answer with the final consolidated result, do not continue output after that.
+
+Further more, do not invent your own commands, use only the ones described above.
+
 Use this variant if you are going to replace a specific range of lines. There can be only one such command in the answer, and it preceeds the final consolidated result.
 
 If the REQUESTED MODIFICATION modifies only a given line range which is less than 33% of the file, use this variant, otherwise use the first one.
@@ -57,7 +68,7 @@ ${modification}
 ==== FINAL SUMMARY ====
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
-Let's take this step by step, first, describe in detail what you are going to do, choose a variant of format of the output and then proceed with that variant.
+Let's take this step by step, first, describe in detail what you are going to do, and then proceed with one of the output variants.
 `.trim();
 
   let tokensCode = encode(promptWithContext).length;
@@ -83,53 +94,53 @@ Let's take this step by step, first, describe in detail what you are going to do
   return await gptExecute({fullPrompt: promptWithContext, onChunk, maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)), temperature: 0});
 }
 
-
-function getLinesBetween(inputLines: string[], start: number, end: number) {
-  let lines = [];
-  for (let i = start; i < end; i++) {
-    lines.push(inputLines[i]);
-  }
-  return lines;
-}
-
-function extractInnerBlock(lines: string[]) {
-  let startLine = 0;
-  let endLine = lines.length;
-
-  if (lines[startLine].startsWith("```") && lines[endLine - 1].startsWith("```")) {
-    startLine++;
-    endLine--;
-  }
-
-  return getLinesBetween(lines, startLine, endLine);
-}
-
 export function applyConsolidated(
   originalCode: string,
   consolidated: string
 ) {
-  let allConsolidatedLines = consolidated.split("\n");
-  let commandLineIndex = allConsolidatedLines.findIndex((line) => line.startsWith("REPLACE"));
-  let command = allConsolidatedLines[commandLineIndex];
-
-  if (command === "REPLACE ALL") {
-    let consolidatedContent = allConsolidatedLines.slice(commandLineIndex + 1).join("\n").trim().split("\n");
-    let consolidatedContentInner = extractInnerBlock(consolidatedContent);
-  
-    return consolidatedContentInner.join("\n");
-  } else if (command === "REPLACE") {
-    let withLineIndex = allConsolidatedLines.findIndex((line) => line.startsWith("WITH"));
-    
-    let replaceContent = allConsolidatedLines.slice(commandLineIndex + 1, withLineIndex).join("\n").trim().split("\n");
-    let replaceContentInner = extractInnerBlock(replaceContent);
-    let replaceString = replaceContentInner.join("\n");
-
-    let withContent = allConsolidatedLines.slice(withLineIndex + 1).join("\n").trim().split("\n");
-    let withContentInner = extractInnerBlock(withContent);
-    let withString = withContentInner.join("\n");
-
-    return originalCode.replace(replaceString, withString);
+  if (consolidated.indexOf("REPLACE ALL\n") !== -1) {
+    let consolidatedContent = consolidated.replace(/(.*)REPLACE ALL\n/sg, "");
+    let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+                                             
+    return innerContent;
   } else {
+    originalCode = applyReplaceWithSegments(consolidated, originalCode);
+
+    return originalCode;
+  }
+}
+
+function applyReplaceWithSegments(consolidated: string, originalCode: string) {
+  let matches = [];
+              
+  let regex = /REPLACE\n((?:(?!REPLACE).)*\n)WITH\n((?:(?!REPLACE).)*\n)(?=\nREPLACE|$)/gs;
+  let match;
+
+  while ((match = regex.exec(consolidated)) !== null) {
+    let replaceText = match[1];
+    let withText = match[2];
+
+    //make sure that withText ends with newline
+    if (withText[withText.length - 1] !== "\n") {
+      withText += "\n";
+    }
+
+    matches.push({ replaceText, withText });
+  }
+
+  if (matches.length === 0) {
     throw new Error(`No REPLACE command found in the answer.`);
   }
+
+  for (let { replaceText, withText } of matches) {
+    let replaceContent = replaceText.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+    let withContent = withText.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+
+    if (originalCode.indexOf(replaceContent) === -1) {
+      throw new Error(`REPLACE command found in the answer, but the original code does not contain the replace string. Replace string: ${replaceContent}`);
+    }
+
+    originalCode = originalCode.replace(replaceContent, withContent);
+  }
+  return originalCode;
 }
