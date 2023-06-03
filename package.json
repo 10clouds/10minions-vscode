@@ -136,6 +136,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "18.x",
+    "@types/play-sound": "^1.1.0",
     "@types/react": "^18.2.7",
     "@types/react-dom": "^18.2.4",
     "@types/vscode": "^1.78.0",
@@ -160,6 +161,7 @@
     "langchain": "^0.0.77",
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1",
+    "play-sound": "^1.1.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

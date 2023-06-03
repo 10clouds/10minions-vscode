@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { CodeMindViewProvider } from "./CodeMindViewProvider";
+import { initPlayingSounds } from "./playSound";
 
 class MyCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [
@@ -35,6 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 
   //Code actions
+  initPlayingSounds(context);
 
   const diagnostics = vscode.languages.createDiagnosticCollection('codemind');
   context.subscriptions.push(diagnostics);

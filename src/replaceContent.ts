@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import * as Diff from "diff";
 import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
+import * as diffMatchPatch from 'diff-match-patch';
+import { START_DIFF_MARKER } from "./ExecutionInfo";
 
 export async function replaceContent(
   document: vscode.TextDocument,
@@ -21,6 +23,66 @@ export async function replaceContent(
       );
     }
   });
+}
+
+function applyFuzzyPatch(source: string, patch: Diff.ParsedDiff): string | undefined {
+  let offset = 0;
+  let result = [...source.split("\n")];
+
+  for (let hunk of patch.hunks) {
+    let range = 5;
+    let foundMatch = false;
+    
+    // Prepare hunk lines for easier processing (separate operation and content).
+    let hunkLines = hunk.lines.map(line => ({operation: line[0], content: line.slice(1)}));
+    
+    for (let i = 0; i < hunkLines.length; i++) {
+      let targetLine = hunk.newStart + i + offset;
+      for (let shift = -range; shift <= range; shift++) {
+        let currentStartLine = targetLine + shift;
+        if (currentStartLine < 0 || currentStartLine >= result.length) {
+          continue;
+        }
+
+        // Check if all lines in the hunk match at this position.
+        // Ignore "+" lines as they do not exist in the source file.
+        let allLinesMatch = hunkLines.filter(hunkLine => hunkLine.operation !== '+').every((hunkLine, hunkLineIndex) => {
+          let resultLine = result[currentStartLine + hunkLineIndex];
+          if (!resultLine) {
+            return false;
+          }
+          let similarity = calculateSimilarity(resultLine, hunkLine.content);
+          console.log(`Similarity: ${similarity} for \`${resultLine}\` and \`${hunkLine.content}\``);
+          return similarity > 0.9;
+        });
+
+        if (allLinesMatch) {
+          console.log(`Match found at ${currentStartLine}`);
+          // Apply all changes at this position.
+          hunkLines.forEach((hunkLine, hunkLineIndex) => {
+            if (hunkLine.operation === '-') {
+              result.splice(currentStartLine + hunkLineIndex, 1);
+              offset--;
+            } else if (hunkLine.operation === '+') {
+              result.splice(currentStartLine + hunkLineIndex, 0, hunkLine.content);
+              offset++;
+            }
+          });
+          foundMatch = true;
+          break;
+        }
+      }
+      if (foundMatch) {
+        break;
+      }
+    }
+
+    if (!foundMatch) {
+      return undefined;
+    }
+  }
+
+  return result.join("\n");
 }
 
 function levenshtein(a: string, b: string) {
@@ -113,21 +175,20 @@ function calculateSimilarity(code1: string, code2: string) {
 export async function applyDiffToContent(content: string, diff: string) {
   return new Promise<string>(async (resolve, reject) => {
     try {
-      let modifiedContent = Diff.applyPatch(content, diff, {
-        fuzzFactor: 5,
-        compareLine: (
-          lineNumber: number,
-          line: string,
-          operation: "-" | " ",
-          patchContent: string
-        ) => {
-          let similarity = calculateSimilarity(line, patchContent);
-          console.log(
-            `similarity ${similarity} line ${line} patchContent ${patchContent}`
-          );
-          return similarity > 0.9;
-        },
-      });
+      //remove in the diff everything before those lines:
+      //--- original
+      //+++ modified
+      //let updatedPatch = "";
+      //let originalStartIndex = diff.indexOf(START_DIFF_MARKER);
+      //let actuallDiff = diff.substring(originalStartIndex + START_DIFF_MARKER.length);
+
+      let patches = Diff.parsePatch(diff);
+
+      if (patches.length !== 1) {
+        reject("Expected a single patch.");
+      }
+
+      let modifiedContent = applyFuzzyPatch(content, patches[0]);
 
       if (!modifiedContent) {
         reject("Unable to apply diff.");

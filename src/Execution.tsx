@@ -1,6 +1,6 @@
 import * as React from "react";
-import { ExecutionInfo } from "./ExecutionInfo";
-import { StopIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
+import { ArrowPathIcon, StopIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
 
@@ -20,7 +20,7 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
       }}
     >
       <div className="flex justify-between">
-        <div className="font-semibold mb-2">
+        <div className="font-semibold mb-2 flex-grow">
           <span
             className="cursor-pointer"
             onClick={() => {
@@ -33,6 +33,18 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
             🧠 {execution.documentName}
           </span>
         </div>
+
+        {execution.stopped && (
+          <ArrowPathIcon
+            onClick={() => {
+              vscode.postMessage({
+                type: "reRunExecution",
+                executionId: execution.id,
+              });
+            }}
+            className="stop-button  h-6 w-6 cursor-pointer"
+          />
+        )}
 
         {!execution.stopped ? (
           <StopIcon
@@ -57,7 +69,23 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
         )}
       </div>
       <div className="mb-2">{userQueryPreview}</div>
-      <div className="mb-2">{execution.executionStage}</div>
+      <div className="mb-2">
+        {execution.executionStage}{" "}
+        {execution.executionStage === FINISHED_STAGE_NAME && (
+          <button
+            //present it as a link
+            className="inline-block btn btn-link p-0 m-0 text-sm text-blue-500 hover:text-blue-200"
+            onClick={() => {
+              vscode.postMessage({
+                type: "showDiff",
+                executionId: execution.id,
+              });
+            }}
+          >
+            Show diff
+          </button>
+        )}
+      </div>
       <div
         className="mb-2 cursor-pointer w-full flex justify-center"
         onClick={() => {

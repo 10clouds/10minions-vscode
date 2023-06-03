@@ -4,6 +4,10 @@ import { ExecutionInfo } from "./ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./createWorkingdocument";
 import { randomUUID } from "crypto";
+import { exec } from "child_process";
+import * as path from "path";
+import * as fs from "fs";
+
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";
@@ -48,6 +52,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "newExecution": {
+          
           let prompt = data.value ? data.value : "Refactor this code";
 
           this.executeFullGPTProcedure(prompt);
@@ -70,6 +75,60 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
           break;
         }
+        case "showDiff": {
+          let executionId = data.executionId;
+          let execution = this.executions.find(
+            (e) => e.id === executionId
+          );
+
+          if (execution) {
+            //create document with content
+            let documentURI = vscode.Uri.parse(execution.documentURI);
+            
+            let document = await vscode.workspace.openTextDocument(documentURI);
+
+            let originalDoc = await vscode.workspace.openTextDocument({
+              language: document.languageId,
+              content: execution.fullContent || "",
+            });
+
+            await vscode.commands.executeCommand(
+              "vscode.diff",
+              originalDoc.uri,
+              document.uri,
+              `(original) ↔ (generated)`
+            );
+          }
+          break;
+        }
+        case "reRunExecution": {
+          let executionId = data.executionId;
+          let execution = this.executions.find(
+            (e) => e.id === executionId
+          );
+
+          if (execution) {
+            if (!execution.stopped) {
+              vscode.window.showErrorMessage(
+                "Execution is still running",
+                executionId
+              );
+              break;
+            }
+
+            execution.stopped = false;
+            
+            await execution.run();
+          } else {
+            vscode.window.showErrorMessage(
+              "No execution found for id",
+              executionId
+            );
+          }
+
+          break;
+        }
+
         case "stopExecution": {
           let executionId = data.executionId;
           let execution = this.executions.find(

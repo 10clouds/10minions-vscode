@@ -1,13 +1,24 @@
-import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
 import { convertToDiff } from "./convertToDiff";
 import { planAndWrite } from "./planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
-import { getRandomProgressMessage } from "./progress";
 import { applyDiffToContent } from "./replaceContent";
-import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
+import { FINISHED_STAGE_NAME } from "./ExecutionInfo";
+import { playNotificationSound } from "./playSound";
+import { applyConsolidated, createConsolidated } from "./createConsilidated";
+
+async function clearFile(uri: string, content: string = "") {
+  const filePath = vscode.Uri.parse(uri).fsPath;
+
+  try {
+    await fs.writeFile(filePath, content); 
+  } catch (err) {
+    console.error("An error occurred while writing to the file:", err);
+  }
+}
 
 async function appendToFile(uri: string, content: string) {
   const filePath = vscode.Uri.parse(uri).fsPath;
@@ -20,7 +31,7 @@ async function appendToFile(uri: string, content: string) {
 }
 
 export class GPTExecution {
-  readonly fullContent: string;
+  fullContent: string;
   readonly documentURI: string;
   readonly workingDocumentURI: string;
   readonly userQuery: string;
@@ -78,7 +89,7 @@ export class GPTExecution {
     }
 
     this.stopped = true;
-    this.executionStage = error? error : "Finished";
+    this.executionStage = error ? error : FINISHED_STAGE_NAME;
 
     this.gptProcedureSubscriptions.forEach((subscription) => {
       subscription.dispose();
@@ -113,6 +124,13 @@ export class GPTExecution {
       let modification = "";
       let diffApplied = false;
 
+      let document = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse(this.documentURI)
+      );
+
+      clearFile(this.workingDocumentURI);
+
+      this.fullContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
 
       const tryToApplyDiff = async (retryAttempt: number) => {
         if (diffApplied) {
@@ -135,13 +153,11 @@ export class GPTExecution {
             }
           );
 
-          let document = await vscode.workspace.openTextDocument(
-            vscode.Uri.parse(this.documentURI)
-          );
-          let currentContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
+          //Update full content
+          this.fullContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
 
           let modifiedContent = await applyDiffToContent(
-            currentContent,
+            this.fullContent,
             diff || "???"
           );
 
@@ -210,12 +226,7 @@ export class GPTExecution {
               async (chunk: string) => {
                 reportSmallProgress();
 
-                //escape */ in chunk
-                chunk = chunk.replace(/\*\//g, "*\\/");
-
-                await appendToFile(this.workingDocumentURI, chunk);
-
-                
+                await appendToFile(this.workingDocumentURI, chunk);                
               },
               () => {
                 return this.stopped;
@@ -225,6 +236,72 @@ export class GPTExecution {
             reportSmallProgress();
             await appendToFile(this.workingDocumentURI, "\n\n");
           },
+        },
+        {
+          name: "Consolidating result ...", 
+          weight: 33,
+          execution: async () => {
+            if (diffApplied) {
+              return;
+            }
+      
+            try {
+              await appendToFile(
+                this.workingDocumentURI,
+                `\nGENERATING CONSOLIDATION\n\n`
+              );
+    
+              let consolidated = await createConsolidated(
+                this.fullContent,
+                modification,
+                async (chunk: string) => {
+                  reportSmallProgress();
+    
+                  await appendToFile(this.workingDocumentURI, chunk);
+                }
+              );
+    
+              //Update full content
+              this.fullContent = document.getText();//.replace(/\n{2,}/g, '\n\n'); //Remove extra empty lines, this really helps with the AI
+    
+              let modifiedContent = applyConsolidated(
+                this.fullContent,
+                consolidated
+              );
+    
+              modifiedContent =
+                modifiedContent +
+                "\n\n" +
+                prepareModificationInfo(this.userQuery, startTime);
+    
+              await applyWorkspaceEdit(async (edit) => {
+                let document = await vscode.workspace.openTextDocument(
+                  vscode.Uri.parse(this.documentURI)
+                );
+    
+                edit.replace(
+                  document.uri,
+                  new vscode.Range(
+                    new vscode.Position(0, 0),
+                    document.positionAt(document.getText().length - 1)
+                  ),
+                  modifiedContent
+                );
+              });
+    
+              diffApplied = true;
+    
+              await appendToFile(
+                this.workingDocumentURI,
+                `\CONSOLIDATION SUCCESFULY APPLIED\n\n`
+              );
+            } catch (error) {
+              await appendToFile(
+                this.workingDocumentURI,
+                `\n\nError in applying consolidation: ${error}\n`
+              );
+            }
+          }
         },
         {
           name: "Applying (1st attempt) ...", 
@@ -273,7 +350,7 @@ export class GPTExecution {
               edit.insert(
                 vscode.Uri.parse(this.documentURI),
                 new vscode.Position(0, 0),
-                `/*\n10Clouds CodeMind: I was unable to modify the code myself, but you can do it yourself based on my remarks below:\n\n${modification}\n*\/\n\n`
+                `/*\n10Clouds CodeMind: I was unable to modify the code myself, but you can do it yourself based on my remarks below:\n\n${modification.replace(/\*\//g, "*\\/")}\n*\/\n\n`
               );
             });
 
@@ -289,6 +366,8 @@ export class GPTExecution {
             );
 
             this.stopExecution();
+
+            playNotificationSound();
           },
         },
       ];
@@ -319,7 +398,6 @@ export class GPTExecution {
 
         await STAGES[currentStageIndex].execution();
 
-
         const weigtsNextStepTotal = STAGES.reduce((acc, stage, index) => {
           if (index > currentStageIndex) {
             return acc;
@@ -331,6 +409,7 @@ export class GPTExecution {
         this.onChanged();
         currentStageIndex++;
       }
+      console.log("Finished");
     });
   }
 

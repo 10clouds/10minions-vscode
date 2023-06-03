@@ -20,14 +20,14 @@ function extractParsedLines(chunk: string) {
   }
 }
 
-async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4") {
+async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4", temperature = 1) {
   const API_URL = "https://api.openai.com/v1/chat/completions";
 
   const controller = new AbortController();
   const signal = controller.signal;
 
   console.log("Querying OpenAI");
-  console.log(JSON.stringify(fullPrompt.split("\n")));
+  fullPrompt.split("\n").forEach((line) => console.log(`> ${line}`));
 
   return await fetch(API_URL, {
     method: "POST",
@@ -49,7 +49,7 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
       ],
       // eslint-disable-next-line @typescript-eslint/naming-convention
       max_tokens: maxTokens,
-      temperature: 1,
+      temperature,
       stream: true,
     }),
     signal,
@@ -113,13 +113,15 @@ export async function gptExecute({
   isCancelled = () => false,
   maxTokens = 2000,
   model = "gpt-4",
+  temperature,
 } : {
   fullPrompt: string,
   onChunk: (chunk: string) => Promise<void>,
   isCancelled?: () => boolean,
   maxTokens?: number,
   model?: string,
+  temperature?: number
 }) {
-  const response = await queryOpenAI(fullPrompt, maxTokens, model);
+  const response = await queryOpenAI(fullPrompt, maxTokens, model, temperature);
   return processOpenAIResponseStream({response, onChunk, isCancelled});
 }
