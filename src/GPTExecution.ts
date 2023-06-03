@@ -94,7 +94,7 @@ export class GPTExecution {
       },
       {
         name: "Consolidating result ...",
-        weight: 33,
+        weight: 100,
         execution: this.consolidatingResultStage.bind(this),
       },
       {
