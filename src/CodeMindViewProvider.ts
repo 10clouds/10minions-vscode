@@ -241,7 +241,6 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
     const execution = new GPTExecution({
       id: executionId,
-      fullContent: document.getText(),//.replace(/\n{2,}/g, '\n\n'), //Remove extra empty lines, this really helps with the AI
       documentURI: document.uri.toString(),
       workingDocumentURI: workingDocument.uri.toString(),
       userQuery,
