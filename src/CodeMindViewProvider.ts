@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import { ExecutionInfo } from "./ExecutionInfo";
+import { ExecutionInfo } from "./ui/ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./createWorkingdocument";
 

@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "./applyWorkspaceEdit";
 import { planAndWrite } from "./planAndWrite";
 import { prepareModificationInfo } from "./prepareModificationInfo";
-import { FINISHED_STAGE_NAME } from "./ExecutionInfo";
+import { FINISHED_STAGE_NAME } from "./ui/ExecutionInfo";
 import { playNotificationSound } from "./playSound";
 import { applyConsolidated, createConsolidated } from "./createConsilidated";
 
@@ -292,7 +292,7 @@ export class GPTExecution {
         vscode.Uri.parse(this.documentURI),
         new vscode.Position(
           document.lineCount - 1,
-          document.lineAt(document.lineCount - 1).text.length
+          document.lineAt(document.lineCount - 1).text.length 
         ),
         `\n\n${prepareModificationInfo(this.userQuery, this.startTime)}`
       );*/

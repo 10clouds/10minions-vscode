@@ -1,5 +1,3 @@
-export const START_DIFF_MARKER = "--- original\n+++ modified\n";
-
 export const FINISHED_STAGE_NAME = "Finished";
 
 export type ExecutionInfo = {
