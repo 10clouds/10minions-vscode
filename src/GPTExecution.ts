@@ -265,7 +265,7 @@ export class GPTExecution {
       this.reportSmallProgress(2);
       await appendToFile(
         this.workingDocumentURI,
-        `\CONSOLIDATION SUCCESFULY APPLIED\n\n`
+        `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`
       );
     } catch (error) {
       this.reportSmallProgress(2);

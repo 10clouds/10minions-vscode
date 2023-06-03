@@ -16,9 +16,7 @@ export async function planAndWrite(
 
   let fileContext = selectedText
     ? `
-===== FILE CONTEXT (code starts on line: ${
-        selectionPosition.line + 1
-      } column: ${selectionPosition.character + 1} )====
+==== FILE CONTEXT ====
 ${fullFileContents}  
 `
     : "";
@@ -38,12 +36,22 @@ Make sure to add a comment to each spot where you are making modifications, so i
 
 Your collegue will only look at the final code, without you around, so make sure to provide all the necessary comments and explanations in the final code.
 
+If you only modify a section of the code and leave the rest as is, as your final code segment, only output that specific section.
+
+Do not provide the entire file or any bigger chunks than necessary.
+
 ==== STRATEGIES FOR SPECIFIC TASKS ====
 If asked to refactor code, critically analyze the provided code and propose a refactoring plan focusing on improving readability and maintainability. Your revised code should remain functional with no change in output or side effects. Suggest renaming functions, creating subroutines, or modifying types as needed, to achieve the aim of simplicity and readability. Ensure your code and any documentation meet the quality standards of a top open source project.  
 If asked to write documentation, write nice comment at the top and consise to the point JSdocs above the signatures of each function.
 If asked to remove comments, don't add your own comments as this is probably not what your college wants.
 
-===== CODE ====
+===== CODE ${
+    selectedText
+      ? `(starts on line ${selectionPosition.line + 1} column: ${
+          selectionPosition.character + 1
+        } in the file)`
+      : ""
+  }====
 ${selectedText ? selectedText : fullFileContents}
 
 ${fileContext}
@@ -55,6 +63,10 @@ Keep in mind that this applies only to CODE and it should be your focus.
 
 Let's take it step by step.
 `.trim();
+
+  onChunk("<<<< PROMPT >>>>\n\n");
+  onChunk(promptWithContext + "\n\n");
+  onChunk("<<<< EXECUTION >>>>\n\n");
 
   return gptExecute({
     fullPrompt: promptWithContext,

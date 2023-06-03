@@ -15,17 +15,31 @@ export async function createConsolidated(
   let promptWithContext = `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
-==== Format of the answer ====
+==== Format of the answer (Variant #1) ====
 
-Stard your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
 
 REPLACE ALL
 
-or 
+Use this variant if you are going to replace the entire file.
 
-REPLACE <start line> <end line>
+There can be only one such command in the answer, and it preceeds the final consolidated result.
 
-Use the first case if you are going to replace the entire file, and the second case if you are going to replace a specific range of lines. There can be only one such command in the answer, and it preceeds the final consolidated result.
+==== Format of the answer (Variant #2) ====
+
+Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+
+REPLACE
+
+Followed by the lines of code you are replacing, and then, when ready to output the final consolidated result, start it with the following command:
+
+WITH
+
+Followed by the code you are replacing with.
+
+Use this variant if you are going to replace a specific range of lines. There can be only one such command in the answer, and it preceeds the final consolidated result.
+
+If the REQUESTED MODIFICATION modifies only a given line range which is less than 33% of the file, use this variant, otherwise use the first one.
 
 ==== Things to take into consideration ====
 
@@ -43,10 +57,7 @@ ${modification}
 ==== FINAL SUMMARY ====
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
-Let's take this step by step, first, describe in detail what you are going to do, and then once you are ready to output the consolidated code, start with the REPLACE command:
-
-REPLACE (followed eithger by ALL or <start line> <end line> where start line and end line are numbers)
-
+Let's take this step by step, first, describe in detail what you are going to do, choose a variant of format of the output and then proceed with that variant.
 `.trim();
 
   let tokensCode = encode(promptWithContext).length;
@@ -63,6 +74,11 @@ REPLACE (followed eithger by ALL or <start line> <end line> where start line and
   if (availableTokens < absoluteMinimumTokens) {
     throw new Error(`Not enough tokens to perform the modification. Available tokens: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}`);
   }
+
+  onChunk(`Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}\n\n`);
+  onChunk("<<<< PROMPT >>>>\n\n");
+  onChunk(promptWithContext + "\n\n");
+  onChunk("<<<< EXECUTION >>>>\n\n");
 
   return await gptExecute({fullPrompt: promptWithContext, onChunk, maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)), temperature: 0});
 }
@@ -93,25 +109,26 @@ export function applyConsolidated(
   consolidated: string
 ) {
   let allConsolidatedLines = consolidated.split("\n");
-  let commandLineIndex = allConsolidatedLines.findIndex((line) => line.startsWith("REPLACE "));
+  let commandLineIndex = allConsolidatedLines.findIndex((line) => line.startsWith("REPLACE"));
   let command = allConsolidatedLines[commandLineIndex];
-  let consolidatedContent = allConsolidatedLines.slice(commandLineIndex + 1).join("\n").trim().split("\n");
-  let consolidatedContentInner = extractInnerBlock(consolidatedContent);
 
   if (command === "REPLACE ALL") {
+    let consolidatedContent = allConsolidatedLines.slice(commandLineIndex + 1).join("\n").trim().split("\n");
+    let consolidatedContentInner = extractInnerBlock(consolidatedContent);
+  
     return consolidatedContentInner.join("\n");
-  } else if (command.startsWith("REPLACE ")) {
-    let [_, startLine, endLine] = command.split(" ");
-    let start = parseInt(startLine);
-    let end = parseInt(endLine);
+  } else if (command === "REPLACE") {
+    let withLineIndex = allConsolidatedLines.findIndex((line) => line.startsWith("WITH"));
+    
+    let replaceContent = allConsolidatedLines.slice(commandLineIndex + 1, withLineIndex).join("\n").trim().split("\n");
+    let replaceContentInner = extractInnerBlock(replaceContent);
+    let replaceString = replaceContentInner.join("\n");
 
-    if (isNaN(start) || isNaN(end)) {
-      throw new Error(`Invalid REPLACE command: ${command}`);
-    }
+    let withContent = allConsolidatedLines.slice(withLineIndex + 1).join("\n").trim().split("\n");
+    let withContentInner = extractInnerBlock(withContent);
+    let withString = withContentInner.join("\n");
 
-    let originalCodeLines = originalCode.split("\n");
-    originalCodeLines.splice(start, end - start, ...consolidatedContentInner);
-    return originalCodeLines.join("\n");
+    return originalCode.replace(replaceString, withString);
   } else {
     throw new Error(`No REPLACE command found in the answer.`);
   }
