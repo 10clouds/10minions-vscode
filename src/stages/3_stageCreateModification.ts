@@ -130,6 +130,7 @@ Let's take it step by step.
     fullPrompt: promptWithContext,
     onChunk,
     isCancelled,
+    controller: new AbortController(),
   });
 }
 

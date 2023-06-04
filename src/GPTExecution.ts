@@ -110,9 +110,7 @@ export class GPTExecution {
   }
 
   public async document() {
-    let document = await vscode.workspace.openTextDocument(
-      vscode.Uri.parse(this.documentURI)
-    );
+    let document = await vscode.workspace.openTextDocument(vscode.Uri.parse(this.documentURI));
     return document;
   }
 
@@ -142,24 +140,30 @@ export class GPTExecution {
       this.rejectProgress = reject;
       this.currentStageIndex = 0;
 
-      while (this.currentStageIndex < this.STAGES.length) {
-        this.executionStage = this.STAGES[this.currentStageIndex].name;
+      try {
+        while (this.currentStageIndex < this.STAGES.length) {
+          this.executionStage = this.STAGES[this.currentStageIndex].name;
 
-        await this.STAGES[this.currentStageIndex].execution();
+          await this.STAGES[this.currentStageIndex].execution();
 
-        const weigtsNextStepTotal = this.STAGES.reduce((acc, stage, index) => {
-          if (index > this.currentStageIndex) {
-            return acc;
-          }
-          return acc + stage.weight;
-        }, 0);
+          const weigtsNextStepTotal = this.STAGES.reduce((acc, stage, index) => {
+            if (index > this.currentStageIndex) {
+              return acc;
+            }
+            return acc + stage.weight;
+          }, 0);
 
-        this.progress = weigtsNextStepTotal / this.TOTAL_WEIGHTS;
-        this.onChanged(false);
-        this.currentStageIndex++;
+          this.progress = weigtsNextStepTotal / this.TOTAL_WEIGHTS;
+          this.onChanged(false);
+          this.currentStageIndex++;
+        }
+
+        console.log("Finished");
+      } catch (error) {
+        vscode.window.showErrorMessage(`Error in execution: ${error}`);
+        console.log("Error in execution", error);
+        this.stopExecution(String(error));
       }
-
-      console.log("Finished");
     });
   }
 

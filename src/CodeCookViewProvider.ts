@@ -78,19 +78,11 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
         }
         case "openDocument": {
           //if it's open and focused close it
-          if (
-            activeEditor &&
-            activeEditor.document.uri.toString() === data.documentURI
-          ) {
-            /*vscode.commands.executeCommand(
-              "workbench.action.closeActiveEditor"
-            );*/
-          } else {
-            let documentURI = vscode.Uri.parse(data.documentURI);
-            await vscode.workspace.openTextDocument(documentURI);
-            await vscode.window.showTextDocument(documentURI);
-          }
-
+          
+          let documentURI = vscode.Uri.parse(data.documentURI);
+          await vscode.workspace.openTextDocument(documentURI);
+          await vscode.window.showTextDocument(documentURI);
+         
           break;
         }
         case "showDiff": {

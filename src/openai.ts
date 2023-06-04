@@ -1,6 +1,9 @@
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
+import api from "gpt-tokenizer/esm/encoding/cl100k_base";
+
+type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
 let openAILock = new AsyncLock();
 
@@ -21,11 +24,30 @@ function extractParsedLines(chunk: string) {
   }
 }
 
+
+
 /* The queryOpenAI function takes a fullPrompt and other optional parameters to
  * send a request to OpenAI's API. It returns a response object. */
-async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4", temperature = 1) {
-  const controller = new AbortController();
+async function queryOpenAI({
+  fullPrompt,
+  controller,
+  maxTokens = 2000,
+  model = "gpt-4",
+  temperature = 1,
+}: {
+  fullPrompt: string;
+  maxTokens?: number;
+  model?: AVAILABLE_MODELS;
+  temperature?: number;
+  controller: AbortController;
+}) {
   const signal = controller.signal;
+
+  let apiKey = vscode.workspace.getConfiguration("codecook").get("apiKey")
+
+  if (!apiKey) {
+    throw new Error("OpenAI API key not found. Please set it in the settings.");
+  }
 
   console.log("Querying OpenAI");
   fullPrompt.split("\n").forEach((line) => console.log(`> ${line}`));
@@ -34,9 +56,7 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${vscode.workspace
-        .getConfiguration("codecook")
-        .get("apiKey")}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
@@ -61,9 +81,9 @@ async function processOpenAIResponseStream({
   onChunk,
   isCancelled,
 }: {
-  response: Response,
-  onChunk: (chunk: string) => Promise<void>,
-  isCancelled: () => boolean
+  response: Response;
+  onChunk: (chunk: string) => Promise<void>;
+  isCancelled: () => boolean;
 }) {
   const stream = response.body!;
   const decoder = new TextDecoder("utf-8");
@@ -116,14 +136,17 @@ export async function gptExecute({
   maxTokens = 2000,
   model = "gpt-4",
   temperature,
+  controller,
 }: {
-  fullPrompt: string,
-  onChunk: (chunk: string) => Promise<void>,
-  isCancelled?: () => boolean,
-  maxTokens?: number,
-  model?: string,
-  temperature?: number
+  fullPrompt: string;
+  onChunk: (chunk: string) => Promise<void>;
+  isCancelled?: () => boolean;
+  maxTokens?: number;
+  model?: AVAILABLE_MODELS;
+  temperature?: number;
+  controller: AbortController;
 }) {
-  const response = await queryOpenAI(fullPrompt, maxTokens, model, temperature);
-  return processOpenAIResponseStream({response, onChunk, isCancelled});
+  const response = await queryOpenAI({fullPrompt, maxTokens, model, temperature, controller});
+  const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
+  return result;
 }

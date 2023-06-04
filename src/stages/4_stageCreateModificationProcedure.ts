@@ -134,6 +134,7 @@ Let's take this step by step, first, describe in detail what you are going to do
     onChunk,
     maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)),
     temperature: 0,
+    controller: new AbortController(),
   });
 }
 

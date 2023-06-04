@@ -88,6 +88,7 @@ Classify the task.
     onChunk,
     isCancelled,
     maxTokens: 50,
+    controller: new AbortController(),
   });
 }
 
