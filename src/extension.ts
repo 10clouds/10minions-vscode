@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { CodeMindViewProvider } from "./CodeMindViewProvider";
-import { initPlayingSounds } from "./playSound";
+import { initPlayingSounds } from "./utils/playSound";
 
 class MyCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [

@@ -1,0 +1,167 @@
+import { encode } from "gpt-tokenizer";
+import * as vscode from "vscode";
+import { GPTExecution } from "../GPTExecution";
+import { EXTENSIVE_DEBUG } from "../const";
+import { gptExecute } from "../openai";
+import { appendToFile } from "../utils/appendToFile";
+import { TASK_CLASSIFICATION_NAME } from "./2_stageClassifyTask";
+
+export const CLASSIFICATION_OUTPUT_FORMATS = {
+  "ANSWER-QUESTION": `
+
+Star with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+
+INSERT
+
+Followed by lines of block comment
+
+BEFORE
+
+Followed by lines of code that the comment will be attached to.
+
+You can then start with the next INSERT line to repeat this sequence, or finish the output. Keep in mind that all lines between INSERT and BEFORE will be used, even the empty ones.
+
+Further more, do not invent your own commands, use only the ones described above.
+`.trim(),
+
+  "FILE-WIDE-CHANGE": `
+
+Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+
+REPLACE ALL
+
+Your job is to output a full consolidated final, production ready, code, described in REQUESTED MODIFICATION when applied to ORIGINAL CODE.
+
+There can be only one such command in the answer, and it preceeds the final consolidated result.
+`.trim(),
+
+  "LOCAL-CHANGE": `
+
+Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+
+REPLACE
+
+Followed by the lines of code you are replacing, and then, when ready to output the final consolidated result, start it with the following command:
+
+WITH
+
+Followed by the code you are replacing with. You may follow this pattern multiple times.
+
+Keep in mind that all lines between REPLACE and WITH will be used, even the empty ones. So any output after final WITH will be part of the final replacement.
+
+Further more, do not invent your own commands, use only the ones described above.
+
+After applications of all the replacements the code should be final, production ready, as described in REQUESTED MODIFICATION.
+
+`.trim(),
+};
+
+async function createConsolidated(
+  classification: TASK_CLASSIFICATION_NAME,
+  refCode: string,
+  modification: string,
+  onChunk: (chunk: string) => Promise<void>
+) {
+  const activeEditor = vscode.window.activeTextEditor;
+  if (!activeEditor) {
+    return "";
+  }
+
+  //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
+  modification = modification.replace(
+    /^(====+)([^=]+)(====+)$/gm,
+    (match, p1, p2, p3) => {
+      return `#${p2}`;
+    }
+  );
+
+  let promptWithContext = `
+You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
+
+==== FORMAT OF THE ANSWER ====
+${CLASSIFICATION_OUTPUT_FORMATS[classification]}
+
+==== THINGS TO TAKE INTO CONSIDERATION ====
+
+* You have been provided an exact modification (REQUESTED MODIFICATION section) that needs to be applied to the code (ORIGINAL CODE section).
+* Make sure to exactly match the structure of the original and exactly the intention of the modification.
+* If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inline appropriate sections from the original code, you are producting final production ready code.
+* If in the REQUESTED MODIFICATION section there are only comments, and user asked something that does not requrie modification of the code. Write the answer as a code comment in appropriate spot.
+
+==== ORIGINAL CODE ====
+${refCode}
+
+==== REQUESTED MODIFICATION ====
+${modification}
+
+==== FINAL SUMMARY ====
+You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
+
+Let's take this step by step, first, describe in detail what you are going to do, and then perform previously described commands in FORMAT OF THE ANSWER section.
+`.trim();
+
+  let tokensCode = encode(promptWithContext).length;
+  let tokensModification = encode(modification).length;
+
+  let luxiouriosTokens = Math.max(tokensCode, tokensModification) * 1.5;
+
+  let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
+
+  let availableTokens = 8000 - encode(promptWithContext).length;
+
+  console.log(
+    `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}`
+  );
+
+  if (availableTokens < absoluteMinimumTokens) {
+    throw new Error(
+      `Not enough tokens to perform the modification. Available tokens: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}`
+    );
+  }
+
+  if (EXTENSIVE_DEBUG) {
+    onChunk(
+      `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}\n\n`
+    );
+    onChunk("<<<< PROMPT >>>>\n\n");
+    onChunk(promptWithContext + "\n\n");
+    onChunk("<<<< EXECUTION >>>>\n\n");
+  }
+
+  return await gptExecute({
+    fullPrompt: promptWithContext,
+    onChunk,
+    maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)),
+    temperature: 0,
+  });
+}
+
+export async function stageCreateModificationProcedure(this: GPTExecution) {
+  if (this.modificationApplied) {
+    return;
+  }
+
+  try {
+    this.reportSmallProgress();
+    await appendToFile(
+      this.workingDocumentURI,
+      `\nGENERATING CONSOLIDATION\n\n`
+    );
+
+    this.modificationProcedure = await createConsolidated(
+      this.classification,
+      this.fullContent,
+      this.modificationDescription,
+      async (chunk: string) => {
+        this.reportSmallProgress();
+        await appendToFile(this.workingDocumentURI, chunk);
+      }
+    );
+  } catch (error) {
+    this.reportSmallProgress();
+    await appendToFile(
+      this.workingDocumentURI,
+      `\n\nError in creating modification procedure: ${error}\n`
+    );
+  }
+}

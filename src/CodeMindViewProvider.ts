@@ -3,7 +3,7 @@ import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { ExecutionInfo } from "./ui/ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
-import { createWorkingdocument } from "./createWorkingdocument";
+import { createWorkingdocument } from "./utils/createWorkingdocument";
 
 export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "codemind.chatView";

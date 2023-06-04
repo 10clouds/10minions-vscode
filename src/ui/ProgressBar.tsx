@@ -13,7 +13,7 @@ export function ProgressBar({ progress }: { progress: number; }) {
       >
         <span
           className="text-xs font-semibold text-white transition-all duration-1000 ease-in-out"
-          style={{ opacity: progress > 0.20 ? 1 : 0 }}
+          style={{ opacity: progress > 0.20 && progress < 1.0 ? 1 : 0 }}
         >
           {percentage}
         </span>
