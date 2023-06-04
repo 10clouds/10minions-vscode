@@ -18,7 +18,7 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
     uri: vscode.Uri
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
-      "🧠 CodeMind AI Fix",
+      "👨‍🍳 Fix with CodeChef AI",
       MyCodeActionProvider.providedCodeActionKinds[0]
     );
     action.command = {

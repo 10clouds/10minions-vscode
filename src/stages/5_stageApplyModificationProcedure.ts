@@ -26,56 +26,76 @@ function applyModificationProcedure(
     } else if (currentCommand.startsWith("INSERT")) {
       storedArg = currentArg;
     } else if (currentCommand.startsWith("WITH")) {
-      let replaceText = storedArg.join("\n").replace(
-        /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
-        "$1"
+      let replaceText = storedArg
+        .join("\n")
+        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let withText = currentArg
+        .join("\n")
+        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+
+      // Step 1: Find replaceText along with its indentation (if any) in currentCode
+      const regexPattern = new RegExp(
+        `^( *)(?=.*(?:^|[\n])\\1${replaceText.replace(
+          /[-\/\\^$*+?.()|[\]{}]/g,
+          "\\$&"
+        )})`,
+        "m"
       );
-      let withText = currentArg.join("\n").replace(
-        /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
-        "$1"
-      );
-        
-      if (currentCode.indexOf(replaceText) === -1) {
+      const match = currentCode.match(regexPattern);
+
+      if (match) {
+        // Step 2: Replace replaceText with withText while maintaining the same indentation
+        const indentation = match[1];
+        const indentedWithText = withText
+          .split("\n")
+          .map((line) => `${indentation}${line}`)
+          .join("\n");
+
+        currentCode = currentCode.replace(
+          `${indentation}${replaceText}`,
+          indentedWithText
+        );
+      } else {
         throw new Error(
-          `REPLACE command found in the answer, but the original code does not contain the replace string. Replace string: ${replaceText}`
+          `WITH command found in the answer, but the original code does not contain the replace string. Replace string: ${replaceText}`
         );
       }
 
-      currentCode = currentCode.replace(replaceText, withText);
       storedArg = [];
     } else if (currentCommand.startsWith("BEFORE")) {
-      let insertText = storedArg.join("\n").replace(
-        /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
-        "$1"
-      );
-      let beforeText = currentArg.join("\n").replace(
-        /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
-        "$1"
-      );
-      
+      let insertText = storedArg
+        .join("\n")
+        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let beforeText = currentArg
+        .join("\n")
+        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+
       if (currentCode.indexOf(beforeText) === -1) {
         throw new Error(
-          `BEFORE command found in the answer, but the original code does not contain the before string. Before string: ${beforeText}`  
+          `BEFORE command found in the answer, but the original code does not contain the before string. Before string: ${beforeText}`
         );
       }
 
       console.log(`insertText: "${insertText}" beforeText: "${beforeText}"`);
-      currentCode = currentCode.replace(beforeText, `${insertText}\n${beforeText}`);
+      currentCode = currentCode.replace(
+        beforeText,
+        `${insertText}\n${beforeText}`
+      );
       storedArg = [];
     } else if (currentCommand.startsWith("RENAME")) {
-      
       //parse currentCommand with regex (RENAME from to)
       let renameCommand = currentCommand.match(/^RENAME\s+(.*?)\s+(.*?)$/);
       if (!renameCommand) {
         throw new Error(`Unable to parse RENAME command: ${currentCommand}`);
       }
-      
+
       let renameFrom = renameCommand[1];
       let renameTo = renameCommand[2];
       let context = currentArg.join("\n").trim();
 
-      console.log(`renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`);
-
+      console.log(
+        `renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`
+      );
 
       /*const document = editor.document;
       const position = editor.selection.active;
@@ -90,7 +110,7 @@ function applyModificationProcedure(
         {
           newName: newFunctionName,
         }
-      );*/      
+      );*/
     }
     currentArg = [];
   }
@@ -105,7 +125,10 @@ function applyModificationProcedure(
       } else {
         commandFound = false;
       }
-    } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE ALL")) {
+    } else if (
+      currentCommand.startsWith("REPLACE") &&
+      !currentCommand.startsWith("REPLACE ALL")
+    ) {
       if (line.startsWith("WITH")) {
         finishLastCommand();
         currentCommand = "WITH";
@@ -165,7 +188,10 @@ export async function stageApplyModificationProcedure(this: GPTExecution) {
         document.uri,
         new vscode.Range(
           new vscode.Position(0, 0),
-          new vscode.Position(document.lineAt(document.lineCount - 1).lineNumber, document.lineAt(document.lineCount - 1).text.length)
+          new vscode.Position(
+            document.lineAt(document.lineCount - 1).lineNumber,
+            document.lineAt(document.lineCount - 1).text.length
+          )
         ),
         modifiedContent
       );

@@ -34,15 +34,15 @@
     "commands": [
       {
         "command": "codemind.setApiKey",
-        "title": "CodeMind: Set API key"
+        "title": "CodeCook: Set API key"
       },
       {
         "command": "codemind.ask",
-        "title": "CodeMind: Ask CodeMind to do something"
+        "title": "CodeCook: Ask CodeCook to do something"
       }
     ],
     "configuration": {
-      "title": "CodeMind",
+      "title": "CodeCook",
       "type": "object",
       "properties": {
         "codemind.apiKey": {
@@ -100,7 +100,7 @@
       "activitybar": [
         {
           "id": "codemind",
-          "title": "CodeMind",
+          "title": "CodeCook",
           "icon": "resources/icon.png"
         }
       ]
@@ -110,7 +110,7 @@
         {
           "type": "webview",
           "id": "codemind.chatView",
-          "name": "CodeMind"
+          "name": "CodeCook"
         }
       ]
     }

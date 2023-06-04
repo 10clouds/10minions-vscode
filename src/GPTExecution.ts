@@ -68,37 +68,37 @@ export class GPTExecution {
 
     this.STAGES = [
       {
-        name: "Starting ...",
+        name: "Preparing Ingredients ...",
         weight: 10,
         execution: stageStarting.bind(this),
       },
       {
-        name: "Classifying ...",
+        name: "Selecting Recipe ...",
         weight: 50,
         execution: stageClassifyTask.bind(this),
       },
       {
-        name: "Writing modification ...",
+        name: "Mixing Ingredients ...",
         weight: 100,
         execution: stageCreateModification.bind(this),
       },
       {
-        name: "Proceduralising modification ...",
+        name: "Preparing Cooking Procedure ...",
         weight: 80,
         execution: stageCreateModificationProcedure.bind(this),
       },
       {
-        name: "Applying modification procedure ...",
+        name: "Cooking The Code ...",
         weight: 20,
         execution: stageApplyModificationProcedure.bind(this),
       },
       {
-        name: "Falling back to comment ...",
+        name: "Switching To Alternate Recipe ...",
         weight: 10,
         execution: stageFallingBackToComment.bind(this),
       },
       {
-        name: "Finishing ...",
+        name: "Serving ...",
         weight: 10,
         execution: stageFinishing.bind(this),
       },

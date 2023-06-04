@@ -85,7 +85,7 @@ ${CLASSIFICATION_OUTPUT_FORMATS[classification]}
 
 * You have been provided an exact modification (REQUESTED MODIFICATION section) that needs to be applied to the code (ORIGINAL CODE section).
 * Make sure to exactly match the structure of the original and exactly the intention of the modification.
-* If the description of the modification contains comments like "// ..." or "/* remainig code */" then you should follow their logic and inline appropriate sections from the original code, you are producting final production ready code.
+* Expand all comments like "// ...", "/* remainig code */" or "// ...rest of the code remains the same..." to the exact code that they refer to. You are producting final production ready code, so you need complete code.
 * If in the REQUESTED MODIFICATION section there are only comments, and user asked something that does not requrie modification of the code. Write the answer as a code comment in appropriate spot.
 
 ==== ORIGINAL CODE ====
