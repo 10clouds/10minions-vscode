@@ -13,11 +13,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
-  public resolveWebviewView(
-    webviewView: vscode.WebviewView,
-    context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken
-  ) {
+  public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
     this._view = webviewView;
 
     // set options for the webview, allow scripts
@@ -26,8 +22,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri],
     };
 
-    const extractTextKey = (uri: vscode.Uri): string =>
-      uri.path.match(/^text\/([a-z\d\-]+)/)![1];
+    const extractTextKey = (uri: vscode.Uri): string => uri.path.match(/^text\/([a-z\d\-]+)/)![1];
 
     const self = this;
 
@@ -37,17 +32,12 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       provideTextDocumentContent(uri: vscode.Uri): string {
         console.log("CONTENT", uri);
         const textKey = extractTextKey(uri);
-        const originalContent = self.executions.find(
-          (e) => e.id === textKey
-        )?.fullContent;
+        const originalContent = self.executions.find((e) => e.id === textKey)?.fullContent;
         return originalContent || "";
       }
     }
 
-    vscode.workspace.registerTextDocumentContentProvider(
-      "codecook",
-      new ContentProvider()
-    );
+    vscode.workspace.registerTextDocumentContentProvider("codecook", new ContentProvider());
 
     // set the HTML for the webview
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -59,9 +49,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
       switch (data.type) {
         case "getTokenCount": {
-          let tokenCount = activeEditor
-            ? encode(activeEditor.document.getText()).length
-            : 0;
+          let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
 
           this._view?.webview.postMessage({
             type: "tokenCount",
@@ -78,11 +66,11 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
         }
         case "openDocument": {
           //if it's open and focused close it
-          
+
           let documentURI = vscode.Uri.parse(data.documentURI);
           await vscode.workspace.openTextDocument(documentURI);
           await vscode.window.showTextDocument(documentURI);
-         
+
           break;
         }
         case "showDiff": {
@@ -90,8 +78,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            const makeUriString = (textKey: string): string =>
-              `codecook:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
+            const makeUriString = (textKey: string): string => `codecook:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
 
             await vscode.commands.executeCommand(
               "vscode.diff",
@@ -108,10 +95,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
           if (execution) {
             if (!execution.stopped) {
-              vscode.window.showErrorMessage(
-                "Execution is still running",
-                executionId
-              );
+              vscode.window.showErrorMessage("Execution is still running", executionId);
               break;
             }
 
@@ -120,10 +104,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
             await execution.run();
           } else {
-            vscode.window.showErrorMessage(
-              "No execution found for id",
-              executionId
-            );
+            vscode.window.showErrorMessage("No execution found for id", executionId);
           }
 
           break;
@@ -148,14 +129,9 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
           if (execution) {
             //remove
-            this.executions = this.executions.filter(
-              (e) => e.id !== executionId
-            );
+            this.executions = this.executions.filter((e) => e.id !== executionId);
           } else {
-            vscode.window.showErrorMessage(
-              "No execution found for id",
-              executionId
-            );
+            vscode.window.showErrorMessage("No execution found for id", executionId);
           }
 
           //notify webview
@@ -163,6 +139,27 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
 
           break;
         }
+      }
+    });
+
+    setTimeout(() => {
+      //post message with info that we have or not API key
+      this._view?.webview.postMessage({
+        type: "apiKeySet",
+        value: !!vscode.workspace.getConfiguration("codecook").get("apiKey"),
+      });
+      console.log(`Sent`)
+    }, 1000); //TODO: This is a hack, how to make it reliable?
+    
+
+    //post message with update to set api key, each time appropriate config is updated
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      console.log(`Changed`)
+      if (e.affectsConfiguration("codecook.apiKey")) {
+        this._view?.webview.postMessage({
+          type: "apiKeySet",
+          value: !!vscode.workspace.getConfiguration("codecook").get("apiKey"),
+        });
       }
     });
   }
@@ -235,16 +232,12 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
   public async executeFullGPTProcedure(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
-      vscode.window.showErrorMessage(
-        "Please open a file before running CodeCook"
-      );
+      vscode.window.showErrorMessage("Please open a file before running CodeCook");
       return;
     }
 
     if (activeEditor.document.fileName.endsWith(".log")) {
-      vscode.window.showErrorMessage(
-        "Please open a file before running CodeCook"
-      );
+      vscode.window.showErrorMessage("Please open a file before running CodeCook");
       return;
     }
 
@@ -273,7 +266,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       },
     });
 
-    this.executions = [execution, ... this.executions];
+    this.executions = [execution, ...this.executions];
     this.notifyExecutionsUpdatedImmediate();
 
     await execution.run();
@@ -285,18 +278,12 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <base href="${webview.asWebviewUri(this._extensionUri)}/">
-      <script src="${webview.asWebviewUri(
-        vscode.Uri.joinPath(this._extensionUri, "resources", "tailwind.min.js")
-      )}"></script>
-      <link rel="stylesheet" href="${webview.asWebviewUri(
-        vscode.Uri.joinPath(this._extensionUri, "resources", "global.css")
-      )}" />
+      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "resources", "tailwind.min.js"))}"></script>
+      <link rel="stylesheet" href="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "resources", "global.css"))}" />
     </head>
     <body>
       <div id="root"></div>
-      <script src="${webview.asWebviewUri(
-        vscode.Uri.joinPath(this._extensionUri, "dist", "sideBar.js")
-      )}"></script>
+      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "dist", "sideBar.js"))}"></script>
     </body>
     </html>`;
   }
