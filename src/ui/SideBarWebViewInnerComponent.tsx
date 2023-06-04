@@ -83,14 +83,21 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         Your GPT enabled coding assistant
       </h3>
       <p className="text-base mb-4">
-        Describe, in simple terms, what you want to do with the selected code.
-        Keep in mind that I will know only about the context of what is in this
-        file alone.
+        Describe your coding task or issue in simple terms, and I'll help you
+        with it. Note that my assistance will be based only on the context of
+        the current file.
       </p>
       <textarea
         style={{ height: "13rem" }}
         className="w-full h-96 text-white bg-gray-700 p-4 text-sm resize-none mb-4"
-        placeholder="Ask something"
+        placeholder={`Ask something ...
+
+... Refactor this
+... Explain
+... Make it preety
+... Rename this to something sensible
+... Are there any bugs?
+... Rework this so now it also does X`}
         value={userInputPrompt}
         onChange={(e) => setUserInputPrompt(e.target.value)}
       />
@@ -118,17 +125,21 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       >
         Cook
       </button>
-      <h2 className="text-xl font-semibold text-center mt-6 mb-2">Oven</h2>
-      {executionList.length === 0 && (
-        <div className="text-base mb-4 text-center">
+      <div className="relative">
+        <div
+          className={
+            "text-base text-center trasition-all duration-300 ease-in-out absolute mt-4 w-full text-center pointer-events-none" +
+            (executionList.length === 0 ? " opacity-100 mb-4" : " opacity-0")
+          }
+        >
           Nothing is cooking yet.
         </div>
-      )}
-      <div className="mt-4">
-        {executionList.map((execution) => (
-          <Execution key={execution.id} execution={execution} />
-        ))}
-      </div>{" "}
+        <div className="mt-4">
+          {executionList.map((execution) => (
+            <Execution key={execution.id} execution={execution} />
+          ))}
+        </div>{" "}
+      </div>
     </div>
   );
 };

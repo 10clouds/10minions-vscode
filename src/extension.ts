@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { CodeMindViewProvider } from "./CodeMindViewProvider";
+import { CodeCookViewProvider } from "./CodeCookViewProvider";
 import { initPlayingSounds } from "./utils/playSound";
 
 class MyCodeActionProvider implements vscode.CodeActionProvider {
@@ -49,15 +49,15 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("CodeMind is now active");
+  console.log("CodeCook is now active");
 
   //Code actions
   initPlayingSounds(context);
 
-  const diagnostics = vscode.languages.createDiagnosticCollection("codemind");
+  const diagnostics = vscode.languages.createDiagnosticCollection("codecook");
   context.subscriptions.push(diagnostics);
 
-  const fixCommandId = "codemind.fixError";
+  const fixCommandId = "codecook.fixError";
   context.subscriptions.push(
     vscode.commands.registerCommand(
       fixCommandId,
@@ -86,10 +86,10 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  const provider = new CodeMindViewProvider(context.extensionUri);
+  const provider = new CodeCookViewProvider(context.extensionUri);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("codemind.setApiKey", async () => {
+    vscode.commands.registerCommand("codecook.setApiKey", async () => {
       try {
         const apiKey = await vscode.window.showInputBox({
           prompt: "Enter your OpenAI API key",
@@ -98,7 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (apiKey) {
           vscode.workspace
-            .getConfiguration("codemind")
+            .getConfiguration("codecook")
             .update("apiKey", apiKey, true);
         }
       } catch (e) {
@@ -109,7 +109,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      CodeMindViewProvider.viewType,
+      CodeCookViewProvider.viewType,
       provider,
       {
         webviewOptions: { retainContextWhenHidden: true },
@@ -117,7 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
   context.subscriptions.push(
-    vscode.commands.registerCommand("codemind.ask", async () => {
+    vscode.commands.registerCommand("codecook.ask", async () => {
       await provider.clearAndfocusOnInput();
     })
   );

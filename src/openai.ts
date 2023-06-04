@@ -35,7 +35,7 @@ async function queryOpenAI(fullPrompt: string, maxTokens = 2000, model = "gpt-4"
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${vscode.workspace
-        .getConfiguration("codemind")
+        .getConfiguration("codecook")
         .get("apiKey")}`,
     },
     body: JSON.stringify({

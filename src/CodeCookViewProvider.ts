@@ -5,8 +5,8 @@ import { ExecutionInfo } from "./ui/ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./utils/createWorkingdocument";
 
-export class CodeMindViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "codemind.chatView";
+export class CodeCookViewProvider implements vscode.WebviewViewProvider {
+  public static readonly viewType = "codecook.chatView";
 
   private executions: GPTExecution[] = [];
   private _view?: vscode.WebviewView;
@@ -45,7 +45,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     }
 
     vscode.workspace.registerTextDocumentContentProvider(
-      "codemind",
+      "codecook",
       new ContentProvider()
     );
 
@@ -82,9 +82,9 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
             activeEditor &&
             activeEditor.document.uri.toString() === data.documentURI
           ) {
-            vscode.commands.executeCommand(
+            /*vscode.commands.executeCommand(
               "workbench.action.closeActiveEditor"
-            );
+            );*/
           } else {
             let documentURI = vscode.Uri.parse(data.documentURI);
             await vscode.workspace.openTextDocument(documentURI);
@@ -99,7 +99,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
 
           if (execution) {
             const makeUriString = (textKey: string): string =>
-              `codemind:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
+              `codecook:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
 
             await vscode.commands.executeCommand(
               "vscode.diff",
@@ -216,7 +216,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   async clearAndfocusOnInput() {
     //make sure that our extension bar is visible
     if (!this._view) {
-      await vscode.commands.executeCommand("codemind.chatView.focus");
+      await vscode.commands.executeCommand("codecook.chatView.focus");
     } else {
       this._view?.show?.(true);
     }
@@ -229,7 +229,7 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
   async preFillPrompt(prompt: string) {
     //make sure that our extension bar is visible
     if (!this._view) {
-      await vscode.commands.executeCommand("codemind.chatView.focus");
+      await vscode.commands.executeCommand("codecook.chatView.focus");
     } else {
       this._view?.show?.(true);
     }
@@ -244,14 +244,14 @@ export class CodeMindViewProvider implements vscode.WebviewViewProvider {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
       vscode.window.showErrorMessage(
-        "Please open a file before running CodeMind"
+        "Please open a file before running CodeCook"
       );
       return;
     }
 
     if (activeEditor.document.fileName.endsWith(".log")) {
       vscode.window.showErrorMessage(
-        "Please open a file before running CodeMind"
+        "Please open a file before running CodeCook"
       );
       return;
     }

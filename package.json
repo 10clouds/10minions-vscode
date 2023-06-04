@@ -1,12 +1,12 @@
 {
-  "name": "codemind",
-  "displayName": "10Clouds CodeMind",
-  "description": "10Clouds CodeMind: GPT-4 Powered Coding Assistant (VSCode Extension)",
+  "name": "codecook",
+  "displayName": "10Clouds CodeCook",
+  "description": "10Clouds CodeCook: Your GPT enabled coding assistant (VSCode Extension)",
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/10clouds/codemind"
+    "url": "https://github.com/10clouds/codecook"
   },
   "version": "0.0.1",
   "engines": {
@@ -33,11 +33,11 @@
   "contributes": {
     "commands": [
       {
-        "command": "codemind.setApiKey",
+        "command": "codecook.setApiKey",
         "title": "CodeCook: Set API key"
       },
       {
-        "command": "codemind.ask",
+        "command": "codecook.ask",
         "title": "CodeCook: Ask CodeCook to do something"
       }
     ],
@@ -45,36 +45,36 @@
       "title": "CodeCook",
       "type": "object",
       "properties": {
-        "codemind.apiKey": {
+        "codecook.apiKey": {
           "type": "string",
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
         },
-        "codemind.promptPrefix.explain": {
+        "codecook.promptPrefix.explain": {
           "type": "string",
           "default": "Explain what this code does: ",
           "description": "The prompt prefix used for explaining the selected code",
           "order": 5
         },
-        "codemind.promptPrefix.refactor": {
+        "codecook.promptPrefix.refactor": {
           "type": "string",
           "default": "Refactor this code and then explain what's changed: ",
           "description": "The prompt prefix used for refactoring the selected code",
           "order": 6
         },
-        "codemind.promptPrefix.findProblems": {
+        "codecook.promptPrefix.findProblems": {
           "type": "string",
           "default": "Find problems with the following code, fix them and explain what was wrong (Do not change anything else, if there are no problems say so): ",
           "description": "The prompt prefix used for finding problems in the selected code",
           "order": 7
         },
-        "codemind.promptPrefix.optimize": {
+        "codecook.promptPrefix.optimize": {
           "type": "string",
           "default": "Optimize the following code if there is anything to improve, if not say so: ",
           "description": "The prompt prefix used for optimizing the selected code",
           "order": 8
         },
-        "codemind.promptPrefix.documentation": {
+        "codecook.promptPrefix.documentation": {
           "type": "string",
           "default": "Write documentation for the following code: ",
           "description": "The prompt prefix used for writing documentation for the selected code",
@@ -85,31 +85,31 @@
     "menus": {
       "editor/context": [
         {
-          "command": "codemind.ask",
+          "command": "codecook.ask",
           "when": "editorTextFocus",
-          "group": "codemind-menu-group@1"
+          "group": "codecook-menu-group@1"
         }
       ],
       "commandPalette": [
         {
-          "command": "codemind.ask"
+          "command": "codecook.ask"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codemind",
+          "id": "codecook",
           "title": "CodeCook",
           "icon": "resources/icon.png"
         }
       ]
     },
     "views": {
-      "codemind": [
+      "codecook": [
         {
           "type": "webview",
-          "id": "codemind.chatView",
+          "id": "codecook.chatView",
           "name": "CodeCook"
         }
       ]

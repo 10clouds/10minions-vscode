@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { GPTExecution } from "../GPTExecution";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { appendToFile } from "../utils/appendToFile";
+import { replaceWithSlidingIndent } from "./replaceWithSlidingIndent";
 
 function applyModificationProcedure(
   originalCode: string,
@@ -33,33 +34,19 @@ function applyModificationProcedure(
         .join("\n")
         .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      // Step 1: Find replaceText along with its indentation (if any) in currentCode
-      const regexPattern = new RegExp(
-        `^( *)(?=.*(?:^|[\n])\\1${replaceText.replace(
-          /[-\/\\^$*+?.()|[\]{}]/g,
-          "\\$&"
-        )})`,
-        "m"
+      let replacement = replaceWithSlidingIndent(
+        currentCode,
+        replaceText,
+        withText
       );
-      const match = currentCode.match(regexPattern);
 
-      if (match) {
-        // Step 2: Replace replaceText with withText while maintaining the same indentation
-        const indentation = match[1];
-        const indentedWithText = withText
-          .split("\n")
-          .map((line) => `${indentation}${line}`)
-          .join("\n");
-
-        currentCode = currentCode.replace(
-          `${indentation}${replaceText}`,
-          indentedWithText
-        );
-      } else {
+      if (replacement === undefined) {
         throw new Error(
-          `WITH command found in the answer, but the original code does not contain the replace string. Replace string: ${replaceText}`
+          `REPLACE WITH command found in the answer, but the original code does not contain the replace string. replaceText: ${replaceText}`
         );
       }
+
+      currentCode = replacement;
 
       storedArg = [];
     } else if (currentCommand.startsWith("BEFORE")) {
@@ -70,17 +57,20 @@ function applyModificationProcedure(
         .join("\n")
         .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      if (currentCode.indexOf(beforeText) === -1) {
-        throw new Error(
-          `BEFORE command found in the answer, but the original code does not contain the before string. Before string: ${beforeText}`
-        );
-      }
-
-      console.log(`insertText: "${insertText}" beforeText: "${beforeText}"`);
-      currentCode = currentCode.replace(
+      let replacement = replaceWithSlidingIndent(
+        currentCode,
         beforeText,
         `${insertText}\n${beforeText}`
       );
+
+      if (replacement === undefined) {
+        throw new Error(
+          `INSERT BEFORE command found in the answer, but the original code does not contain the replace string. replaceText: ${beforeText}`
+        );
+      }
+
+      currentCode = replacement;
+
       storedArg = [];
     } else if (currentCommand.startsWith("RENAME")) {
       //parse currentCommand with regex (RENAME from to)
@@ -97,7 +87,10 @@ function applyModificationProcedure(
         `renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`
       );
 
-      /*const document = editor.document;
+      /*
+      
+      TODO:
+      const document = editor.document;
       const position = editor.selection.active;
 
       const oldFunctionName = "oldFunction";
