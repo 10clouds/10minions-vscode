@@ -57,7 +57,7 @@ export function replaceWithSlidingIndent(
       replaceTextLines
     );
 
-    if (currentLineIndentation) {
+    if (currentLineIndentation !== undefined) {
       let adjustedReplaceTextLines = adjustLinesIndentation(
         replaceTextLines,
         currentLineIndentation

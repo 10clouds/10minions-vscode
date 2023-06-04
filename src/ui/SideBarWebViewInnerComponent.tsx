@@ -88,7 +88,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
             <a href="https://platform.openai.com/overview" target="_blank" rel="noopener noreferrer" className="text-blue-500">
               OpenAI
             </a>
-            .
+             (You will need GPT-4 access on this key).
           </p>
 
           <p className="mb-2">
