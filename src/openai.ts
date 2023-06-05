@@ -43,7 +43,7 @@ async function queryOpenAI({
 }) {
   const signal = controller.signal;
 
-  let apiKey = vscode.workspace.getConfiguration("codecook").get("apiKey")
+  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey")
 
   if (!apiKey) {
     throw new Error("OpenAI API key not found. Please set it in the settings.");

@@ -78,13 +78,13 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         <Logo />
       </div>
       <h1 style={{ color: "#602ae0" }} className="text-4xl font-bold text-center mb-4">
-        👨‍🍳 CodeCook 👩‍🍳
+        🤖 10Minions 🤖
       </h1>
-      <h3 className="text-xl font-semibold text-center mb-6">Your GPT enabled coding assistant</h3>
+      <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
       {apiKeySet === false && (
         <div className="text-base mb-4">
           <p className="mb-2">
-            <span className="font-bold">CodeCook</span> needs an API key to work. You can get one from{" "}
+            <span className="font-bold">10Minions</span> needs an API key to work. You can get one from{" "}
             <a href="https://platform.openai.com/overview" target="_blank" rel="noopener noreferrer" className="text-blue-500">
               OpenAI
             </a>
@@ -92,19 +92,18 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
           </p>
 
           <p className="mb-2">
-            Once you have an API key, set it in the VS Code settings under <span className="font-bold">CodeCook.apiKey</span>.
+            Once you have an API key, set it in the VS Code settings under <span className="font-bold">10Minions.apiKey</span>.
           </p>
 
           <p className="mb-2">
-            You can also set the key by pressing SHIFT-ALT-P and then typing <span className="font-bold">CodeCook: Set API Key</span>.
+            You can also set the key by pressing SHIFT-ALT-P and then typing <span className="font-bold">10Minions: Set API Key</span>.
           </p>
         </div>
       )}
       {apiKeySet === true && (
         <>
           <p className="text-base mb-4">
-            Describe your coding task or issue in simple terms, and I'll help you with it. Note that my assistance will be based only on the context of the
-            current file.
+            Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For pinpoint precision, highlight the code involved.
           </p>
           <textarea
             style={{ height: "13rem" }}
@@ -141,7 +140,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
             }}
             disabled={justClickedGo}
           >
-            Cook
+            Go
           </button>
           <div className="relative">
             <div
@@ -150,7 +149,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                 (executionList.length === 0 ? " opacity-100 mb-4" : " opacity-0")
               }
             >
-              Nothing is cooking yet.
+              No minions are active.
             </div>
             <div className="mt-4">
               {executionList.map((execution) => (

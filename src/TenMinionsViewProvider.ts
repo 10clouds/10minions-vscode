@@ -5,8 +5,8 @@ import { ExecutionInfo } from "./ui/ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
 import { createWorkingdocument } from "./utils/createWorkingdocument";
 
-export class CodeCookViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "codecook.chatView";
+export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
+  public static readonly viewType = "10minions.chatView";
 
   private executions: GPTExecution[] = [];
   private _view?: vscode.WebviewView;
@@ -37,7 +37,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       }
     }
 
-    vscode.workspace.registerTextDocumentContentProvider("codecook", new ContentProvider());
+    vscode.workspace.registerTextDocumentContentProvider("10minions", new ContentProvider());
 
     // set the HTML for the webview
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -78,7 +78,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            const makeUriString = (textKey: string): string => `codecook:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
+            const makeUriString = (textKey: string): string => `10minions:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
 
             await vscode.commands.executeCommand(
               "vscode.diff",
@@ -146,7 +146,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
       //post message with info that we have or not API key
       this._view?.webview.postMessage({
         type: "apiKeySet",
-        value: !!vscode.workspace.getConfiguration("codecook").get("apiKey"),
+        value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
       });
       console.log(`Sent`)
     }, 1000); //TODO: This is a hack, how to make it reliable?
@@ -155,10 +155,10 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration((e) => {
       console.log(`Changed`)
-      if (e.affectsConfiguration("codecook.apiKey")) {
+      if (e.affectsConfiguration("10minions.apiKey")) {
         this._view?.webview.postMessage({
           type: "apiKeySet",
-          value: !!vscode.workspace.getConfiguration("codecook").get("apiKey"),
+          value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });
       }
     });
@@ -205,7 +205,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
   async clearAndfocusOnInput() {
     //make sure that our extension bar is visible
     if (!this._view) {
-      await vscode.commands.executeCommand("codecook.chatView.focus");
+      await vscode.commands.executeCommand("10minions.chatView.focus");
     } else {
       this._view?.show?.(true);
     }
@@ -218,7 +218,7 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
   async preFillPrompt(prompt: string) {
     //make sure that our extension bar is visible
     if (!this._view) {
-      await vscode.commands.executeCommand("codecook.chatView.focus");
+      await vscode.commands.executeCommand("10minions.chatView.focus");
     } else {
       this._view?.show?.(true);
     }
@@ -232,12 +232,12 @@ export class CodeCookViewProvider implements vscode.WebviewViewProvider {
   public async executeFullGPTProcedure(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
-      vscode.window.showErrorMessage("Please open a file before running CodeCook");
+      vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
 
     if (activeEditor.document.fileName.endsWith(".log")) {
-      vscode.window.showErrorMessage("Please open a file before running CodeCook");
+      vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
 

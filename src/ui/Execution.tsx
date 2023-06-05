@@ -30,7 +30,7 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
               });
             }}
           >
-            👨‍🍳 {execution.documentName}
+            🤖 {execution.documentName}
           </span>
         </div>
 

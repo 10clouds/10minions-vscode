@@ -1,12 +1,12 @@
 {
-  "name": "codecook",
-  "displayName": "10Clouds CodeCook",
-  "description": "10Clouds CodeCook: Your GPT enabled coding assistant (VSCode Extension)",
+  "name": "10minions",
+  "displayName": "10Minions by 10Clouds (GPT enabled coding assistant)",
+  "description": "10Minions by 10Clouds (GPT enabled coding assistant)",
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/10clouds/codecook"
+    "url": "https://github.com/10clouds/10minions"
   },
   "version": "0.0.1",
   "engines": {
@@ -33,84 +33,54 @@
   "contributes": {
     "commands": [
       {
-        "command": "codecook.setApiKey",
-        "title": "CodeCook: Set API key"
+        "command": "10minions.setApiKey",
+        "title": "10Minions: Set API key"
       },
       {
-        "command": "codecook.ask",
-        "title": "CodeCook: Ask CodeCook to do something"
+        "command": "10minions.ask",
+        "title": "10Minions: Ask 10Minions to do something"
       }
     ],
     "configuration": {
-      "title": "CodeCook",
+      "title": "10Minions",
       "type": "object",
       "properties": {
-        "codecook.apiKey": {
+        "10minions.apiKey": {
           "type": "string",
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
-        },
-        "codecook.promptPrefix.explain": {
-          "type": "string",
-          "default": "Explain what this code does: ",
-          "description": "The prompt prefix used for explaining the selected code",
-          "order": 5
-        },
-        "codecook.promptPrefix.refactor": {
-          "type": "string",
-          "default": "Refactor this code and then explain what's changed: ",
-          "description": "The prompt prefix used for refactoring the selected code",
-          "order": 6
-        },
-        "codecook.promptPrefix.findProblems": {
-          "type": "string",
-          "default": "Find problems with the following code, fix them and explain what was wrong (Do not change anything else, if there are no problems say so): ",
-          "description": "The prompt prefix used for finding problems in the selected code",
-          "order": 7
-        },
-        "codecook.promptPrefix.optimize": {
-          "type": "string",
-          "default": "Optimize the following code if there is anything to improve, if not say so: ",
-          "description": "The prompt prefix used for optimizing the selected code",
-          "order": 8
-        },
-        "codecook.promptPrefix.documentation": {
-          "type": "string",
-          "default": "Write documentation for the following code: ",
-          "description": "The prompt prefix used for writing documentation for the selected code",
-          "order": 9
         }
       }
     },
     "menus": {
       "editor/context": [
         {
-          "command": "codecook.ask",
+          "command": "10minions.ask",
           "when": "editorTextFocus",
-          "group": "codecook-menu-group@1"
+          "group": "10minions-menu-group@1"
         }
       ],
       "commandPalette": [
         {
-          "command": "codecook.ask"
+          "command": "10minions.ask"
         }
       ]
     },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codecook",
-          "title": "CodeCook",
+          "id": "10minions",
+          "title": "10Minions",
           "icon": "resources/icon.png"
         }
       ]
     },
     "views": {
-      "codecook": [
+      "10minions": [
         {
           "type": "webview",
-          "id": "codecook.chatView",
-          "name": "CodeCook"
+          "id": "10minions.chatView",
+          "name": "10Minions"
         }
       ]
     }

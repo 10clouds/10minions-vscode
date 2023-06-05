@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { CodeCookViewProvider } from "./CodeCookViewProvider";
+import { TenMinionsViewProvider } from "./TenMinionsViewProvider";
 import { initPlayingSounds } from "./utils/playSound";
 
 class MyCodeActionProvider implements vscode.CodeActionProvider {
@@ -18,7 +18,7 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
     uri: vscode.Uri
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
-      "👨‍🍳 Fix with CodeChef AI",
+      "🤖 Fix with 10Minions AI",
       MyCodeActionProvider.providedCodeActionKinds[0]
     );
     action.command = {
@@ -49,15 +49,15 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("CodeCook is now active");
+  console.log("10Minions is now active");
 
   //Code actions
   initPlayingSounds(context);
 
-  const diagnostics = vscode.languages.createDiagnosticCollection("codecook");
+  const diagnostics = vscode.languages.createDiagnosticCollection("10minions");
   context.subscriptions.push(diagnostics);
 
-  const fixCommandId = "codecook.fixError";
+  const fixCommandId = "10minions.fixError";
   context.subscriptions.push(
     vscode.commands.registerCommand(
       fixCommandId,
@@ -86,10 +86,10 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  const provider = new CodeCookViewProvider(context.extensionUri);
+  const provider = new TenMinionsViewProvider(context.extensionUri);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("codecook.setApiKey", async () => {
+    vscode.commands.registerCommand("10minions.setApiKey", async () => {
       try {
         const apiKey = await vscode.window.showInputBox({
           prompt: "Enter your OpenAI API key",
@@ -98,7 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (apiKey) {
           vscode.workspace
-            .getConfiguration("codecook")
+            .getConfiguration("10minions")
             .update("apiKey", apiKey, true);
         }
       } catch (e) {
@@ -109,7 +109,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      CodeCookViewProvider.viewType,
+      TenMinionsViewProvider.viewType,
       provider,
       {
         webviewOptions: { retainContextWhenHidden: true },
@@ -117,7 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
   context.subscriptions.push(
-    vscode.commands.registerCommand("codecook.ask", async () => {
+    vscode.commands.registerCommand("10minions.ask", async () => {
       await provider.clearAndfocusOnInput();
     })
   );
