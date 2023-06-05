@@ -16,13 +16,11 @@ Utilize the minions across a broad spectrum of programming languages.
 
 10Minions by 10Clouds is your tireless team of code optimizers, diligently working behind the scenes to help you maintain a clean, efficient, and robust codebase. Discover the magic of autonomous coding and maximize your productivity with 10Minions today.
 
-
-
 Plugin is using existing APIs to streamline work in visual studio.
 
 What it does? You write what change you want developed on a given file, then press go, and wait for the AI to fix that code for you. It takes a while as it’s multiple GPT-4 calls, but you can run this multiple times on multiple files concurrently, while you work on something else.
 
-Repo: https://github.com/10clouds/codemind 
+Repo: https://github.com/10clouds/10Minions
 
 This needs to be released mid June.
 
