@@ -36,7 +36,7 @@ function adjustLinesIndentation(
   return lines.map((line) => (line.length > 0 ? `${indentation}${line}` : ""));
 }
 
-export function replaceWithSlidingIndent(
+function replaceWithSlidingIndentStrict(
   currentCode: string,
   replaceText: string,
   withText: string
@@ -83,4 +83,30 @@ export function replaceWithSlidingIndent(
   }
 
   return;
+}
+
+function trimEmptyLinesAtTheBeginingAndEnd(text: string): string {
+  return text.replace(/^(\s*\n)*/, "").replace(/(\s*\n)*$/, "");
+}
+
+export function replaceWithSlidingIndent(
+  currentCode: string,
+  replaceText: string,
+  withText: string
+) {
+  let result = replaceWithSlidingIndentStrict(
+    currentCode,
+    replaceText,
+    withText
+  );
+
+  if (result === undefined) {
+    result = replaceWithSlidingIndentStrict(
+      currentCode,
+      trimEmptyLinesAtTheBeginingAndEnd(replaceText),
+      trimEmptyLinesAtTheBeginingAndEnd(withText)
+    );
+  }
+
+  return result;
 }
