@@ -80,9 +80,10 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       </h1>
       <div className="text-center mb-2"> by </div>
       <div className="text-center mb-4">
-     <Logo />
-      </div>
-      <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
+        <a href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
+          <Logo />
+        </a>
+      </div>      <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
       {apiKeySet === false && (
         <div className="text-base mb-4">
           <p className="mb-2">
