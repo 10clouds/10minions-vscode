@@ -4,7 +4,7 @@ import * as vscode from "vscode";
 
 export async function createWorkingdocument(id: string) {
   let sanitizedId = id.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-  let tmpFileName = path.join(os.tmpdir(), "👨‍🍳 " + sanitizedId + ".log");
+  let tmpFileName = path.join(os.tmpdir(), "🤖 " + sanitizedId + ".log");
 
   vscode.window.setStatusBarMessage("10Minions is working...", 1000);
 

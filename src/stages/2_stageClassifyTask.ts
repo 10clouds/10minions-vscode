@@ -5,26 +5,26 @@ import { gptExecute } from "../openai";
 import { EXTENSIVE_DEBUG } from "../const";
 
 export type TASK_CLASSIFICATION_NAME =
-  | "ANSWER-QUESTION"
-  | "FILE-WIDE-CHANGE"
-  | "LOCAL-CHANGE";
+  | "AnswerQuestion"
+  | "FileWideChange"
+  | "LocalChange";
 
 export const TASK_CLASSIFICATION: {
   name: TASK_CLASSIFICATION_NAME;
   description: string;
 }[] = [
   {
-    name: "ANSWER-QUESTION",
+    name: "AnswerQuestion",
     description:
       "You are asked a question, and you need to answer it or asked to comment on something. The result is not code, but textual description. For example: explain a concept, desribe a bug, etc.",
   },
   {
-    name: "FILE-WIDE-CHANGE",
+    name: "FileWideChange",
     description:
       "You are asked to make a change that will affect multiple places in the file, or the entire file. For example: refactor code, write documentation, remove comments, etc.",
   },
   {
-    name: "LOCAL-CHANGE",
+    name: "LocalChange",
     description:
       "Most of the file will be unaffected, we will be modifing a small region or up to 3 small regions. For example: fix a bug, add a feature, add a test, etc.",
   },

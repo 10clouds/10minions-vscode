@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { GPTExecution } from "../GPTExecution";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { appendToFile } from "../utils/appendToFile";
-import { replaceWithSlidingIndent } from "./replaceWithSlidingIndent";
+import { replaceWithSlidingIndent } from "../utils/replaceWithSlidingIndent";
 
 function applyModificationProcedure(
   originalCode: string,

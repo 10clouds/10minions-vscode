@@ -74,12 +74,14 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 font-sans leading-normal tracking-normal">
-      <div className="text-center mb-4">
-        <Logo />
-      </div>
-      <h1 style={{ color: "#602ae0" }} className="text-4xl font-bold text-center mb-4">
-        🤖 10Minions 🤖
+      
+      <h1 style={{ color: "#602ae0" }} className="text-4xl font-bold text-center mb-0">
+        🤖 10Minions 🤖 
       </h1>
+      <div className="text-center mb-2"> by </div>
+      <div className="text-center mb-4">
+     <Logo />
+      </div>
       <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
       {apiKeySet === false && (
         <div className="text-base mb-4">

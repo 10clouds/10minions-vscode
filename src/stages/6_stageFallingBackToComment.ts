@@ -2,25 +2,7 @@ import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { GPTExecution } from "../GPTExecution";
 import { appendToFile } from "../utils/appendToFile";
-
-function escapeContentForLanguage(language: string, content: string) {
-  switch (language) {
-    case "python":
-      return content.replace(/'''/g, "'''\\");
-    default:
-      return content.replace(/\*\//g, "*\\/");
-  }
-}
-
-function getCommentForLanguage(language: string, content: string) {
-  const escapedContent = escapeContentForLanguage(language, content);
-  switch (language) {
-    case "python":
-      return `'''\n${escapedContent}\n'''\n\n`;
-    default:
-      return `/*\n${escapedContent}\n*/\n\n`;
-  }
-}
+import { getCommentForLanguage } from "../utils/comments";
 
 export async function stageFallingBackToComment(this: GPTExecution) {
   if (this.modificationApplied) {
@@ -46,7 +28,7 @@ ${this.modificationDescription}
     edit.insert(
       vscode.Uri.parse(this.documentURI),
       new vscode.Position(0, 0),
-      languageSpecificComment
+      languageSpecificComment + "\n"
     );
   });
 

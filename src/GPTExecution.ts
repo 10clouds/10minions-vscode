@@ -35,7 +35,7 @@ export class GPTExecution {
   stopped: boolean = false;
   progress: number = 0;
   executionStage: string = "Starting ...";
-  classification: TASK_CLASSIFICATION_NAME = "ANSWER-QUESTION";
+  classification: TASK_CLASSIFICATION_NAME = "AnswerQuestion";
 
   constructor({
     id,
@@ -68,37 +68,37 @@ export class GPTExecution {
 
     this.STAGES = [
       {
-        name: "Minion Deployment ...",
+        name: "Starting ...",
         weight: 10,
         execution: stageStarting.bind(this),
       },
       {
-        name: "Mission Assimilation ...",
+        name: "Understanding ...",
         weight: 50,
         execution: stageClassifyTask.bind(this),
       },
       {
-        name: "Task Manifestation ...",
+        name: "Conceptualising ...",
         weight: 100,
         execution: stageCreateModification.bind(this),
       },
       {
-        name: "Blueprint Formation ...",
+        name: "Applying ...",
         weight: 80,
         execution: stageCreateModificationProcedure.bind(this),
       },
       {
-        name: "Code Refinement in Action ...",
+        name: "Injecting ...",
         weight: 20,
         execution: stageApplyModificationProcedure.bind(this),
       },
       {
-        name: "Adjusting Approach ...",
+        name: "Readjusting ...",
         weight: 10,
         execution: stageFallingBackToComment.bind(this),
       },
       {
-        name: "Concluding Mission ...",
+        name: "Finishing ...",
         weight: 10,
         execution: stageFinishing.bind(this),
       },
@@ -141,10 +141,14 @@ export class GPTExecution {
       this.currentStageIndex = 0;
 
       try {
-        while (this.currentStageIndex < this.STAGES.length) {
+        while (this.currentStageIndex < this.STAGES.length && !this.stopped) {
           this.executionStage = this.STAGES[this.currentStageIndex].name;
 
           await this.STAGES[this.currentStageIndex].execution();
+
+          if (this.stopped) {
+            break;
+          }
 
           const weigtsNextStepTotal = this.STAGES.reduce((acc, stage, index) => {
             if (index > this.currentStageIndex) {
@@ -160,9 +164,14 @@ export class GPTExecution {
 
         console.log("Finished");
       } catch (error) {
-        vscode.window.showErrorMessage(`Error in execution: ${error}`);
-        console.log("Error in execution", error);
+        if (error !== "Canceled by user") {
+          vscode.window.showErrorMessage(`Error in execution: ${error}`);
+          console.log("Error in execution", error);
+        }
+        
         this.stopExecution(String(error));
+      } finally {
+        this.progress = 1;
       }
     });
   }

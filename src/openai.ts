@@ -1,7 +1,6 @@
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
-import api from "gpt-tokenizer/esm/encoding/cl100k_base";
 
 type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
@@ -93,7 +92,7 @@ async function processOpenAIResponseStream({
     stream.on("data", async (value) => {
       if (isCancelled()) {
         stream.removeAllListeners();
-        reject();
+        reject("Canceled by user");
         return;
       }
       const chunk = decoder.decode(value);
@@ -114,7 +113,7 @@ async function processOpenAIResponseStream({
     stream.on("end", () => {
       if (isCancelled()) {
         stream.removeAllListeners();
-        reject();
+        reject("Canceled by user");
         return;
       }
       resolve(fullContent);

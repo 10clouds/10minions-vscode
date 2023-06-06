@@ -7,7 +7,7 @@ import { appendToFile } from "../utils/appendToFile";
 import { TASK_CLASSIFICATION_NAME } from "./2_stageClassifyTask";
 
 export const CLASSIFICATION_OUTPUT_FORMATS = {
-  "ANSWER-QUESTION": `
+  "AnswerQuestion": `
 
 Star with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
 
@@ -24,7 +24,7 @@ You can then start with the next INSERT line to repeat this sequence, or finish 
 Further more, do not invent your own commands, use only the ones described above.
 `.trim(),
 
-  "FILE-WIDE-CHANGE": `
+  "FileWideChange": `
 
 Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
 
@@ -35,7 +35,7 @@ Your job is to output a full consolidated final, production ready, code, describ
 There can be only one such command in the answer, and it preceeds the final consolidated result.
 `.trim(),
 
-  "LOCAL-CHANGE": `
+  "LocalChange": `
 
 Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
 
