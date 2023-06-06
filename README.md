@@ -1,4 +1,4 @@
-# 10Minions: GPT-4 Powered Coding Assistant (VSCode Extension) README
+# 10Minions by 10Clouds (GPT enabled coding assistant) README
 
 Unleash your fleet of digital minions with 10Minions by 10Clouds. Crafted with unparalleled AI power, each minion is an autonomous force in your codebase. Assign them tasks, sit back, and watch as they work diligently and concurrently on your projects, ensuring your code is clean, efficient, and up to industry standards. The power of multi-tasking has never been this simple.
 
