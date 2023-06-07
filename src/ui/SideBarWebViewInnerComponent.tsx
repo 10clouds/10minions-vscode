@@ -133,6 +133,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
     window.addEventListener("message", eventHandler);
 
+    vscode.postMessage({ type: 'readyForMessages' });
+
     return () => {
       window.removeEventListener("message", eventHandler);
     };

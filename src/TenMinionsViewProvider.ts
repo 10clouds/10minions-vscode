@@ -197,17 +197,17 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
           break;
         }
+        case "readyForMessages" : {
+          // Post the apiKeySet message when the event fires.
+          this._view?.webview.postMessage({
+            type: "apiKeySet",
+            value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
+          });
+          console.log(`Sent`);
+          return;
+        }
       }
     });
-
-    setTimeout(() => {
-      //post message with info that we have or not API key
-      this._view?.webview.postMessage({
-        type: "apiKeySet",
-        value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
-      });
-      console.log(`Sent`);
-    }, 1000); //TODO: This is a hack, how to make it reliable?
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -325,6 +325,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
     await execution.run();
   }
+
+  
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     return `<html lang="en">
