@@ -1,3 +1,8 @@
+export type TASK_CLASSIFICATION_NAME =
+  | "AnswerQuestion"
+  | "FileWideChange"
+  | "LocalChange";
+
 export const FINISHED_STAGE_NAME = "Finished";
 
 export type ExecutionInfo = {
@@ -9,4 +14,6 @@ export type ExecutionInfo = {
   executionStage: string;
   progress: number;
   stopped: boolean;
+  classification: TASK_CLASSIFICATION_NAME;
+  modificationDescription: string;
 };

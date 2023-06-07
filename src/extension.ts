@@ -86,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  const provider = new TenMinionsViewProvider(context.extensionUri);
+  const provider = new TenMinionsViewProvider(context.extensionUri, context);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("10minions.setApiKey", async () => {

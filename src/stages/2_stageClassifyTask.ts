@@ -3,11 +3,7 @@ import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { gptExecute } from "../openai";
 import { EXTENSIVE_DEBUG } from "../const";
-
-export type TASK_CLASSIFICATION_NAME =
-  | "AnswerQuestion"
-  | "FileWideChange"
-  | "LocalChange";
+import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
 
 export const TASK_CLASSIFICATION: {
   name: TASK_CLASSIFICATION_NAME;

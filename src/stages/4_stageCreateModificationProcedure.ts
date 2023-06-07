@@ -4,7 +4,7 @@ import { GPTExecution } from "../GPTExecution";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
 import { appendToFile } from "../utils/appendToFile";
-import { TASK_CLASSIFICATION_NAME } from "./2_stageClassifyTask";
+import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
 
 export const CLASSIFICATION_OUTPUT_FORMATS = {
   "AnswerQuestion": `
@@ -47,11 +47,11 @@ WITH
 
 Followed by the code you are replacing with. End the sequence with the following command:
 
-END REPLACE
+END_REPLACE
 
-You may follow this pattern multiple times. If followed by next REPLACE, END REPLACE is not required.
+You may follow this pattern multiple times. If followed by next REPLACE, END_REPLACE is not required.
 
-Follow this rules when using REPLACE / WITH / END REPLACE command sequence:
+Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
 * Keep in mind that all lines after WITH, and until next REPLACE, will be used, even the empty ones. So any output after final WITH will be part of the final replacement.
 * Do not invent your own commands, use only the ones described above.

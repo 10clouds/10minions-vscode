@@ -76,7 +76,7 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
           newName: newFunctionName,
         }
       );*/
-    } else if (currentCommand.startsWith("END REPLACE")) {
+    } else if (currentCommand.startsWith("END_REPLACE")) {
       // Do nothing
     }
 
@@ -91,7 +91,7 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
     } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE ALL")) {
       isANewCommand = line.startsWith("WITH");
     } else if (currentCommand.startsWith("WITH")) {
-      isANewCommand = line.startsWith("END REPLACE") || line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
+      isANewCommand = line.startsWith("END_REPLACE") || line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
     } else {
       isANewCommand = line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
     }

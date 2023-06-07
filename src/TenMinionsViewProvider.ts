@@ -11,9 +11,45 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   private executions: GPTExecution[] = [];
   private _view?: vscode.WebviewView;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  private readonly _context: vscode.ExtensionContext;
+
+  constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
+    this._context = context;
+  }
+
+  private commandHistory: Record<string, { weight: number; timeStamp: number }> = {};
+
+  private getCommandSuggestions(input: string) {
+    if (!input) return "";
+
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+
+    const suggestions = Object.keys(this.commandHistory)
+      .filter((command) => command.toLowerCase().startsWith(input.toLowerCase()))
+      .map((command) => {
+        const { weight, timeStamp } = this.commandHistory[command];
+        const daysOld = Math.floor((Date.now() - timeStamp) / ONE_DAY);
+        return { command, weight: weight - daysOld, originalCommand: command };
+      })
+      .sort((a, b) => b.weight - a.weight);
+
+    if (suggestions.length === 0) return "";
+
+    // Concatenate the input and the rest of the matched command, preserving the input's original case
+    const matchedCommand = suggestions[0].originalCommand;
+    const inputLength = input.length;
+    return input + matchedCommand.slice(inputLength);
+  }
 
   public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
+    this.commandHistory = this._context.globalState.get("10minions.commandHistory") || {
+      "Refactor this": { weight: 0, timeStamp: Date.now() },
+      "Explain": { weight: 0, timeStamp: Date.now() },
+      "Make it pretty": { weight: 0, timeStamp: Date.now() },
+      "Rename this to something sensible": { weight: 0, timeStamp: Date.now() },
+      "Are there any bugs? Fix them": { weight: 0, timeStamp: Date.now() },
+      "Rework this so now it also does X": { weight: 0, timeStamp: Date.now() },
+    };
     this._view = webviewView;
 
     // set options for the webview, allow scripts
@@ -60,6 +96,17 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         }
         case "newExecution": {
           let prompt = data.value ? data.value : "Refactor this code";
+
+          // Update command history
+          const newCommandHistory = { ...this.commandHistory };
+          if (newCommandHistory[prompt]) {
+            newCommandHistory[prompt].weight += 1;
+          } else {
+            newCommandHistory[prompt] = { weight: 1, timeStamp: Date.now() };
+          }
+
+          this.commandHistory = newCommandHistory;
+          await this._context.globalState.update("10minions.commandHistory", newCommandHistory);
 
           this.executeFullGPTProcedure(prompt);
           break;
@@ -122,13 +169,23 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
           break;
         }
+        case "getSuggestions": {
+          const input = data.input || "";
+          const suggestion = this.getCommandSuggestions(input);
+          console.log(`Suggestion: ${suggestion}`);
+          this._view?.webview.postMessage({
+            type: "suggestion",
+            value: suggestion,
+          });
+          break;
+        }
         case "closeExecution": {
           let executionId = data.executionId;
 
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            //remove
+            execution.stopExecution("Canceled by user", false);
             this.executions = this.executions.filter((e) => e.id !== executionId);
           } else {
             vscode.window.showErrorMessage("No execution found for id", executionId);
@@ -148,13 +205,12 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         type: "apiKeySet",
         value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
       });
-      console.log(`Sent`)
+      console.log(`Sent`);
     }, 1000); //TODO: This is a hack, how to make it reliable?
-    
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration((e) => {
-      console.log(`Changed`)
+      console.log(`Changed`);
       if (e.affectsConfiguration("10minions.apiKey")) {
         this._view?.webview.postMessage({
           type: "apiKeySet",
@@ -194,6 +250,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       logFileURI: e.workingDocumentURI,
       progress: e.progress,
       stopped: e.stopped,
+      classification: e.classification,
+      modificationDescription: e.modificationDescription,
     }));
 
     this._view?.webview.postMessage({
@@ -252,11 +310,6 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       userQuery,
       selection: activeEditor.selection,
       selectedText: document.getText(activeEditor.selection),
-      onStopped: () => {
-        this._view?.webview.postMessage({
-          type: "executionStopped",
-        });
-      },
       onChanged: (important) => {
         if (important) {
           this.notifyExecutionsUpdatedImmediate();

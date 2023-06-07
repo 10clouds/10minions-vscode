@@ -16,7 +16,7 @@ export async function stageFallingBackToComment(this: GPTExecution) {
   const languageSpecificComment = getCommentForLanguage(
     language,
     `
-10Clouds 10Minions: I was unable to modify the code myself, but you can do it yourself based on my remarks below:
+10Minions: I was unable to modify the code myself, but you can do it yourself based on my remarks below:
 
 ${this.modificationDescription}
 `.trim()

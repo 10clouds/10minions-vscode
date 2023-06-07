@@ -4,12 +4,11 @@ import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
-import { TASK_CLASSIFICATION_NAME } from "./2_stageClassifyTask";
-import { AICursor, insertIntoNewDocument, startWritingComment } from "../ui/AICursor";
 import { escapeContentForLanguage } from "../utils/comments";
+import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
 
 export const CLASSIFICATION_PROMPTS = {
-  "AnswerQuestion": (selectedText?: string) =>
+  AnswerQuestion: (selectedText?: string) =>
     `
 
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -24,7 +23,7 @@ At the end provide your final answer, this is the only thing that will be suppli
 
   `.trim(),
 
-  "FileWideChange": (selectedText?: string) =>
+  FileWideChange: (selectedText?: string) =>
     `
 
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -52,7 +51,7 @@ If asked to remove comments, don't add your own comments as this is probably not
 
 `.trim(),
 
-  "LocalChange": (selectedText?: string) =>
+  LocalChange: (selectedText?: string) =>
     `
 
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -107,13 +106,7 @@ ${fullFileContents}
     : ""
 }
 
-===== CODE SNIPPET ${
-  selectedText
-    ? `(starts on line ${selectionPosition.line + 1} column: ${
-        selectionPosition.character + 1
-      } in the file)`
-    : ""
-}====
+===== CODE SNIPPET ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : ""}====
 ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
@@ -137,79 +130,23 @@ Let's take it step by step.
 }
 
 export async function stageCreateModification(this: GPTExecution) {
-  if (this.classification === "AnswerQuestion") {
-    
-    let aiCursor = new AICursor();
-    try {
-
-      aiCursor.document = await this.document();
-      aiCursor.selection = new vscode.Selection(
-        this.selection.start,
-        this.selection.start
-      );
-  
-      await startWritingComment(aiCursor)
-  
-
-      let charsWithoutNewline = 0;
-      let NEWLINE_LIMIT = 100;
-
-      await planAndWrite(
-        this.classification,
-        this.userQuery,
-        this.selection.start,
-        this.selectedText,
-        this.fullContent,
-        async (chunk: string) => {
-          if (aiCursor.document === undefined) {
-            return;
-          }
-
-          let content = escapeContentForLanguage(aiCursor.document.languageId, chunk)
-          
-          if (content.includes("\n")) {
-            charsWithoutNewline = 0;
-          } else {
-            charsWithoutNewline += content.length;
-          }
-
-          if (charsWithoutNewline > NEWLINE_LIMIT && content.includes(" ")) {
-            content = content.replace(" ", "\n");
-            charsWithoutNewline = 0;
-          }
-
-          await insertIntoNewDocument(aiCursor, content, false);
-          this.reportSmallProgress();
-        },
-        () => {
-          return this.stopped;
-        }
-      );
-  
-      this.modificationApplied = true;
-    } finally {
-      console.log("DISPOSING");
-      aiCursor.dispose();
-      console.log("DISPOSED");
+  this.modificationDescription = "";
+  this.modificationDescription = await planAndWrite(
+    this.classification,
+    this.userQuery,
+    this.selection.start,
+    this.selectedText,
+    this.fullContent,
+    async (chunk: string) => {
+      this.modificationDescription += chunk;
+      await appendToFile(this.workingDocumentURI, chunk);
+      this.reportSmallProgress();
+    },
+    () => {
+      return this.stopped;
     }
-    
-  } else {
-    this.modificationDescription = await planAndWrite(
-      this.classification,
-      this.userQuery,
-      this.selection.start,
-      this.selectedText,
-      this.fullContent,
-      async (chunk: string) => {
-        this.reportSmallProgress();
-        await appendToFile(this.workingDocumentURI, chunk);
-      },
-      () => {
-        return this.stopped;
-      }
-    );
-  
-    this.reportSmallProgress();
-    await appendToFile(this.workingDocumentURI, "\n\n");
-  }
+  );
+
+  this.reportSmallProgress();
+  await appendToFile(this.workingDocumentURI, "\n\n");
 }

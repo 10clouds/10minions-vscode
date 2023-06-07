@@ -1,7 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { FINISHED_STAGE_NAME } from "./ui/ExecutionInfo";
-import { TASK_CLASSIFICATION_NAME } from "./stages/2_stageClassifyTask";
+import { FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/ExecutionInfo";
 import { stageStarting } from "./stages/1_stageStarting";
 import { stageClassifyTask } from "./stages/2_stageClassifyTask";
 import { stageCreateModification } from "./stages/3_stageCreateModification";
@@ -11,6 +10,27 @@ import { stageFinishing } from "./stages/7_stageFinishing";
 import { stageApplyModificationProcedure } from "./stages/5_stageApplyModificationProcedure";
 import { appendToFile } from "./utils/appendToFile";
 
+// Function to calculate and format the execution time in HH:mm:SS format
+function calculateAndFormatExecutionTime(executionDuration: number): string {
+  // Function to format the time parts in HH:mm:SS format
+  function formatExecutionTime(hours: number, minutes: number, seconds: number): string {
+    const paddedHours = hours.toString().padStart(2, "0");
+    const paddedMinutes = minutes.toString().padStart(2, "0");
+    const paddedSeconds = seconds.toFixed(0).padStart(2, "0");
+    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+  }
+
+  // Calculate the execution time parts
+  const executionTimeSec = executionDuration / 1000;
+  const hours = Math.floor(executionTimeSec / 3600);
+  const remainingSecAfterHours = executionTimeSec % 3600;
+  const minutes = Math.floor(remainingSecAfterHours / 60);
+  const remainingSecAfterMinutes = remainingSecAfterHours % 60;
+
+  // Format the execution time
+  return formatExecutionTime(hours, minutes, remainingSecAfterMinutes);
+}
+
 export class GPTExecution {
   fullContent: string;
   readonly documentURI: string;
@@ -19,7 +39,6 @@ export class GPTExecution {
   readonly id: string;
   readonly selection: vscode.Selection;
   readonly selectedText: string;
-  readonly onStopped: () => void;
   readonly onChanged: (important: boolean) => void;
   readonly STAGES: any[];
   readonly TOTAL_WEIGHTS: number;
@@ -37,6 +56,7 @@ export class GPTExecution {
   progress: number = 0;
   executionStage: string = "Starting ...";
   classification: TASK_CLASSIFICATION_NAME = "AnswerQuestion";
+  waiting: boolean = false; // Add "waiting" property
 
   constructor({
     id,
@@ -45,7 +65,6 @@ export class GPTExecution {
     userQuery,
     selection,
     selectedText,
-    onStopped = () => {},
     onChanged = (important: boolean) => {},
   }: {
     id: string;
@@ -54,7 +73,6 @@ export class GPTExecution {
     userQuery: string;
     selection: vscode.Selection;
     selectedText: string;
-    onStopped?: () => void;
     onChanged?: (important: boolean) => void;
   }) {
     this.id = id;
@@ -64,7 +82,6 @@ export class GPTExecution {
     this.userQuery = userQuery;
     this.selection = selection;
     this.selectedText = selectedText;
-    this.onStopped = onStopped;
     this.onChanged = onChanged;
 
     this.STAGES = [
@@ -90,11 +107,21 @@ export class GPTExecution {
       },
       {
         name: "Applying Changes ...",
-        weight: 20,
+        weight: 10,
         execution: stageApplyModificationProcedure.bind(this),
       },
       {
-        name: "Readjusting ...",
+        name: "Preparing Changes (retry) ...",
+        weight: 40,
+        execution: stageCreateModificationProcedure.bind(this),
+      },
+      {
+        name: "Applying Changes (retry) ...",
+        weight: 10,
+        execution: stageApplyModificationProcedure.bind(this),
+      },
+      {
+        name: "Applying changes as comment (fall back) ...",
         weight: 10,
         execution: stageFallingBackToComment.bind(this),
       },
@@ -115,7 +142,7 @@ export class GPTExecution {
     return document;
   }
 
-  public stopExecution(error?: string) {
+  public stopExecution(error?: string, important: boolean = true) {
     if (this.stopped) {
       return;
     }
@@ -131,8 +158,7 @@ export class GPTExecution {
 
     //delete tmp file
     //vscode.workspace.fs.delete(refDocument.uri);
-    this.onStopped();
-    this.onChanged(true);
+    this.onChanged(important);
   }
 
   public async run() {
@@ -170,33 +196,13 @@ export class GPTExecution {
           vscode.window.showErrorMessage(`Error in execution: ${error}`);
           console.log("Error in execution", error);
         }
-        
+
         this.stopExecution(String(error));
       } finally {
         const executionTime = Date.now() - this.startTime;
+        const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
 
-        // Convert the execution time to a human-readable format
-        const executionTimeSec = executionTime / 1000;
-        const hours = Math.floor(executionTimeSec / 3600);
-        const remainingSecAfterHours = executionTimeSec % 3600;
-        const minutes = Math.floor(remainingSecAfterHours / 60);
-        const remainingSecAfterMinutes = remainingSecAfterHours % 60;
-        // Display hours segment only if hours are greater than 0
-        const hoursSegment = hours > 0 ? `${hours}h ` : "";
-
-        // Display minutes segment only if minutes are greater than 0
-        const minutesSegment = minutes > 0 ? `${minutes}m ` : "";
-
-        // Display seconds segment, no need for a condition since seconds will always be displayed
-        const secondsSegment = `${remainingSecAfterMinutes.toFixed(2)}s`;
-
-        // Combine all segments to create the humanReadableExecutionTime
-        const humanReadableExecutionTime = `${hoursSegment}${minutesSegment}${secondsSegment}`;
-
-        await appendToFile(
-          this.workingDocumentURI,
-          `${this.executionStage} (Execution Time: ${humanReadableExecutionTime})\n\n`
-        );
+        await appendToFile(this.workingDocumentURI, `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
         this.progress = 1;
       }
     });

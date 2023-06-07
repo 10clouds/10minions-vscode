@@ -11,7 +11,7 @@ export async function stageStarting(this: GPTExecution) {
   this.stopped = false;
   this.progress = 0;
   this.executionStage = "Starting ...";
-  this.classification = "AnswerQuestion";
+  this.classification = "LocalChange";
 
   let document = await vscode.workspace.openTextDocument(
     vscode.Uri.parse(this.documentURI)

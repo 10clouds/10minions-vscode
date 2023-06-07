@@ -31,7 +31,7 @@ export function GoButton({ onClick }: { onClick?: () => void }) {
   );
 }
 
-export function ExecutionsList({ executionList }: { executionList: ExecutionInfo[] }) {
+export function ExecutionsList({ executionList, removedExecution }: { executionList: ExecutionInfo[]; removedExecution: ExecutionInfo | null }) {
   return (
     <div className="relative" style={{ minHeight: "3rem" }}>
       <div
@@ -45,7 +45,7 @@ export function ExecutionsList({ executionList }: { executionList: ExecutionInfo
       </div>
       <div className="mt-4">
         {executionList.map((execution) => (
-          <Execution key={execution.id} execution={execution} />
+          <Execution key={execution.id} execution={execution} className={removedExecution && removedExecution.id === execution.id ? "fade-out" : ""} />
         ))}
       </div>
     </div>
@@ -53,10 +53,15 @@ export function ExecutionsList({ executionList }: { executionList: ExecutionInfo
 }
 
 export const SideBarWebViewInnerComponent: React.FC = () => {
-  let [userInputPrompt, setUserInputPrompt] = React.useState("");
-  let [infoMessage, setInfoMessage] = React.useState("");
-  let [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
-  let [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
+  const [userInputPrompt, setUserInputPrompt] = React.useState("");
+  const [infoMessage, setInfoMessage] = React.useState("");
+  const [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
+  const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
+  const [removedExecution, setRemovedExecution] = React.useState<ExecutionInfo | null>(null);
+  const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
+
+  const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+
 
   function handleMessage(message: any) {
     switch (message.type) {
@@ -74,6 +79,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         break;
       case "apiKeySet":
         setApiKeySet(message.value);
+        break;
+      case "suggestion":
+        setSelectedSuggestion(message.value || "");
         break;
     }
   }
@@ -96,8 +104,39 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }
 
   function handleExecutionsUpdated(executions: ExecutionInfo[]) {
+    // Find the unique ExecutionInfo that was removed
+    const removed = executionList.find((exec) => !executions.some(({ id }) => id === exec.id));
+    if (removed) {
+      setRemovedExecution(removed);
+    }
+
     setExecutionList(executions);
+
+    // Reset the removedExecution state after the fade-out animation (500ms)
+    setTimeout(() => {
+      setRemovedExecution(null);
+    }, 500);
   }
+
+  function handleSuggestionClick(command: string) {
+    setUserInputPrompt(command);
+    setSelectedSuggestion("");
+  }
+
+  React.useEffect(() => {
+    const eventHandler = (event: any) => {
+      const message = event.data;
+      console.log("message received", message.type);
+
+      handleMessage(message);
+    };
+
+    window.addEventListener("message", eventHandler);
+
+    return () => {
+      window.removeEventListener("message", eventHandler);
+    };
+  }, []);
 
   React.useEffect(() => {
     const eventHandler = (event: any) => {
@@ -140,7 +179,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       )}
 
       {apiKeySet === true && (
-        <div className="mb-6">
+        <div className="mb-6 relative">
           <textarea
             style={{
               height: "20rem",
@@ -157,11 +196,30 @@ Ask something ...
 ... Explain
 ... Make it pretty
 ... Rename this to something sensible
-... Are there any bugs?
+... Are there any bugs? Fix them
 ... Rework this so now it also does X
 `.trim()}
             value={userInputPrompt}
-            onChange={(e) => setUserInputPrompt(e.target.value)}
+            onChange={(e) => {
+              setUserInputPrompt(e.target.value);
+
+              // Post the message to the handler
+              vscode.postMessage({
+                type: "getSuggestions",
+                input: e.target.value,
+              });
+            }}
+            onScroll={(e) => {
+              const textArea = e.target as HTMLTextAreaElement;
+              const { scrollLeft, scrollTop } = textArea;
+              setScrollPosition({ scrollLeft, scrollTop });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Tab" && selectedSuggestion.length > 0) {
+                e.preventDefault(); // Prevent default tab behavior
+                handleSuggestionClick(selectedSuggestion);
+              }
+            }} 
           />
 
           {infoMessage && (
@@ -169,6 +227,25 @@ Ask something ...
               {infoMessage}
             </div>
           )}
+
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              height: "20rem",
+              pointerEvents: "none",
+              backgroundColor: "var(--vscode-editor-background)",
+              color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+              overflow: "hidden",
+              whiteSpace: "pre-wrap", // Preserve line breaks and spaces
+              opacity: 0.5,
+              transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
+            }}
+            className="w-full h-96 p-4 text-sm resize-none mb-4 focus:outline-none"
+          >
+            {userInputPrompt + (selectedSuggestion.startsWith(userInputPrompt) ? selectedSuggestion.slice(userInputPrompt.length) : "")}
+          </div>
 
           <GoButton
             onClick={() => {
@@ -179,7 +256,7 @@ Ask something ...
             }}
           />
 
-          <ExecutionsList executionList={executionList} />
+          <ExecutionsList executionList={executionList} removedExecution={removedExecution} />
         </div>
       )}
 
