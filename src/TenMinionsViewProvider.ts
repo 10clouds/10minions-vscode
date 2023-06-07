@@ -1,9 +1,8 @@
-import { randomUUID } from "crypto";
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import { ExecutionInfo } from "./ui/ExecutionInfo";
 import { GPTExecution } from "./GPTExecution";
-import { createWorkingdocument } from "./utils/createWorkingdocument";
+import { ExecutionInfo } from "./ui/ExecutionInfo";
+import { basename } from "path";
 
 export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "10minions.chatView";
@@ -125,13 +124,14 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            const makeUriString = (textKey: string): string => `10minions:text/${textKey}?_ts=${Date.now()}`; // `_ts` to avoid cache
+            const makeUriString = (textKey: string): string => `10minions:text/${textKey}`; // `_ts` to avoid cache
 
+            const documentUri = vscode.Uri.parse(execution.documentURI);
             await vscode.commands.executeCommand(
               "vscode.diff",
               vscode.Uri.parse(makeUriString(executionId)),
-              vscode.Uri.parse(execution.documentURI),
-              `(original) ↔ (generated)`
+              documentUri,
+              `(original) ↔ ${basename(documentUri.fsPath)}`
             );
           }
           break;
@@ -146,11 +146,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
               break;
             }
 
-            execution.stopped = false;
-            execution.userQuery = data.newUserQuery || execution.userQuery;
-            this.notifyExecutionsUpdatedImmediate();
-
-            await execution.run();
+            await execution.run(data.newUserQuery || execution.userQuery);
           } else {
             vscode.window.showErrorMessage("No execution found for id", executionId);
           }
@@ -198,13 +194,12 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case "readyForMessages" : {
-          // Post the apiKeySet message when the event fires.
           this._view?.webview.postMessage({
             type: "apiKeySet",
             value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
           });
-          console.log(`Sent`);
-          return;
+
+          break;
         }
       }
     });
@@ -290,6 +285,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
   public async executeFullGPTProcedure(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
+
     if (!activeEditor) {
       vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
@@ -300,18 +296,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const document = activeEditor.document;
-    const executionId = randomUUID();
-    const workingDocument = await createWorkingdocument(executionId);
-
     const execution = new GPTExecution({
-      id: executionId,
-      documentURI: document.uri.toString(),
-      workingDocumentURI: workingDocument.uri.toString(),
-      userQuery,
-      selection: activeEditor.selection,
-      selectedText: document.getText(activeEditor.selection),
-      onChanged: (important) => {
+      onChanged: async (important) => {
         if (important) {
           this.notifyExecutionsUpdatedImmediate();
         } else {
@@ -321,12 +307,14 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     });
 
     this.executions = [execution, ...this.executions];
-    this.notifyExecutionsUpdatedImmediate();
 
-    await execution.run();
+    await execution.run({
+      userQuery,
+      document: activeEditor.document,
+      selection: activeEditor.selection,
+      selectedText: activeEditor.document.getText(activeEditor.selection),
+    });
   }
-
-  
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     return `<html lang="en">

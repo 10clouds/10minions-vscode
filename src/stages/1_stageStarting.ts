@@ -15,11 +15,16 @@ export async function stageStarting(this: GPTExecution) {
   this.reportSmallProgress();
   await appendToFile(
     this.workingDocumentURI,
-    "File: " + this.baseName + "\n\n"
+    "File: " + this.baseName + "\n"
   );
 
   await appendToFile(
     this.workingDocumentURI,
-    "User: " + this.userQuery + "\n\n"
+    "Task: " + this.userQuery + "\n"
+  );
+
+  await appendToFile(
+    this.workingDocumentURI,
+    "\n"
   );
 }

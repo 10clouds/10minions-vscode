@@ -143,6 +143,10 @@ Let's take this step by step, first, describe in detail what you are going to do
 }
 
 export async function stageCreateModificationProcedure(this: GPTExecution) {
+  if (this.classification === undefined) {
+    throw new Error("Classification is undefined");
+  }
+
   if (this.classification === "AnswerQuestion") {
     return;
   }

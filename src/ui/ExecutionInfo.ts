@@ -14,6 +14,6 @@ export type ExecutionInfo = {
   executionStage: string;
   progress: number;
   stopped: boolean;
-  classification: TASK_CLASSIFICATION_NAME;
+  classification?: TASK_CLASSIFICATION_NAME;
   modificationDescription: string;
 };
