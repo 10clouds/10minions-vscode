@@ -4,15 +4,6 @@ import { appendToFile } from "../utils/appendToFile";
 import { clearFile } from "../utils/clearFile";
 
 export async function stageStarting(this: GPTExecution) {
-  this.startTime = Date.now(); // Assign startTime
-  this.modificationApplied = false;
-  this.modificationDescription = "";
-  this.modificationProcedure = "";
-  this.stopped = false;
-  this.progress = 0;
-  this.executionStage = "Starting ...";
-  this.classification = "LocalChange";
-
   let document = await vscode.workspace.openTextDocument(
     vscode.Uri.parse(this.documentURI)
   );

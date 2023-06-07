@@ -33,9 +33,10 @@ function calculateAndFormatExecutionTime(executionDuration: number): string {
 
 export class GPTExecution {
   fullContent: string;
+  userQuery: string;
+  
   readonly documentURI: string;
   readonly workingDocumentURI: string;
-  readonly userQuery: string;
   readonly id: string;
   readonly selection: vscode.Selection;
   readonly selectedText: string;
@@ -52,11 +53,11 @@ export class GPTExecution {
   modificationDescription: string = "";
   modificationProcedure: string = "";
   modificationApplied: boolean = false;
-  stopped: boolean = false;
+  stopped: boolean = true;
   progress: number = 0;
-  executionStage: string = "Starting ...";
+  executionStage: string = "";
   classification: TASK_CLASSIFICATION_NAME = "AnswerQuestion";
-  waiting: boolean = false; // Add "waiting" property
+  waiting: boolean = false;
 
   constructor({
     id,
@@ -162,6 +163,20 @@ export class GPTExecution {
   }
 
   public async run() {
+    //Reset run
+    
+    this.stopExecution("Rerunning ...", false);
+    this.stopped = false;
+    this.startTime = Date.now(); // Assign startTime
+    this.modificationApplied = false;
+    this.modificationDescription = "";
+    this.modificationProcedure = "";
+    
+    this.progress = 0;
+    this.executionStage = "Starting ...";
+    this.classification = "LocalChange";
+    this.onChanged(true);
+    
     this.startTime = Date.now(); // Initialize startTime
     return new Promise<void>(async (resolve, reject) => {
       this.resolveProgress = resolve;

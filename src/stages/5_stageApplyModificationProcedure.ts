@@ -110,6 +110,10 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
 }
 
 export async function stageApplyModificationProcedure(this: GPTExecution) {
+  if (this.classification === "AnswerQuestion") {
+    return;
+  }
+
   if (this.modificationApplied) {
     return;
   }

@@ -5,6 +5,10 @@ import { appendToFile } from "../utils/appendToFile";
 import { getCommentForLanguage } from "../utils/comments";
 
 export async function stageFallingBackToComment(this: GPTExecution) {
+  if (this.classification === "AnswerQuestion") {
+    return;
+  }
+
   if (this.modificationApplied) {
     return;
   }

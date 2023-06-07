@@ -147,6 +147,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
             }
 
             execution.stopped = false;
+            execution.userQuery = data.newUserQuery || execution.userQuery;
             this.notifyExecutionsUpdatedImmediate();
 
             await execution.run();

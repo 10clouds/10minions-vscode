@@ -4,7 +4,6 @@ import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
-import { escapeContentForLanguage } from "../utils/comments";
 import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
 
 export const CLASSIFICATION_PROMPTS = {
@@ -130,6 +129,9 @@ Let's take it step by step.
 }
 
 export async function stageCreateModification(this: GPTExecution) {
+  if (this.classification === "AnswerQuestion") {
+    return;
+  }
   this.modificationDescription = "";
   this.modificationDescription = await planAndWrite(
     this.classification,

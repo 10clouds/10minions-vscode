@@ -1,8 +1,13 @@
+import { XMarkIcon } from "@heroicons/react/24/solid";
 import * as React from "react";
 import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
-import { ArrowPathIcon, StopCircleIcon, StopIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
+
+function adjustTextAreaHeight(target: HTMLTextAreaElement) {
+  target.style.height = "auto";
+  target.style.height = target.scrollHeight + "px";
+}
 
 function getUserQueryPreview(userQuery: string) {
   const lines = userQuery.split("\n");
@@ -17,38 +22,52 @@ function getUserQueryPreview(userQuery: string) {
 
 export function Execution({ execution, ...props }: { execution: ExecutionInfo } & React.HTMLAttributes<HTMLDivElement>) {
   const { className, ...propsWithoutClassName } = props;
-  
+
   const userQueryPreview = getUserQueryPreview(execution.userQuery);
 
-    // State variables for managing the input field state
-    const [isInputOpen, setIsInputOpen] = React.useState(false);
-    const [updatedPrompt, setUpdatedPrompt] = React.useState(execution.userQuery);
+  // State variables for managing the input field state
+  const [isInputOpen, setIsInputOpen] = React.useState(false);
+  const [updatedPrompt, setUpdatedPrompt] = React.useState(execution.userQuery);
 
-      // Handle onClick event for the user query preview div
-  function handleClickUserQueryPreview() {
-    setIsInputOpen(true);
-  }
+  React.useEffect(() => {
+    setUpdatedPrompt(execution.userQuery);
+  }, [execution.userQuery]);
 
-    // Handle Enter key being pressed to stop and re-run the execution
-    function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        setIsInputOpen(false);
-  
-        // Stop the current execution
-        vscode.postMessage({
-          type: "stopExecution",
-          executionId: execution.id,
-        });
-  
-        // Re-run the execution with the updated prompt
-        vscode.postMessage({
-          type: "reRunExecution",
-          executionId: execution.id,
-          newUserQuery: updatedPrompt, // Pass the updated prompt value
-        });
+  React.useLayoutEffect(() => {
+    if (isInputOpen) {
+      const textAreaElement = document.querySelector<HTMLTextAreaElement>(".execution textarea");
+      if (textAreaElement) {
+        adjustTextAreaHeight(textAreaElement);
       }
     }
+  }, [isInputOpen]);
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Only call handleRun() when Enter key is pressed without Shift
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      setIsInputOpen(false);
+
+      handleRun();
+    }
+  }
+
+  function handleRun() {
+    if (updatedPrompt !== execution.userQuery) {
+      // Stop the current execution
+      vscode.postMessage({
+        type: "stopExecution",
+        executionId: execution.id,
+      });
+
+      // Re-run the execution with the updated prompt
+      vscode.postMessage({
+        type: "reRunExecution",
+        executionId: execution.id,
+        newUserQuery: updatedPrompt, // Pass the updated prompt value
+      });
+    }
+  }
 
   return (
     <div
@@ -88,32 +107,39 @@ export function Execution({ execution, ...props }: { execution: ExecutionInfo } 
           className="h-6 w-6 cursor-pointer"
         />
       </div>
-      <div className="mb-2" onClick={handleClickUserQueryPreview}>
+      <div className="mb-2" onClick={() => setIsInputOpen(true)}>
         {isInputOpen ? (
-          <input
-            type="text"
+          <textarea
             style={{
               backgroundColor: "inherit",
               color: "inherit",
               border: "none",
               outline: "none",
               cursor: "text",
+              width: "100%", // Make it span the entire line
+              resize: "none", // Disable the resizing of the textarea
             }}
             value={updatedPrompt}
             onChange={(event) => setUpdatedPrompt(event.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => setIsInputOpen(false)}
+            onBlur={() => {
+              setIsInputOpen(false);
+              handleRun();
+            }}
             autoFocus
+            // Make the textarea auto expand based on the content
+            onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
+              adjustTextAreaHeight(event.target as HTMLTextAreaElement);
+            }}
           />
         ) : (
           userQueryPreview
-        )}
+        )}{" "}
       </div>
       <hr className="mb-2 mt-2" style={{ opacity: 0.2 }} />
       <div className="flex justify-between mb-2 items-center">
         <span>
-          {execution.executionStage}
-          {' '}
+          {execution.executionStage}{" "}
           {execution.executionStage === FINISHED_STAGE_NAME && (
             <a
               //present it as a link
@@ -159,7 +185,7 @@ export function Execution({ execution, ...props }: { execution: ExecutionInfo } 
         )}
       </div>
       {execution.classification === "AnswerQuestion" ? (
-        <pre style={{whiteSpace: "pre-wrap"}}>{execution.modificationDescription}</pre>
+        <pre style={{ whiteSpace: "pre-wrap" }}>{execution.modificationDescription}</pre>
       ) : (
         <>
           <div className="flex items-center mb-2">
