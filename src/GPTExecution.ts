@@ -9,6 +9,7 @@ import { stageCreateModificationProcedure } from "./stages/4_stageCreateModifica
 import { stageFallingBackToComment } from "./stages/6_stageFallingBackToComment";
 import { stageFinishing } from "./stages/7_stageFinishing";
 import { stageApplyModificationProcedure } from "./stages/5_stageApplyModificationProcedure";
+import { appendToFile } from "./utils/appendToFile";
 
 export class GPTExecution {
   fullContent: string;
@@ -83,12 +84,12 @@ export class GPTExecution {
         execution: stageCreateModification.bind(this),
       },
       {
-        name: "Applying ...",
+        name: "Preparing Changes ...",
         weight: 80,
         execution: stageCreateModificationProcedure.bind(this),
       },
       {
-        name: "Injecting ...",
+        name: "Applying Changes ...",
         weight: 20,
         execution: stageApplyModificationProcedure.bind(this),
       },
@@ -135,6 +136,7 @@ export class GPTExecution {
   }
 
   public async run() {
+    this.startTime = Date.now(); // Initialize startTime
     return new Promise<void>(async (resolve, reject) => {
       this.resolveProgress = resolve;
       this.rejectProgress = reject;
@@ -171,6 +173,30 @@ export class GPTExecution {
         
         this.stopExecution(String(error));
       } finally {
+        const executionTime = Date.now() - this.startTime;
+
+        // Convert the execution time to a human-readable format
+        const executionTimeSec = executionTime / 1000;
+        const hours = Math.floor(executionTimeSec / 3600);
+        const remainingSecAfterHours = executionTimeSec % 3600;
+        const minutes = Math.floor(remainingSecAfterHours / 60);
+        const remainingSecAfterMinutes = remainingSecAfterHours % 60;
+        // Display hours segment only if hours are greater than 0
+        const hoursSegment = hours > 0 ? `${hours}h ` : "";
+
+        // Display minutes segment only if minutes are greater than 0
+        const minutesSegment = minutes > 0 ? `${minutes}m ` : "";
+
+        // Display seconds segment, no need for a condition since seconds will always be displayed
+        const secondsSegment = `${remainingSecAfterMinutes.toFixed(2)}s`;
+
+        // Combine all segments to create the humanReadableExecutionTime
+        const humanReadableExecutionTime = `${hoursSegment}${minutesSegment}${secondsSegment}`;
+
+        await appendToFile(
+          this.workingDocumentURI,
+          `${this.executionStage} (Execution Time: ${humanReadableExecutionTime})\n\n`
+        );
         this.progress = 1;
       }
     });

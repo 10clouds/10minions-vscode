@@ -45,13 +45,17 @@ Followed by the lines of code you are replacing, and then, when ready to output 
 
 WITH
 
-Followed by the code you are replacing with. You may follow this pattern multiple times.
+Followed by the code you are replacing with. End the sequence with the following command:
 
-Keep in mind that all lines between REPLACE and WITH will be used, even the empty ones. So any output after final WITH will be part of the final replacement.
+END REPLACE
 
-Further more, do not invent your own commands, use only the ones described above.
+You may follow this pattern multiple times. If followed by next REPLACE, END REPLACE is not required.
 
-After applications of all the replacements the code should be final, production ready, as described in REQUESTED MODIFICATION.
+Follow this rules when using REPLACE / WITH / END REPLACE command sequence:
+* All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
+* Keep in mind that all lines after WITH, and until next REPLACE, will be used, even the empty ones. So any output after final WITH will be part of the final replacement.
+* Do not invent your own commands, use only the ones described above.
+* After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
 
 `.trim(),
 };
@@ -143,27 +147,20 @@ export async function stageCreateModificationProcedure(this: GPTExecution) {
     return;
   }
 
-  try {
-    this.reportSmallProgress();
-    await appendToFile(
-      this.workingDocumentURI,
-      `\nGENERATING CONSOLIDATION\n\n`
-    );
+  await appendToFile(
+    this.workingDocumentURI,
+    `\nGENERATING CONSOLIDATION\n\n`
+  );
 
-    this.modificationProcedure = await createConsolidated(
-      this.classification,
-      this.fullContent,
-      this.modificationDescription,
-      async (chunk: string) => {
-        this.reportSmallProgress();
-        await appendToFile(this.workingDocumentURI, chunk);
-      }
-    );
-  } catch (error) {
-    this.reportSmallProgress();
-    await appendToFile(
-      this.workingDocumentURI,
-      `\n\nError in creating modification procedure: ${error}\n`
-    );
-  }
+  this.reportSmallProgress();
+  
+  this.modificationProcedure = await createConsolidated(
+    this.classification,
+    this.fullContent,
+    this.modificationDescription,
+    async (chunk: string) => {
+      this.reportSmallProgress();
+      await appendToFile(this.workingDocumentURI, chunk);
+    }
+  );
 }

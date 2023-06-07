@@ -4,10 +4,7 @@ import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { appendToFile } from "../utils/appendToFile";
 import { replaceWithSlidingIndent } from "../utils/replaceWithSlidingIndent";
 
-function applyModificationProcedure(
-  originalCode: string,
-  modificationProcedure: string
-) {
+function applyModificationProcedure(originalCode: string, modificationProcedure: string) {
   let currentCode = originalCode;
   let lines = modificationProcedure.split("\n");
   let storedArg: string[] = [];
@@ -17,56 +14,33 @@ function applyModificationProcedure(
   function finishLastCommand() {
     if (currentCommand.startsWith("REPLACE ALL")) {
       let consolidatedContent = currentArg.join("\n");
-      let innerContent = consolidatedContent.replace(
-        /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
-        "$1"
-      );
+      let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       currentCode = innerContent;
     } else if (currentCommand.startsWith("REPLACE")) {
       storedArg = currentArg;
     } else if (currentCommand.startsWith("INSERT")) {
       storedArg = currentArg;
     } else if (currentCommand.startsWith("WITH")) {
-      let replaceText = storedArg
-        .join("\n")
-        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-      let withText = currentArg
-        .join("\n")
-        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let replaceText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let withText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = replaceWithSlidingIndent(
-        currentCode,
-        replaceText,
-        withText
-      );
+      let replacement = replaceWithSlidingIndent(currentCode, replaceText, withText);
 
       if (replacement === undefined) {
-        throw new Error(
-          `REPLACE WITH command found in the answer, but the original code does not contain the replace string. replaceText: ${replaceText}`
-        );
+        throw new Error(`REPLACE WITH command found in the answer, but the original code does not contain the replace string. replaceText: ${replaceText}`);
       }
 
       currentCode = replacement;
 
       storedArg = [];
     } else if (currentCommand.startsWith("BEFORE")) {
-      let insertText = storedArg
-        .join("\n")
-        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-      let beforeText = currentArg
-        .join("\n")
-        .replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let insertText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+      let beforeText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = replaceWithSlidingIndent(
-        currentCode,
-        beforeText,
-        `${insertText}\n${beforeText}`
-      );
+      let replacement = replaceWithSlidingIndent(currentCode, beforeText, `${insertText}\n${beforeText}`);
 
       if (replacement === undefined) {
-        throw new Error(
-          `INSERT BEFORE command found in the answer, but the original code does not contain the replace string. replaceText: ${beforeText}`
-        );
+        throw new Error(`INSERT BEFORE command found in the answer, but the original code does not contain the replace string. replaceText: ${beforeText}`);
       }
 
       currentCode = replacement;
@@ -83,9 +57,7 @@ function applyModificationProcedure(
       let renameTo = renameCommand[2];
       let context = currentArg.join("\n").trim();
 
-      console.log(
-        `renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`
-      );
+      console.log(`renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`);
 
       /*
       
@@ -104,49 +76,30 @@ function applyModificationProcedure(
           newName: newFunctionName,
         }
       );*/
+    } else if (currentCommand.startsWith("END REPLACE")) {
+      // Do nothing
     }
+
     currentArg = [];
   }
 
   for (let line of lines) {
-    let commandFound = true;
+    let isANewCommand = false;
 
     if (currentCommand.startsWith("INSERT")) {
-      if (line.startsWith("BEFORE")) {
-        finishLastCommand();
-        currentCommand = "BEFORE";
-      } else {
-        commandFound = false;
-      }
-    } else if (
-      currentCommand.startsWith("REPLACE") &&
-      !currentCommand.startsWith("REPLACE ALL")
-    ) {
-      if (line.startsWith("WITH")) {
-        finishLastCommand();
-        currentCommand = "WITH";
-      } else {
-        commandFound = false;
-      }
+      isANewCommand = line.startsWith("BEFORE");
+    } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE ALL")) {
+      isANewCommand = line.startsWith("WITH");
+    } else if (currentCommand.startsWith("WITH")) {
+      isANewCommand = line.startsWith("END REPLACE") || line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
     } else {
-      if (line.startsWith("REPLACE ALL")) {
-        finishLastCommand();
-        currentCommand = line;
-      } else if (line.startsWith("REPLACE")) {
-        finishLastCommand();
-        currentCommand = line;
-      } else if (line.startsWith("RENAME")) {
-        finishLastCommand();
-        currentCommand = line;
-      } else if (line.startsWith("INSERT")) {
-        finishLastCommand();
-        currentCommand = line;
-      } else {
-        commandFound = false;
-      }
+      isANewCommand = line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
     }
 
-    if (!commandFound) {
+    if (isANewCommand) {
+      finishLastCommand();
+      currentCommand = line;
+    } else {
       currentArg.push(line);
     }
   }
@@ -169,10 +122,7 @@ export async function stageApplyModificationProcedure(this: GPTExecution) {
     let document = await this.document();
     this.fullContent = document.getText();
 
-    let modifiedContent = applyModificationProcedure(
-      this.fullContent,
-      this.modificationProcedure
-    );
+    let modifiedContent = applyModificationProcedure(this.fullContent, this.modificationProcedure);
 
     console.log(`modifiedContent: "${modifiedContent}"`);
 
@@ -181,10 +131,7 @@ export async function stageApplyModificationProcedure(this: GPTExecution) {
         document.uri,
         new vscode.Range(
           new vscode.Position(0, 0),
-          new vscode.Position(
-            document.lineAt(document.lineCount - 1).lineNumber,
-            document.lineAt(document.lineCount - 1).text.length
-          )
+          new vscode.Position(document.lineAt(document.lineCount - 1).lineNumber, document.lineAt(document.lineCount - 1).text.length)
         ),
         modifiedContent
       );
@@ -193,15 +140,9 @@ export async function stageApplyModificationProcedure(this: GPTExecution) {
     this.modificationApplied = true;
 
     this.reportSmallProgress();
-    await appendToFile(
-      this.workingDocumentURI,
-      `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`
-    );
+    await appendToFile(this.workingDocumentURI, `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`);
   } catch (error) {
     this.reportSmallProgress();
-    await appendToFile(
-      this.workingDocumentURI,
-      `\n\nError in applying consolidation: ${error}\n`
-    );
+    await appendToFile(this.workingDocumentURI, `\n\nError in applying consolidation: ${error}\n`);
   }
 }

@@ -4,24 +4,35 @@ import { ArrowPathIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
 
-export function Execution({ execution }: { execution: ExecutionInfo }) {
-  let userQueryLines = execution.userQuery.split("\n");
-  let userQueryPreview = userQueryLines[0].substring(0, 100);
+function getUserQueryPreview(userQuery: string) {
+  const lines = userQuery.split("\n");
+  let preview = lines[0].substring(0, 100);
 
-  if (userQueryLines.length > 1 || userQueryLines[0].length > 100) {
-    userQueryPreview += "…";
+  if (lines.length > 1 || lines[0].length > 100) {
+    preview += "…";
   }
+
+  return preview;
+}
+
+export function Execution({ execution }: { execution: ExecutionInfo }) {
+  const userQueryPreview = getUserQueryPreview(execution.userQuery);
+
   return (
     <div
-      key={execution.id}
-      className="mb-2 p-4 bg-gray-700 rounded flex flex-col"
       style={{
+        backgroundColor: "var(--vscode-editor-background)",
+        color: "var(--vscode-editor-foreground)",
+        borderColor: "var(--vscode-focusBorder)",
         animation: "bounce-half 0.3s",
       }}
+      key={execution.id}
+      className="execution mb-2 p-4 rounded flex flex-col"
     >
       <div className="flex justify-between">
-        <div className="font-semibold mb-2 flex-grow">
+        <div className="text-base font-semibold mb-2 flex-grow">
           <span
+            title="Open Document" // Added tooltip
             className="cursor-pointer"
             onClick={() => {
               vscode.postMessage({
@@ -36,18 +47,20 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
 
         {execution.stopped && (
           <ArrowPathIcon
+            title="Re-run Execution" // Added tooltip
             onClick={() => {
               vscode.postMessage({
                 type: "reRunExecution",
                 executionId: execution.id,
               });
             }}
-            className="stop-button  h-6 w-6 cursor-pointer"
+            className="h-6 w-6 cursor-pointer"
           />
         )}
 
         {!execution.stopped ? (
           <span
+            title="Stop Execution" // Added tooltip
             onClick={() => {
               vscode.postMessage({
                 type: "stopExecution",
@@ -60,23 +73,26 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
           </span>
         ) : (
           <XMarkIcon
+            title="Close Execution" // Added tooltip
             onClick={() => {
               vscode.postMessage({
                 type: "closeExecution",
                 executionId: execution.id,
               });
             }}
-            className="stop-button h-6 w-6 cursor-pointer"
+            className="h-6 w-6 cursor-pointer"
           />
         )}
       </div>
       <div className="mb-2">{userQueryPreview}</div>
+      <hr className="mb-2 mt-2" style={{ opacity: 0.2 }} />
       <div className="mb-2">
         {execution.executionStage}{" "}
         {execution.executionStage === FINISHED_STAGE_NAME && (
-          <button
+          (<a
             //present it as a link
-            className="inline-block btn btn-link p-0 m-0 text-sm text-blue-500 hover:text-blue-200"
+            title="Show Diff" // Added tooltip
+            className="inline-block btn cursor-pointer"
             onClick={() => {
               vscode.postMessage({
                 type: "showDiff",
@@ -85,11 +101,12 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
             }}
           >
             Show diff
-          </button>
+          </a>)
         )}
       </div>
       <div
         className="mb-2 cursor-pointer w-full flex justify-center"
+        title="Open Log File" // Added tooltip
         onClick={() => {
           vscode.postMessage({
             type: "openDocument",
@@ -97,7 +114,7 @@ export function Execution({ execution }: { execution: ExecutionInfo }) {
           });
         }}
       >
-        <ProgressBar progress={execution.progress} />
+        <ProgressBar progress={execution.progress} stopped={execution.stopped} />
       </div>
     </div>
   );

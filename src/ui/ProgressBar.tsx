@@ -1,15 +1,13 @@
 import * as React from "react";
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export function ProgressBar({ progress }: { progress: number; }) {
-  // Calculate percentage from progress
+export function ProgressBar({ progress, stopped }: { progress: number; stopped: boolean }) {
   const percentage = `${(progress * 100).toFixed(1)}%`;
 
   return (
     <div className="bg-gray-300 relative h-4 w-full rounded-2xl">
       <div
-        className="bg-indigo-500 absolute top-0 left-0 flex h-full items-center justify-center rounded-2xl transition-all duration-1000 ease-in-out"
-        style={{ width: percentage }}
+        className={`absolute top-0 left-0 flex h-full items-center justify-center rounded-2xl transition-all duration-1000 ease-in-out ${!stopped ? "wave-animation" : ""}`}
+        style={{ width: percentage, backgroundColor: "#5e20e5" }}
       >
         <span
           className="text-xs font-semibold text-white transition-all duration-1000 ease-in-out"
