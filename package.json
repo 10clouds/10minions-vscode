@@ -49,6 +49,12 @@
           "type": "string",
           "markdownDescription": "API key from [OpenAI](https://platform.openai.com/account/api-keys)",
           "order": 0
+        },
+        "10minions.enableCompletionSounds": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable or disable playing sounds when 10Minions finishes processing your task",
+          "order": 1
         }
       }
     },

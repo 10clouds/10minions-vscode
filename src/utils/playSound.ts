@@ -1,4 +1,4 @@
-import { ExtensionContext } from "vscode";
+import { ExtensionContext, workspace } from "vscode";
 import * as path from "path";
 
 const ps = require("play-sound")();
@@ -10,12 +10,14 @@ export function initPlayingSounds(context: ExtensionContext) {
 }
 
 export function playNotificationSound() {
-  ps.play(
-    path.join(CONTEXT.extensionPath, "resources", "notification.wav"),
-    (err: any) => {
-      if (err) {
-        console.log("Error occurred while playing sound:", err);
+  if (workspace.getConfiguration("10minions").get("enableCompletionSounds")) {
+    ps.play(
+      path.join(CONTEXT.extensionPath, "resources", "notification.wav"),
+      (err: any) => {
+        if (err) {
+          console.log("Error occurred while playing sound:", err);
+        }
       }
-    }
-  );
+    );  
+  }
 }
