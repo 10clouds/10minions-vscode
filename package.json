@@ -86,6 +86,7 @@
     }
   },
   "scripts": {
+    "vscode:package": "yarn run package && vsce package",
     "vscode:publish": "yarn run package && vsce publish",
     "vscode:prepublish": "yarn run package",
     "compile": "webpack",
