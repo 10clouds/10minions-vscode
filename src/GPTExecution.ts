@@ -2,10 +2,11 @@ import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
 import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
-import { FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/ExecutionInfo";
+import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/ExecutionInfo";
 import { appendToFile } from "./utils/appendToFile";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
 import { createWorkingdocument } from "./utils/createWorkingdocument";
+import { gptExecute } from "./openai";
 
 export class GPTExecution {
   readonly userQuery: string;
@@ -23,6 +24,7 @@ export class GPTExecution {
   //
   // tracking variables between stages
   //
+  shortName: string = "";
   fullContent: string = "";
   currentStageIndex: number = 0;
   startTime: number = 0;
@@ -143,6 +145,8 @@ export class GPTExecution {
       this.rejectProgress = reject;
       this.currentStageIndex = 0;
 
+      this.setShortName();
+
       try {
         while (this.currentStageIndex < STAGES.length && !this.stopped) {
           this.executionStage = STAGES[this.currentStageIndex].name;
@@ -174,7 +178,7 @@ export class GPTExecution {
           this.currentStageIndex++;
         }
       } catch (error) {
-        if (error !== "Canceled by user") {
+        if (error !== CANCELED_STAGE_NAME) {
           vscode.window.showErrorMessage(`Error in execution: ${error}`);
           console.log("Error in execution", error);
         }
@@ -187,6 +191,35 @@ export class GPTExecution {
         await appendToFile(this.workingDocumentURI, `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
         this.progress = 1;
       }
+    });
+  }
+
+  private async setShortName() {
+    this.shortName = "...";
+    let context = this.selectedText
+      ? `
+==== WHAT USER SELECTED ====
+${this.selectedText}
+      `.trim()
+      : `
+==== WHAT IS THE NAME OF THE FILE ====
+${this.baseName}    
+      `.trim();
+
+    await gptExecute({
+      maxTokens: 20,
+      fullPrompt: `
+      Create a very short summary of a task. Maximum of 20 characters. You MUST not exceed this number. Try to combine info both from what user said and what user selected / file name. If a selected identifier is too long or file name is too long, just use some keywords from it.
+
+      ==== WHAT USER SAID ====
+      ${this.userQuery}
+
+      ${context}
+      
+      `.trim(),
+    }).then((res) => {
+      this.shortName = res || this.baseName;
+      this.onChanged(true);
     });
   }
 

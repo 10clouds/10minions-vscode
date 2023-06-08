@@ -1,21 +1,23 @@
 import * as React from "react";
+import { ExecutionInfo } from "./ExecutionInfo";
+import { getMinionBlendedColor } from "../utils/blendColors";
+import { getOpacityAndColor } from "../utils/getOpacityAndColor";
 
-export function ProgressBar({ progress, stopped }: { progress: number; stopped: boolean }) {
-  const percentage = `${(progress * 100).toFixed(1)}%`;
+export function ProgressBar({ execution }: { execution: ExecutionInfo }) {
+  const percentage = `${(execution.progress * 100).toFixed(1)}%`;
+
+  let { opacity, color } = getOpacityAndColor(execution);
+
+  color = getMinionBlendedColor(execution)
 
   return (
-    <div className="bg-gray-300 relative h-4 w-full rounded-2xl">
+    <div className={`bg-gray-300 relative h-1 w-full transition-opacity ${opacity}`}>
       <div
-        className={`absolute top-0 left-0 flex h-full items-center justify-center rounded-2xl transition-all duration-1000 ease-in-out ${!stopped ? "wave-animation" : ""}`}
-        style={{ width: percentage, backgroundColor: "#5e20e5" }}
-      >
-        <span
-          className="text-xs font-semibold text-white transition-all duration-1000 ease-in-out"
-          style={{ opacity: progress > 0.20 && progress < 1.0 ? 1 : 0 }}
-        >
-          {percentage}
-        </span>
-      </div>
+        className={`absolute top-0 left-0 flex h-full items-center justify-center transition-all duration-1000 ease-in-out ${
+          !execution.stopped ? "wave-animation" : ""
+        }`}
+        style={{ width: percentage, backgroundColor: color }}
+      ></div>
     </div>
   );
 }

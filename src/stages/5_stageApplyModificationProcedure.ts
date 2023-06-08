@@ -27,7 +27,16 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let replacement = replaceWithSlidingIndent(currentCode, replaceText, withText);
 
       if (replacement === undefined) {
-        throw new Error(`REPLACE WITH command found in the answer, but the original code does not contain the replace string. replaceText: ${replaceText}`);
+        throw new Error(`
+Failed replace
+
+replaceText:
+${replaceText}
+
+originalCode:
+${originalCode}
+
+`.trim());
       }
 
       currentCode = replacement;
@@ -40,7 +49,16 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let replacement = replaceWithSlidingIndent(currentCode, beforeText, `${insertText}\n${beforeText}`);
 
       if (replacement === undefined) {
-        throw new Error(`INSERT BEFORE command found in the answer, but the original code does not contain the replace string. replaceText: ${beforeText}`);
+        throw new Error(`
+Failed replace
+
+replaceText:
+${beforeText}
+
+originalCode:
+${originalCode}
+
+`.trim());
       }
 
       currentCode = replacement;

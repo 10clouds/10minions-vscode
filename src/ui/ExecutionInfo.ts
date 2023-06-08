@@ -4,6 +4,7 @@ export type TASK_CLASSIFICATION_NAME =
   | "LocalChange";
 
 export const FINISHED_STAGE_NAME = "Finished";
+export const CANCELED_STAGE_NAME = "Canceled";
 
 export type ExecutionInfo = {
   id: string;
@@ -16,4 +17,6 @@ export type ExecutionInfo = {
   stopped: boolean;
   classification?: TASK_CLASSIFICATION_NAME;
   modificationDescription: string;
+  selectedText: string;
+  shortName: string;
 };

@@ -1,6 +1,7 @@
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
+import { CANCELED_STAGE_NAME } from "./ui/ExecutionInfo";
 
 type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
@@ -18,7 +19,6 @@ function extractParsedLines(chunk: string) {
   } catch (e) {
     console.error(`Error parsing chunk: ${chunk}`);
     console.error(e);
-    console.error(chunk);
     throw e;
   }
 }
@@ -90,30 +90,35 @@ async function processOpenAIResponseStream({
 
   return await new Promise<string>((resolve, reject) => {
     stream.on("data", async (value) => {
-      if (isCancelled()) {
-        stream.removeAllListeners();
-        reject("Canceled by user");
-        return;
+      try {
+        if (isCancelled()) {
+          stream.removeAllListeners();
+          reject(CANCELED_STAGE_NAME);
+          return;
+        }
+        const chunk = decoder.decode(value);
+  
+        const parsedLines = extractParsedLines(chunk);
+        const tokens = parsedLines
+          .map((l) => l.choices[0].delta.content)
+          .filter((c) => c)
+          .join("");
+  
+        await openAILock.acquire("openAI", async () => {
+          await onChunk(tokens);
+        });
+  
+        fullContent += tokens;
+      } catch (e) {
+        console.error("Error processing response stream: ", e);
+        reject(e);
       }
-      const chunk = decoder.decode(value);
-
-      const parsedLines = extractParsedLines(chunk);
-      const tokens = parsedLines
-        .map((l) => l.choices[0].delta.content)
-        .filter((c) => c)
-        .join("");
-
-      await openAILock.acquire("openAI", async () => {
-        await onChunk(tokens);
-      });
-
-      fullContent += tokens;
     });
 
     stream.on("end", () => {
       if (isCancelled()) {
         stream.removeAllListeners();
-        reject("Canceled by user");
+        reject(CANCELED_STAGE_NAME);
         return;
       }
       resolve(fullContent);
@@ -130,22 +135,38 @@ async function processOpenAIResponseStream({
  * other functions to send a GPT-4 query and receive and process the response. */
 export async function gptExecute({
   fullPrompt,
-  onChunk,
+  onChunk = async (chunk: string) => {},
   isCancelled = () => false,
   maxTokens = 2000,
   model = "gpt-4",
   temperature,
-  controller,
+  controller = new AbortController(),
 }: {
   fullPrompt: string;
-  onChunk: (chunk: string) => Promise<void>;
+  onChunk?: (chunk: string) => Promise<void>;
   isCancelled?: () => boolean;
   maxTokens?: number;
   model?: AVAILABLE_MODELS;
   temperature?: number;
-  controller: AbortController;
+  controller?: AbortController;
 }) {
-  const response = await queryOpenAI({fullPrompt, maxTokens, model, temperature, controller});
-  const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
-  return result;
+  // Step 1: Add a loop that iterates up to 3 times.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await queryOpenAI({fullPrompt, maxTokens, model, temperature, controller});
+      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
+
+      // Step 3: On successful run, break the loop early and return the result.
+      return result;
+    } catch (error) {
+      // Step 2: Add error handling for exceptions.
+      // Step 4: Log the error and retry the process for up to 2 more times.
+      console.error(`Error on attempt ${attempt}: ${error}`);
+
+      // Step 5: On the 3rd error, give up and re-throw the error.
+      if (attempt === 3) {
+        throw error;
+      }
+    }
+  }
 }

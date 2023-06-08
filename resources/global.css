@@ -25,11 +25,51 @@
   }
 }
 
+@keyframes busy-robot {
+  0% {
+    transform: translateY(0) translateX(0px) rotate(0);
+  }
+  10% {
+    transform: translateY(-2px) translateX(0px) rotate(0.01turn);
+  }
+  20% {
+    transform: translateY(0) translateX(0px) rotate(0);
+  }
+  30% {
+    transform: translateY(-2px) translateX(0px) rotate(-0.01turn);
+  }
+  40% {
+    transform: translateY(0) translateX(0) rotate(0);
+  }
+  100% {
+    transform: translateY(0) translateX(0) rotate(0);
+  }
+}
+
 body a.logo:hover {
   color: var(--vscode-sideBar-foreground);
 }
 
-/* Updated animation duration to accommodate the updated wave animation */
+.busy-robot {
+  animation: busy-robot 1.0s ease-in-out infinite 1s;
+}
+
+@keyframes busy-robot-extra {
+  0%  {
+    transform: rotate(-1turn);
+  }
+  15% {
+    transform: rotate(0turn);
+  }
+  100% {
+    transform: rotate(0turn);
+  }
+}
+
+.busy-robot-extra {
+  animation: busy-robot-extra 6.0s ease-in-out infinite 4.3s;
+}
+
 .wave-animation::before {
   content: "";
   position: absolute;
@@ -40,7 +80,7 @@ body a.logo:hover {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.0) 25%,
-    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.3) 50%,
     rgba(255, 255, 255, 0.0) 60%
   );
   background-size: 200% 100%;

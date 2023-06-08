@@ -1,7 +1,7 @@
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { GPTExecution } from "./GPTExecution";
-import { ExecutionInfo } from "./ui/ExecutionInfo";
+import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
 import { basename } from "path";
 
 export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
@@ -38,6 +38,19 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     const matchedCommand = suggestions[0].originalCommand;
     const inputLength = input.length;
     return input + matchedCommand.slice(inputLength);
+  }
+
+  private async updateCommandHistory(prompt: string) {
+    // Update command history
+    const newCommandHistory = { ...this.commandHistory };
+    if (newCommandHistory[prompt]) {
+      newCommandHistory[prompt].weight += 1;
+    } else {
+      newCommandHistory[prompt] = { weight: 1, timeStamp: Date.now() };
+    }
+
+    this.commandHistory = newCommandHistory;
+    await this._context.globalState.update("10minions.commandHistory", newCommandHistory);
   }
 
   public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
@@ -96,16 +109,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         case "newExecution": {
           let prompt = data.value ? data.value : "Refactor this code";
 
-          // Update command history
-          const newCommandHistory = { ...this.commandHistory };
-          if (newCommandHistory[prompt]) {
-            newCommandHistory[prompt].weight += 1;
-          } else {
-            newCommandHistory[prompt] = { weight: 1, timeStamp: Date.now() };
-          }
-
-          this.commandHistory = newCommandHistory;
-          await this._context.globalState.update("10minions.commandHistory", newCommandHistory);
+          await this.updateCommandHistory(prompt);
 
           this.runMinionOnCurrentSelectionAndEditor(prompt);
           break;
@@ -184,7 +188,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            execution.stopExecution("Canceled by user");
+            execution.stopExecution(CANCELED_STAGE_NAME);
           } else {
             console.error("No execution found for id", executionId);
           }
@@ -207,7 +211,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           let execution = this.executions.find((e) => e.id === executionId);
 
           if (execution) {
-            execution.stopExecution("Canceled by user", false);
+            execution.stopExecution(CANCELED_STAGE_NAME, false);
             this.executions = this.executions.filter((e) => e.id !== executionId);
           } else {
             vscode.window.showErrorMessage("No execution found for id", executionId);
@@ -273,6 +277,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       stopped: e.stopped,
       classification: e.classification,
       modificationDescription: e.modificationDescription,
+      selectedText: e.selectedText,
+      shortName: e.shortName,
     }));
 
     this._view?.webview.postMessage({
@@ -302,10 +308,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       this._view?.show?.(true);
     }
 
-    this._view?.webview.postMessage({
-      type: "preFillPrompt",
-      value: prompt,
-    });
+    this.runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
   public async runMinionOnCurrentSelectionAndEditor(userQuery: string) {
