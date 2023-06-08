@@ -1196,13 +1196,6 @@
   resolved "https://registry.npmjs.org/@types/node/-/node-18.16.13.tgz"
   integrity sha512-uZRomboV1vBL61EBXneL4j9/hEn+1Yqa4LQdpGrKmXFyJmVfWc9JV9+yb2AlnOnuaDnb2PDO3hC6/LKmzJxP1A==
 
-"@types/play-sound@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@types/play-sound/-/play-sound-1.1.0.tgz#fc60ea73d09100df7ccd2e54707edcebc6546289"
-  integrity sha512-v+ggBleNpLah+RDTuyFsYjBGnAwULcJD2mjdP/X4ICsu3HPcOmCktZnfgwQ9UECS+01d5MCm1+YYip2R/iIX0g==
-  dependencies:
-    "@types/node" "*"
-
 "@types/prop-types@*":
   version "15.7.5"
   resolved "https://registry.npmjs.org/@types/prop-types/-/prop-types-15.7.5.tgz"
@@ -1238,6 +1231,13 @@
   version "7.5.0"
   resolved "https://registry.npmjs.org/@types/semver/-/semver-7.5.0.tgz"
   integrity sha512-G8hZ6XJiHnuhQKR7ZmysCeJWE08o8T0AXtk5darsCaTVsYZhhgUrq53jizaR2FvsoeCwJhlmwTjkXBY5Pn/ZHw==
+
+"@types/sound-play@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@types/sound-play/-/sound-play-1.1.0.tgz#5e8a8354c92492b40a477c747ac6059d9e251768"
+  integrity sha512-r9BuZ7T8KmS3qxW52hg3LoFX8kl+jUPZilI2QawmjnNEjbHLDYrGOX1HOguF5BRI8ECM0OSXONl13UwT0XkPgw==
+  dependencies:
+    "@types/node" "*"
 
 "@types/vscode@^1.78.0":
   version "1.78.0"
@@ -2145,11 +2145,6 @@ find-cache-dir@^3.3.2:
     make-dir "^3.0.2"
     pkg-dir "^4.1.0"
 
-find-exec@1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/find-exec/-/find-exec-1.0.2.tgz#dd90e77ef50ab380bdb2f6cc508a386606f3d3bd"
-  integrity sha512-/cs763F5i7Nm/aG+hjBv2nJB/Bl2w0tnuZd5bbfcV+WYapn8T4ez3B87H6MgvsmdheDkitj/rHi557wvE+XylQ==
-
 find-up@5.0.0, find-up@^5.0.0:
   version "5.0.0"
   resolved "https://registry.npmjs.org/find-up/-/find-up-5.0.0.tgz"
@@ -3008,13 +3003,6 @@ pkg-dir@^4.1.0, pkg-dir@^4.2.0:
   dependencies:
     find-up "^4.0.0"
 
-play-sound@^1.1.5:
-  version "1.1.5"
-  resolved "https://registry.yarnpkg.com/play-sound/-/play-sound-1.1.5.tgz#5b44aa0ed59e2ec2f80710210ed783c79b6fb854"
-  integrity sha512-gbdF1iLNyL5r9Ne9YwARGMkrvfR4EL9G1ZLtFPLkI2tQt0kkHw5CHM5E6Gl/lDuuk/Uj/O5Q29Bi08jMK4egbA==
-  dependencies:
-    find-exec "1.0.2"
-
 prelude-ls@^1.2.1:
   version "1.2.1"
   resolved "https://registry.npmjs.org/prelude-ls/-/prelude-ls-1.2.1.tgz"
@@ -3287,6 +3275,11 @@ slash@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/slash/-/slash-3.0.0.tgz"
   integrity sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==
+
+sound-play@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/sound-play/-/sound-play-1.1.0.tgz#58ffa31d1bf51822d49d91ff7865591fd9376381"
+  integrity sha512-Bd/L0AoCwITFeOnpNLMsfPXrV5GG5NhrC/T6odveahYbhPZkdTnrFXRia9FCC5WBWdUTw1d+yvLBvi4wnD1xOA==
 
 source-map-support@~0.5.20:
   version "0.5.21"
