@@ -138,35 +138,44 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         }
         case "reRunExecution": {
           let executionId = data.executionId;
-          let oldExecution = this.executions.find((e) => e.id === executionId);
-          
-          if (!oldExecution) {
+          let oldExecutionMaybe = this.executions.find((e) => e.id === executionId);
+
+          if (!oldExecutionMaybe) {
             vscode.window.showErrorMessage("No execution found for id", executionId);
             throw new Error(`No execution found for id ${executionId}`);
           }
+
+          let oldExecution = oldExecutionMaybe;
 
           if (!oldExecution.stopped) {
             vscode.window.showErrorMessage("Execution is still running", executionId);
             break;
           }
 
-          let newExecution = await GPTExecution.create({
-            userQuery: data.newUserQuery || oldExecution.userQuery,
-            document: await oldExecution.document(),
-            selection: oldExecution.selection,
-            selectedText: oldExecution.selectedText,
-            onChanged: async (important) => {
-              if (important) {
-                this.notifyExecutionsUpdatedImmediate();
-              } else {
-                this.notifyExecutionsUpdated();
-              }
-            }
-          })
+          //remove old execution
+          this.executions = this.executions.filter((e) => e.id !== executionId);
 
-          this.executions = [newExecution, ...this.executions.filter((e) => e.id !== executionId)];
+          //after 1 second add a new one
+          setTimeout(async () => {
+            let newExecution = await GPTExecution.create({
+              userQuery: data.newUserQuery || oldExecution.userQuery,
+              document: await oldExecution.document(),
+              selection: oldExecution.selection,
+              selectedText: oldExecution.selectedText,
+              onChanged: async (important) => {
+                if (important) {
+                  this.notifyExecutionsUpdatedImmediate();
+                } else {
+                  this.notifyExecutionsUpdated();
+                }
+              },
+            });
 
-          await newExecution.run();
+            this.executions = [newExecution, ...this.executions.filter((e) => e.id !== executionId)];
+
+            await newExecution.run();
+          }, 1000);
+
           break;
         }
 
@@ -209,7 +218,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
           break;
         }
-        case "readyForMessages" : {
+        case "readyForMessages": {
           this._view?.webview.postMessage({
             type: "apiKeySet",
             value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
