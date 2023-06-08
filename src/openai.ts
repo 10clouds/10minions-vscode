@@ -169,4 +169,6 @@ export async function gptExecute({
       }
     }
   }
+
+  throw new Error("Assertion: Should never get here");
 }
