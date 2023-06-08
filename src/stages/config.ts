@@ -1,0 +1,59 @@
+import { stageStarting } from "./1_stageStarting";
+import { stageClassifyTask } from "./2_stageClassifyTask";
+import { stageCreateModification } from "./3_stageCreateModification";
+import { stageCreateModificationProcedure } from "./4_stageCreateModificationProcedure";
+import { stageFallingBackToComment } from "./6_stageFallingBackToComment";
+import { stageFinishing } from "./7_stageFinishing";
+import { stageApplyModificationProcedure } from "./5_stageApplyModificationProcedure";
+
+export const STAGES = [
+  {
+    name: "Starting ...",
+    weight: 10,
+    execution: stageStarting,
+  },
+  {
+    name: "Understanding ...",
+    weight: 50,
+    execution: stageClassifyTask,
+  },
+  {
+    name: "Conceptualising ...",
+    weight: 100,
+    execution: stageCreateModification,
+  },
+  {
+    name: "Preparing Changes ...",
+    weight: 80,
+    execution: stageCreateModificationProcedure,
+  },
+  {
+    name: "Applying Changes ...",
+    weight: 10,
+    execution: stageApplyModificationProcedure,
+  },
+  {
+    name: "Preparing Changes (retry) ...",
+    weight: 40,
+    execution: stageCreateModificationProcedure,
+  },
+  {
+    name: "Applying Changes (retry) ...",
+    weight: 10,
+    execution: stageApplyModificationProcedure,
+  },
+  {
+    name: "Applying changes as comment (fall back) ...",
+    weight: 10,
+    execution: stageFallingBackToComment,
+  },
+  {
+    name: "Finishing ...",
+    weight: 10,
+    execution: stageFinishing,
+  },
+];
+
+export const TOTAL_WEIGHTS = STAGES.reduce((acc, stage) => {
+  return acc + stage.weight;
+}, 0);

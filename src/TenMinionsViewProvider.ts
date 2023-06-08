@@ -107,7 +107,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           this.commandHistory = newCommandHistory;
           await this._context.globalState.update("10minions.commandHistory", newCommandHistory);
 
-          this.executeFullGPTProcedure(prompt);
+          this.runMinionOnCurrentSelectionAndEditor(prompt);
           break;
         }
         case "openDocument": {
@@ -138,19 +138,35 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         }
         case "reRunExecution": {
           let executionId = data.executionId;
-          let execution = this.executions.find((e) => e.id === executionId);
-
-          if (execution) {
-            if (!execution.stopped) {
-              vscode.window.showErrorMessage("Execution is still running", executionId);
-              break;
-            }
-
-            await execution.run(data.newUserQuery || execution.userQuery);
-          } else {
+          let oldExecution = this.executions.find((e) => e.id === executionId);
+          
+          if (!oldExecution) {
             vscode.window.showErrorMessage("No execution found for id", executionId);
+            throw new Error(`No execution found for id ${executionId}`);
           }
 
+          if (!oldExecution.stopped) {
+            vscode.window.showErrorMessage("Execution is still running", executionId);
+            break;
+          }
+
+          let newExecution = await GPTExecution.create({
+            userQuery: data.newUserQuery || oldExecution.userQuery,
+            document: await oldExecution.document(),
+            selection: oldExecution.selection,
+            selectedText: oldExecution.selectedText,
+            onChanged: async (important) => {
+              if (important) {
+                this.notifyExecutionsUpdatedImmediate();
+              } else {
+                this.notifyExecutionsUpdated();
+              }
+            }
+          })
+
+          this.executions = [newExecution, ...this.executions.filter((e) => e.id !== executionId)];
+
+          await newExecution.run();
           break;
         }
 
@@ -283,7 +299,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  public async executeFullGPTProcedure(userQuery: string) {
+  public async runMinionOnCurrentSelectionAndEditor(userQuery: string) {
     const activeEditor = vscode.window.activeTextEditor;
 
     if (!activeEditor) {
@@ -296,7 +312,11 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const execution = new GPTExecution({
+    const execution = await GPTExecution.create({
+      userQuery,
+      document: activeEditor.document,
+      selection: activeEditor.selection,
+      selectedText: activeEditor.document.getText(activeEditor.selection),
       onChanged: async (important) => {
         if (important) {
           this.notifyExecutionsUpdatedImmediate();
@@ -308,12 +328,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
     this.executions = [execution, ...this.executions];
 
-    await execution.run({
-      userQuery,
-      document: activeEditor.document,
-      selection: activeEditor.selection,
-      selectedText: activeEditor.document.getText(activeEditor.selection),
-    });
+    await execution.run();
   }
 
   private _getHtmlForWebview(webview: vscode.Webview) {

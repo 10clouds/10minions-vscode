@@ -133,10 +133,6 @@ export async function stageCreateModification(this: GPTExecution) {
     throw new Error("Classification is undefined");
   }
 
-  if (this.classification === "AnswerQuestion") {
-    return;
-  }
-  
   this.modificationDescription = "";
   this.modificationDescription = await planAndWrite(
     this.classification,

@@ -141,19 +141,23 @@ export function Execution({ execution, ...props }: { execution: ExecutionInfo } 
         <span>
           {execution.executionStage}{" "}
           {execution.executionStage === FINISHED_STAGE_NAME && (
-            <a
-              //present it as a link
-              title="Show Diff"
-              className="inline-block btn cursor-pointer"
-              onClick={() => {
-                vscode.postMessage({
-                  type: "showDiff",
-                  executionId: execution.id,
-                });
-              }}
-            >
-              Show diff
-            </a>
+            <>
+              {"("}
+              <a
+                //present it as a link
+                title="Show Diff"
+                className="inline-block btn cursor-pointer"
+                onClick={() => {
+                  vscode.postMessage({
+                    type: "showDiff",
+                    executionId: execution.id,
+                  });
+                }}
+              >
+                Show diff
+              </a>
+              {")"}
+            </>
           )}
         </span>
         {!execution.stopped ? (
@@ -184,26 +188,21 @@ export function Execution({ execution, ...props }: { execution: ExecutionInfo } 
           </a>
         )}
       </div>
-      {execution.classification === "AnswerQuestion" ? (
-        <pre style={{ whiteSpace: "pre-wrap" }}>{execution.modificationDescription}</pre>
-      ) : (
-        <>
-          <div className="flex items-center mb-2">
-            <div
-              className="cursor-pointer w-full"
-              title="Open Log File"
-              onClick={() => {
-                vscode.postMessage({
-                  type: "openDocument",
-                  documentURI: execution.logFileURI,
-                });
-              }}
-            >
-              <ProgressBar progress={execution.progress} stopped={execution.stopped} />
-            </div>
-          </div>
-        </>
-      )}
+      <div className="flex items-center mb-2">
+        <div
+          className="cursor-pointer w-full"
+          title="Open Log File"
+          onClick={() => {
+            vscode.postMessage({
+              type: "openDocument",
+              documentURI: execution.logFileURI,
+            });
+          }}
+        >
+          <ProgressBar progress={execution.progress} stopped={execution.stopped} />
+        </div>
+      </div>
+      {execution.classification === "AnswerQuestion" ? <pre style={{ whiteSpace: "pre-wrap" }}>{execution.modificationDescription}</pre> : <></>}
     </div>
   );
 }

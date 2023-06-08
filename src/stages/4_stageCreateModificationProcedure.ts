@@ -155,11 +155,6 @@ export async function stageCreateModificationProcedure(this: GPTExecution) {
     return;
   }
 
-  await appendToFile(
-    this.workingDocumentURI,
-    `\nGENERATING CONSOLIDATION\n\n`
-  );
-
   this.reportSmallProgress();
   
   this.modificationProcedure = await createConsolidated(

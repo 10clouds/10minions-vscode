@@ -31,7 +31,7 @@ export function GoButton({ onClick }: { onClick?: () => void }) {
   );
 }
 
-export function ExecutionsList({ executionList, removedExecution }: { executionList: ExecutionInfo[]; removedExecution: ExecutionInfo | null }) {
+export function ExecutionsList({ executionList }: { executionList: ExecutionInfo[] }) {
   return (
     <div className="relative" style={{ minHeight: "3rem" }}>
       <div
@@ -45,7 +45,7 @@ export function ExecutionsList({ executionList, removedExecution }: { executionL
       </div>
       <div className="mt-4">
         {executionList.map((execution) => (
-          <Execution key={execution.id} execution={execution} className={removedExecution && removedExecution.id === execution.id ? "fade-out" : ""} />
+          <Execution key={execution.id} execution={execution} />
         ))}
       </div>
     </div>
@@ -57,11 +57,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [infoMessage, setInfoMessage] = React.useState("");
   const [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
-  const [removedExecution, setRemovedExecution] = React.useState<ExecutionInfo | null>(null);
   const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
 
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
-
 
   function handleMessage(message: any) {
     switch (message.type) {
@@ -104,18 +102,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }
 
   function handleExecutionsUpdated(executions: ExecutionInfo[]) {
-    // Find the unique ExecutionInfo that was removed
-    const removed = executionList.find((exec) => !executions.some(({ id }) => id === exec.id));
-    if (removed) {
-      setRemovedExecution(removed);
-    }
-
     setExecutionList(executions);
-
-    // Reset the removedExecution state after the fade-out animation (500ms)
-    setTimeout(() => {
-      setRemovedExecution(null);
-    }, 500);
   }
 
   function handleSuggestionClick(command: string) {
@@ -133,7 +120,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
     window.addEventListener("message", eventHandler);
 
-    vscode.postMessage({ type: 'readyForMessages' });
+    vscode.postMessage({ type: "readyForMessages" });
 
     return () => {
       window.removeEventListener("message", eventHandler);
@@ -221,7 +208,7 @@ Ask something ...
                 e.preventDefault(); // Prevent default tab behavior
                 handleSuggestionClick(selectedSuggestion);
               }
-            }} 
+            }}
           />
 
           {infoMessage && (
@@ -258,7 +245,7 @@ Ask something ...
             }}
           />
 
-          <ExecutionsList executionList={executionList} removedExecution={removedExecution} />
+          <ExecutionsList executionList={executionList} />
         </div>
       )}
 
