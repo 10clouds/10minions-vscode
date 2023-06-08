@@ -1,9 +1,11 @@
 import * as React from "react";
+import FlipMove from "react-flip-move";
 import { createRoot } from "react-dom/client";
 import { Logo } from "./Logo";
 import { useTemporaryFlag } from "./useTemporaryFlag";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { Execution } from "./Execution";
+import { ALL_ROBOT_ICONS } from "./Minion";
 
 declare const acquireVsCodeApi: any;
 
@@ -18,7 +20,7 @@ export function GoButton({ onClick }: { onClick?: () => void }) {
         backgroundColor: "#5e20e5",
         color: "#ffffff",
       }}
-      className={"w-full font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
+      className={"w-full mb-4 font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
       type="submit"
       onClick={() => {
         onClick?.();
@@ -33,23 +35,37 @@ export function GoButton({ onClick }: { onClick?: () => void }) {
 
 export function ExecutionsList({ executionList }: { executionList: ExecutionInfo[] }) {
   return (
-    <div className="relative" style={{ minHeight: "3rem" }}>
-      <div
-        className={
-          "absolute text-center transition-all duration-300 ease-in-out w-full pointer-events-none" +
-          (executionList.length === 0 ? " opacity-100" : " opacity-0")
-        }
-        style={{ minHeight: "3rem" }}
+      <FlipMove
+        enterAnimation={{
+          from: {
+            transform: "translateY(-10%)",
+            animationTimingFunction: "cubic-bezier(0.8, 0, 1, 1)",
+            opacity: "0.1",
+          },
+          to: {
+            transform: "translateY(0)",
+            animationTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
+            opacity: "1",
+          },
+        }}
+        leaveAnimation="elevator"
       >
-        No minions are active.
-      </div>
-      <div className="mt-4">
+        {executionList.length === 0 && (
+          <div key="no-minions" className="text-center">
+            No minions are active.
+          </div>
+        )}
+
         {executionList.map((execution) => (
           <Execution key={execution.id} execution={execution} />
         ))}
-      </div>
-    </div>
+      </FlipMove>
   );
+}
+
+function getRandomRobotIcon() {
+  const randomIndex = Math.floor(Math.random() * ALL_ROBOT_ICONS.length);
+  return ALL_ROBOT_ICONS[randomIndex];
 }
 
 export const SideBarWebViewInnerComponent: React.FC = () => {
@@ -127,24 +143,14 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     };
   }, []);
 
-  React.useEffect(() => {
-    const eventHandler = (event: any) => {
-      const message = event.data;
-      console.log("message received", message.type);
-
-      handleMessage(message);
-    };
-
-    window.addEventListener("message", eventHandler);
-
-    return () => {
-      window.removeEventListener("message", eventHandler);
-    };
-  }, []);
-
+  const RobotIcon1 = React.useMemo(() => getRandomRobotIcon(), []);
+  const RobotIcon2 = React.useMemo(() => getRandomRobotIcon(), []);
+  
+  console.log("PRZYPADL")
   return (
-    <div className="container mx-auto px-4 py-8 font-sans leading-normal tracking-normal">
-      <h1 className="text-4xl font-bold text-center mb-2 text-primary">🤖 10Minions 🤖</h1>
+    <div className="w-full">
+      <div className="p-4">
+      <h1 className="text-4xl font-bold text-center mb-2 text-primary"><RobotIcon1 className={`w-8 h-8 inline-flex`}/> 10Minions <RobotIcon2 className={`w-8 h-8 inline-flex`} /></h1>
       <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
 
       {apiKeySet === false && (
@@ -176,7 +182,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
               color: "var(--vscode-editor-foreground)",
               borderColor: "var(--vscode-focusBorder)",
             }}
-            className="w-full h-96 p-4 text-sm resize-none mb-4 focus:outline-none"
+            className="w-full h-96 p-4 text-sm resize-none focus:outline-none"
             placeholder={`
 Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For pinpoint precision, highlight the code involved.
             
@@ -248,10 +254,23 @@ Ask something ...
           <ExecutionsList executionList={executionList} />
         </div>
       )}
+      </div>
 
-      <div className="text-center mx-auto">
+      <div
+        // Update className to achieve better centering, margin, padding, and width
+        className="text-center p-4 fixed bottom-0 w-full"  
+        key="credits"
+        style={{
+          backgroundColor: "var(--vscode-sideBar-background)",
+        }}
+      >
         by{" "}
-        <a className="inline-block text-center w-1/6 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
+        <a
+          className="inline-block text-center w-1/6 logo"
+          href="https://10clouds.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Logo className="w-full" />
         </a>
       </div>

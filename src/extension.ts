@@ -18,7 +18,7 @@ class MyCodeActionProvider implements vscode.CodeActionProvider {
     uri: vscode.Uri
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
-      "🤖 Fix with 10Minions AI",
+      "Fix with 10Minions",
       MyCodeActionProvider.providedCodeActionKinds[0]
     );
     action.command = {

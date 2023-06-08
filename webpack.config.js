@@ -60,7 +60,10 @@ const sideBarConfig = {
   },
   resolve: {
     // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
-    extensions: [".ts", ".tsx", ".js"]
+    extensions: [".ts", ".tsx", ".js"],
+    fallback: {
+      'process/browser': require.resolve('process/browser')
+    },
   },
   module: {
     rules: [

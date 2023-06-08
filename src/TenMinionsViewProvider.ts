@@ -24,7 +24,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     const ONE_DAY = 24 * 60 * 60 * 1000;
 
     const suggestions = Object.keys(this.commandHistory)
-      .filter((command) => command.toLowerCase().startsWith(input.toLowerCase()))
+      .filter((command) => command.toLowerCase().startsWith(input.toLowerCase()) && command.toLowerCase() !== input.toLowerCase())
       .map((command) => {
         const { weight, timeStamp } = this.commandHistory[command];
         const daysOld = Math.floor((Date.now() - timeStamp) / ONE_DAY);

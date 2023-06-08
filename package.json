@@ -77,7 +77,7 @@
         {
           "id": "10minions",
           "title": "10Minions",
-          "icon": "resources/icon.png"
+          "icon": "resources/icon.svg"
         }
       ]
     },
@@ -137,6 +137,7 @@
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-flip-move": "^3.0.5"
   }
 }
