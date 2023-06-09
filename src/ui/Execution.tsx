@@ -2,12 +2,11 @@ import { XMarkIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/s
 import * as React from "react";
 import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
 import { ProgressBar } from "./ProgressBar";
-import { vscode } from "./SideBarWebViewInnerComponent";
+import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { forwardRef } from "react";
 import { ALL_ROBOT_ICONS } from "./Minion";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
-
-//Task: If this can not be placed in one line, show an elipsis character at the end (use only standard tailwind classes for that)
+import { MessageToVSCode } from "../Messages";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
   //target.style.height = "auto";
@@ -72,13 +71,13 @@ export const Execution = forwardRef(
     function handleRun() {
       if (updatedPrompt !== execution.userQuery) {
         // Stop the current execution
-        vscode.postMessage({
+       postMessageToVsCode({
           type: "stopExecution",
           executionId: execution.id,
         });
 
         // Retry the execution with the updated prompt
-        vscode.postMessage({
+       postMessageToVsCode({
           type: "reRunExecution",
           executionId: execution.id,
           newUserQuery: updatedPrompt, // Pass the updated prompt value
@@ -97,7 +96,7 @@ export const Execution = forwardRef(
     }
 
     function handleClickShowDiff() {
-      vscode.postMessage({
+     postMessageToVsCode({
         type: "showDiff",
         executionId: execution.id,
       });
@@ -122,7 +121,7 @@ export const Execution = forwardRef(
             <div
               title="Open Log"
               onClick={() => {
-                vscode.postMessage({
+               postMessageToVsCode({
                   type: "openDocument",
                   documentURI: execution.logFileURI,
                 });
@@ -139,7 +138,7 @@ export const Execution = forwardRef(
                 className="cursor-pointer truncate"
                 title="Open Log"
                 onClick={() => {
-                  vscode.postMessage({
+                 postMessageToVsCode({
                     type: "openDocument",
                     documentURI: execution.logFileURI,
                   });
@@ -164,7 +163,7 @@ export const Execution = forwardRef(
               <button
                 title="Stop Execution"
                 onClick={() => {
-                  vscode.postMessage({
+                 postMessageToVsCode({
                     type: "stopExecution",
                     executionId: execution.id,
                   });
@@ -180,7 +179,7 @@ export const Execution = forwardRef(
               <button
                 title="Retry Execution"
                 onClick={() => {
-                  vscode.postMessage({
+                 postMessageToVsCode({
                     type: "reRunExecution",
                     executionId: execution.id,
                   });
@@ -201,7 +200,7 @@ export const Execution = forwardRef(
             <XMarkIcon
               title="Close Execution"
               onClick={() => {
-                vscode.postMessage({
+               postMessageToVsCode({
                   type: "closeExecution",
                   executionId: execution.id,
                 });
@@ -219,7 +218,7 @@ export const Execution = forwardRef(
                   title="Open Document"
                   className="cursor-pointer mb-2"
                   onClick={() => {
-                    vscode.postMessage({
+                   postMessageToVsCode({
                       type: "openDocument",
                       documentURI: execution.documentURI,
                     });
@@ -288,7 +287,7 @@ export const Execution = forwardRef(
             className="cursor-pointer w-full"
             title="Open Log"
             onClick={() => {
-              vscode.postMessage({
+             postMessageToVsCode({
                 type: "openDocument",
                 documentURI: execution.logFileURI,
               });

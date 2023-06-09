@@ -2,6 +2,7 @@ import { basename } from "path";
 import * as vscode from "vscode";
 import { GPTExecution, SerializedGPTExecution } from "./GPTExecution";
 import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
+import { postMessageToWebView } from "./TenMinionsViewProvider";
 
 export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   private executions: GPTExecution[] = [];
@@ -190,7 +191,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       shortName: e.shortName,
     }));
 
-    this._view!.webview.postMessage({
+    postMessageToWebView(this._view, {
       type: "executionsUpdated",
       executions: executionInfo,
     });

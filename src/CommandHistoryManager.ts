@@ -56,7 +56,7 @@ export class CommandHistoryManager {
     // Implement the custom onChunk function
     const onChunk = async (chunk: string) => {
       result += chunk;
-      this._view?.webview.postMessage({
+      postMessageToWebView(this._view, {
         type: "suggestion",
         value: result,
       });

@@ -2,6 +2,13 @@ import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { CommandHistoryManager } from "./CommandHistoryManager";
 import { ExecutionsManager } from "./ExecutionsManager";
+import { MessageToVSCode, MessageToWebView } from "./Messages";
+
+
+export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
+  return view?.webview.postMessage(message);
+}
+
 
 export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "10minions.chatView";
@@ -33,13 +40,13 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     // add an event listener for messages received by the webview
-    webviewView.webview.onDidReceiveMessage(async (data) => await this.handleWebviewMessage(data));
+    webviewView.webview.onDidReceiveMessage(async (data: MessageToVSCode) => await this.handleWebviewMessage(data));
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration((e) => {
       console.log(`Changed`);
       if (e.affectsConfiguration("10minions.apiKey")) {
-        this._view?.webview.postMessage({
+        postMessageToWebView(this._view, {
           type: "apiKeySet",
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });
@@ -55,7 +62,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       this._view?.show?.(true);
     }
 
-    this._view?.webview.postMessage({
+    postMessageToWebView(this._view, {
       type: "clearAndfocusOnInput",
     });
   }
@@ -71,7 +78,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
-  async handleWebviewMessage(data: any) {
+  
+  async handleWebviewMessage(data: MessageToVSCode) {
     console.log("CMD", data);
     const activeEditor = vscode.window.activeTextEditor;
 
@@ -79,7 +87,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       case "getTokenCount": {
         let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
 
-        this._view?.webview.postMessage({
+        postMessageToWebView(this._view, {
           type: "tokenCount",
           value: tokenCount,
         });
@@ -120,7 +128,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         const input = data.input || "";
         const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
         console.log(`Suggestion: ${suggestion}`);
-        this._view?.webview.postMessage({
+        postMessageToWebView(this._view, {
           type: "suggestion",
           value: suggestion,
         });
@@ -132,7 +140,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case "readyForMessages": {
-        this._view?.webview.postMessage({
+        postMessageToWebView(this._view, {
           type: "apiKeySet",
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });

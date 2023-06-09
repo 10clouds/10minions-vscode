@@ -6,10 +6,15 @@ import { useTemporaryFlag } from "./useTemporaryFlag";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { Execution } from "./Execution";
 import { ALL_ROBOT_ICONS } from "./Minion";
+import { MessageToVSCode, MessageToWebView } from "../Messages";
 
 declare const acquireVsCodeApi: any;
 
-export const vscode = acquireVsCodeApi();
+const vscode = acquireVsCodeApi();
+
+export function postMessageToVsCode(message: MessageToVSCode) {
+  vscode.postMessage(message);
+}
 
 export function GoButton({ onClick }: { onClick?: () => void }) {
   let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
@@ -106,7 +111,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
 
-  function handleMessage(message: any) {
+  function handleMessage(message: MessageToWebView) {
     console.log("CMD (webview)", message.type);
 
     switch (message.type) {
@@ -157,7 +162,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   React.useEffect(() => {
     const eventHandler = (event: any) => {
-      const message = event.data;
+      const message: MessageToWebView = event.data;
       console.log("message received", message.type);
 
       handleMessage(message);
@@ -165,7 +170,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
     window.addEventListener("message", eventHandler);
 
-    vscode.postMessage({ type: "readyForMessages" });
+   postMessageToVsCode({ type: "readyForMessages" });
 
     return () => {
       window.removeEventListener("message", eventHandler);
@@ -233,7 +238,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                 setUserInputPrompt(e.target.value);
 
                 // Post the message to the handler
-                vscode.postMessage({
+               postMessageToVsCode({
                   type: "getSuggestions",
                   input: e.target.value,
                 });
@@ -280,7 +285,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
             <GoButton
               onClick={() => {
-                vscode.postMessage({
+               postMessageToVsCode({
                   type: "newExecution",
                   value: userInputPrompt,
                 });
