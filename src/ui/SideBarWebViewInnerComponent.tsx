@@ -142,12 +142,15 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       <React.Fragment>
         <h1 className="text-4xl font-bold text-center mb-2 text-primary">
           <div className="flex items-center justify-center">
-            <RobotIcon1 style={{color: blendWithForeground(BRAND_COLOR, 0.75)}} className="w-8 h-8 inline-flex align-middle mr-2" />
-            <span style={{color: blendWithForeground(BRAND_COLOR, 0.75)}}>10</span>Minions
-            <RobotIcon2 style={{color: blendWithForeground(BRAND_COLOR, 0.75)}} className="w-8 h-8 inline-flex align-middle ml-2" />
+            <RobotIcon1 style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }} className="w-8 h-8 inline-flex align-middle mr-2" />
+            <span style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}>10</span>Minions
+            <RobotIcon2 style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }} className="w-8 h-8 inline-flex align-middle ml-2" />
           </div>
         </h1>
-        <h3 className="text-xl font-semibold text-center mb-6">Your Army of <span style={{color: blendWithForeground(BRAND_COLOR, 0.75)}}>AI-Powered</span><br/> <span style={{opacity: 0.7}}>Coding</span> Comrades</h3>
+        <h3 className="text-xl font-semibold text-center mb-6">
+          Your Army of <span style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}>AI-Powered</span>
+          <br /> <span style={{ opacity: 0.7 }}>Coding</span> Comrades
+        </h3>
       </React.Fragment>
     );
   }
@@ -171,7 +174,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
     window.addEventListener("message", eventHandler);
 
-   postMessageToVsCode({ type: "readyForMessages" });
+    postMessageToVsCode({ type: "readyForMessages" });
 
     return () => {
       window.removeEventListener("message", eventHandler);
@@ -200,9 +203,19 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     );
   }
 
+  const handleTextAreaClick = React.useCallback((e: React.MouseEvent<HTMLTextAreaElement, MouseEvent>) => {
+    if (textAreaRef.current) {
+      const { scrollLeft, scrollTop } = textAreaRef.current;
+      console.log("SDASD", scrollLeft, scrollTop);
+      setScrollPosition({ scrollLeft, scrollTop });
+    }
+  }, []);
+
+
   const RobotIcon1 = React.useMemo(() => getRandomRobotIcon(), []);
   const RobotIcon2 = React.useMemo(() => getRandomRobotIcon(), []);
 
+  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = React.useState({ x: 0, y: 0 });
 
   React.useEffect(() => {
@@ -222,79 +235,77 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         {apiKeySet === false && <ApiKeyInfoMessage />}
 
         {apiKeySet === true && (
-          <div className="relative">
-            <textarea
-              style={{
-                position: "relative",
-                height: "20rem",
-                backgroundColor: "var(--vscode-editor-background)",
-                color: "rgba(0,0,0,0)", // Transparent text color
-                borderColor: "var(--vscode-focusBorder)",
-                caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
-              }}
-              className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none"
-              placeholder={COMMAND_PLACEHOLDER}
-              value={userInputPrompt}
-              onChange={(e) => {
-                setUserInputPrompt(e.target.value);
+          <>
+            <div style={{ position: "relative" }}>
+              <textarea
+                ref={textAreaRef}
+                style={{
+                  position: "relative",
+                  height: "20rem",
+                  backgroundColor: "var(--vscode-editor-background)",
+                  color: "rgba(0,0,0,0)", // Transparent text color
+                  borderColor: "var(--vscode-focusBorder)",
+                  
+                }}
+                onClick={handleTextAreaClick}
+                className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none"
+                placeholder={COMMAND_PLACEHOLDER}
+                value={userInputPrompt}
+                onChange={(e) => {
+                  setUserInputPrompt(e.target.value);
 
-                // Post the message to the handler
-               postMessageToVsCode({
-                  type: "getSuggestions",
-                  input: e.target.value,
-                });
-              }}
-              onClick={(e) => {
-                const textareaElement = e.target as HTMLTextAreaElement;
-                const cursorCoords = getCaretCoordinates(textareaElement, textareaElement.selectionStart);
-                setCursorPosition({ x: cursorCoords.left, y: cursorCoords.top });
-              }}
-              onScroll={(e) => {
-                const textArea = e.target as HTMLTextAreaElement;
-                const { scrollLeft, scrollTop } = textArea;
-                setScrollPosition({ scrollLeft, scrollTop });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Tab" && selectedSuggestion.length > 0) {
-                  e.preventDefault(); // Prevent default tab behavior
-                  handleSuggestionClick(selectedSuggestion);
-                }
-              }}
-            />
+                  // Post the message to the handler
+                  postMessageToVsCode({
+                    type: "getSuggestions",
+                    input: e.target.value,
+                  });
+                }}
+                onScroll={handleTextAreaClick}
+                onKeyDown={(e) => {
+                  if (e.key === "Tab" && selectedSuggestion.length > 0) {
+                    e.preventDefault(); // Prevent default tab behavior
+                    handleSuggestionClick(selectedSuggestion);
+                  }
+                }}
+              />
 
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                height: "20rem",
-                pointerEvents: "none",
-                color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
-                overflow: "hidden",
-                whiteSpace: "pre-wrap", // Preserve line breaks and spaces
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  height: "20rem",
+                  pointerEvents: "none",
+                  color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+                  overflow: "hidden",
+                  whiteSpace: "pre-wrap", // Preserve line breaks and spaces
+                  zIndex: 1000,
+                  transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
+                }}
+                className="w-full h-96 p-4 text-sm resize-none focus:outline-none"
+                // Adding ":before" pseudo-element to represent the caret
+                data-caret
+              >
+                <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(0, selectedSuggestion.indexOf(userInputPrompt))}</span>
+                <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
+                <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
+                <br/>
+                {selectedSuggestion &&  <span style={{ opacity: 0.5 }}>Press Tab to accept</span>}
+              </div>
 
-                transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
-              }}
-              className="w-full h-96 p-4 text-sm resize-none focus:outline-none"
-              // Adding ":before" pseudo-element to represent the caret
-              data-caret
-            >
-              <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(0, selectedSuggestion.indexOf(userInputPrompt))}</span>
-              <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
-              <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
+              
             </div>
-
             <GoButton
-              onClick={() => {
-               postMessageToVsCode({
-                  type: "newExecution",
-                  value: userInputPrompt,
-                });
-              }}
-            />
-
+                onClick={() => {
+                  postMessageToVsCode({
+                    type: "newExecution",
+                    value: userInputPrompt,
+                  });
+                }}
+              />
+              
             <ExecutionsList executionList={executionList} />
-          </div>
+          </>
         )}
       </div>
 
@@ -306,9 +317,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
           backgroundColor: "var(--vscode-sideBar-background)",
         }}
       >
-        by{" "}
-        <a className="inline-block text-center w-1/6 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
-          <Logo className="w-full" />
+        <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
+          by <br />
+          <Logo className="inline-block w-20" />
         </a>
       </div>
     </div>
