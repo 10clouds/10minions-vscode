@@ -8,6 +8,7 @@ export const CANCELED_STAGE_NAME = "Canceled";
 
 export type ExecutionInfo = {
   id: string;
+  minionIndex: number;
   documentName: string;
   documentURI: string;
   logFileURI: string;

@@ -10,6 +10,7 @@ import { gptExecute } from "./openai";
 
 export type SerializedGPTExecution = {
   id: string;
+  minionIndex: number;
   documentURI: string;
   workingDocumentURI: string;
   userQuery: string;
@@ -34,6 +35,7 @@ export class GPTExecution {
   serialize(): SerializedGPTExecution {
     return {
       id: this.id,
+      minionIndex: this.minionIndex,
       documentURI: this.documentURI,
       workingDocumentURI: this.workingDocumentURI,
       userQuery: this.userQuery,
@@ -58,6 +60,7 @@ export class GPTExecution {
   static deserialize(data: SerializedGPTExecution): GPTExecution {
     return new GPTExecution({
       id: data.id,
+      minionIndex: data.minionIndex || 0,
       documentURI: data.documentURI,
       workingDocumentURI: data.workingDocumentURI,
       userQuery: data.userQuery,
@@ -80,6 +83,7 @@ export class GPTExecution {
 
   readonly userQuery: string;
   readonly id: string;
+  readonly minionIndex: number;
 
   readonly documentURI: string;
   readonly workingDocumentURI: string;
@@ -108,6 +112,7 @@ export class GPTExecution {
 
   constructor({
     id,
+    minionIndex,
     documentURI,
     workingDocumentURI,
     userQuery,
@@ -124,6 +129,7 @@ export class GPTExecution {
     classification = undefined,
   }: {
     id: string;
+    minionIndex: number;
     documentURI: string;
     workingDocumentURI: string;
     userQuery: string;
@@ -140,6 +146,7 @@ export class GPTExecution {
     classification?: TASK_CLASSIFICATION_NAME;
   }) {
     this.id = id;
+    this.minionIndex = minionIndex;
     this.documentURI = documentURI;
     this.workingDocumentURI = workingDocumentURI;
     this.userQuery = userQuery;
@@ -161,12 +168,14 @@ export class GPTExecution {
     document,
     selection,
     selectedText,
+    minionIndex,
     onChanged,
   }: {
     userQuery: string;
     document: vscode.TextDocument;
     selection: vscode.Selection;
     selectedText: string;
+    minionIndex: number;
     onChanged: (important: boolean) => Promise<void>;
   }): Promise<GPTExecution> {
     const executionId = randomUUID();
@@ -174,6 +183,7 @@ export class GPTExecution {
 
     const execution = new GPTExecution({
       id: executionId,
+      minionIndex,
       documentURI: document.uri.toString(),
       workingDocumentURI: workingDocument.uri.toString(),
       userQuery,

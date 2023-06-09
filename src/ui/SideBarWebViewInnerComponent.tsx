@@ -1,13 +1,12 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import FlipMove from "react-flip-move";
 import { MessageToVSCode, MessageToWebView } from "../Messages";
-import { Execution } from "./Execution";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { Logo } from "./Logo";
 import { ALL_OUTLINE_ROBOT_ICONS } from "./OutlineRobotIcons";
-import { useTemporaryFlag } from "./useTemporaryFlag";
 import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
+import { GoButton } from "./GoButton";
+import { ExecutionsList } from "./ExecutionsList";
 
 declare const acquireVsCodeApi: any;
 
@@ -17,81 +16,6 @@ export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
 
-export function GoButton({ onClick }: { onClick?: () => void }) {
-  let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
-
-  return (
-    <button
-      style={{
-        backgroundColor: blendWithForeground(BRAND_COLOR, 0.75),
-        color: blendWithForeground("#ffffff", 0.75),
-      }}
-      className={"w-full mb-4 font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
-      type="submit"
-      onClick={() => {
-        onClick?.();
-        markJustClickedGo();
-      }}
-      disabled={justClickedGo}
-    >
-      Go
-    </button>
-  );
-}
-
-export function ExecutionsList({ executionList }: { executionList: ExecutionInfo[] }) {
-  return (
-    <FlipMove
-      enterAnimation={{
-        from: {
-          transform: "translateY(-10%)",
-          animationTimingFunction: "cubic-bezier(0.8, 0, 1, 1)",
-          opacity: "0.1",
-        },
-        to: {
-          transform: "translateY(0)",
-          animationTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
-          opacity: "1",
-        },
-      }}
-      leaveAnimation="elevator"
-    >
-      {executionList.length === 0 && (
-        <div key="no-minions" className="text-center">
-          No minions are active.
-        </div>
-      )}
-
-      {executionList.map((execution) => (
-        <Execution key={execution.id} execution={execution} />
-      ))}
-    </FlipMove>
-  );
-}
-
-function getRandomRobotIcon() {
-  const randomIndex = Math.floor(Math.random() * ALL_OUTLINE_ROBOT_ICONS.length);
-  return ALL_OUTLINE_ROBOT_ICONS[randomIndex];
-}
-
-function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
-  const div = document.createElement("div");
-  const span = document.createElement("span");
-  const computedStyle = getComputedStyle(element);
-
-  div.style.width = computedStyle.width;
-  div.style.height = computedStyle.height;
-  div.style.overflowY = computedStyle.overflowY;
-
-  span.textContent = element.value.substring(0, position);
-  div.appendChild(span);
-
-  element.parentElement?.appendChild(div);
-  const rect = span.getBoundingClientRect();
-  element.parentElement?.removeChild(div);
-
-  return { left: rect.left - element.getBoundingClientRect().left, top: rect.top - element.getBoundingClientRect().top };
-}
 
 const COMMAND_PLACEHOLDER = `
 Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For pinpoint precision, highlight the code involved.
@@ -109,7 +33,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
   const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
-
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
 
   function handleMessage(message: MessageToWebView) {
@@ -206,30 +129,43 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const handleTextAreaClick = React.useCallback((e: React.MouseEvent<HTMLTextAreaElement, MouseEvent>) => {
     if (textAreaRef.current) {
       const { scrollLeft, scrollTop } = textAreaRef.current;
-      console.log("SDASD", scrollLeft, scrollTop);
       setScrollPosition({ scrollLeft, scrollTop });
     }
   }, []);
 
+  function handleTextAreaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    // Prevent the caret from going into the prefix area
+    if (textAreaRef.current) {
+      const selectionStart = Math.max(prefix.length, textAreaRef.current.selectionStart);
+      const selectionEnd = Math.max(prefix.length, textAreaRef.current.selectionEnd);
+      textAreaRef.current.selectionStart = selectionStart;
+      textAreaRef.current.selectionEnd = selectionEnd;
+    }
 
-  const RobotIcon1 = React.useMemo(() => getRandomRobotIcon(), []);
-  const RobotIcon2 = React.useMemo(() => getRandomRobotIcon(), []);
+    // Remove prefix from input
+    const input = e.target.value.slice(prefix.length);
+    setUserInputPrompt(input);
+
+    // Post the message to the handler
+    postMessageToVsCode({
+      type: "getSuggestions",
+      input: e.target.value,
+    });
+  }
+
+  //get two random different robot icons
+  const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * ALL_OUTLINE_ROBOT_ICONS.length);
+    return [ALL_OUTLINE_ROBOT_ICONS[randomIndex], ALL_OUTLINE_ROBOT_ICONS[(randomIndex + 1) % ALL_OUTLINE_ROBOT_ICONS.length]];
+  }, []);
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
-  const [cursorPosition, setCursorPosition] = React.useState({ x: 0, y: 0 });
 
-  React.useEffect(() => {
-    const caret = document.querySelector("[data-caret]");
-    if (caret) {
-      if (caret && caret instanceof HTMLElement) {
-        caret.style.transform = `translate(${cursorPosition.x}px, ${cursorPosition.y}px)`;
-      }
-    }
-  }, [cursorPosition]);
+  const prefix = selectedSuggestion.slice(0, selectedSuggestion.indexOf(userInputPrompt));
 
   return (
     <div className="w-full">
-      <div className="p-4 mb-6">
+      <div className="p-4 mb-16">
         {renderHeader(RobotIcon1, RobotIcon2)}
 
         {apiKeySet === false && <ApiKeyInfoMessage />}
@@ -243,24 +179,18 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                   position: "relative",
                   height: "20rem",
                   backgroundColor: "var(--vscode-editor-background)",
-                  color: "rgba(0,0,0,0)", // Transparent text color
+                  color: "rgba(0,0,0,100)", // Transparent text color
                   borderColor: "var(--vscode-focusBorder)",
-                  
+                  caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
+
                 }}
                 onClick={handleTextAreaClick}
                 className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none"
                 placeholder={COMMAND_PLACEHOLDER}
-                value={userInputPrompt}
-                onChange={(e) => {
-                  setUserInputPrompt(e.target.value);
-
-                  // Post the message to the handler
-                  postMessageToVsCode({
-                    type: "getSuggestions",
-                    input: e.target.value,
-                  });
-                }}
+                value={prefix + userInputPrompt}
+                onChange={handleTextAreaChange}
                 onScroll={handleTextAreaClick}
+                onInput={handleTextAreaChange}
                 onKeyDown={(e) => {
                   if (e.key === "Tab" && selectedSuggestion.length > 0) {
                     e.preventDefault(); // Prevent default tab behavior
@@ -283,14 +213,12 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                   transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
                 }}
                 className="w-full h-96 p-4 text-sm resize-none focus:outline-none"
-                // Adding ":before" pseudo-element to represent the caret
-                data-caret
               >
-                <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(0, selectedSuggestion.indexOf(userInputPrompt))}</span>
+                <span style={{ opacity: 0.5 }}>{prefix}</span>
                 <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
                 <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
                 <br/>
-                {selectedSuggestion &&  <span style={{ opacity: 0.5 }}>Press Tab to accept</span>}
+                {selectedSuggestion &&  <span style={{ opacity: 0.5 }}>Press Tab to accept suggestion</span>}
               </div>
 
               
@@ -315,6 +243,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         key="credits"
         style={{
           backgroundColor: "var(--vscode-sideBar-background)",
+          zIndex: 1000,
         }}
       >
         <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">

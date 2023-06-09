@@ -1,9 +1,8 @@
 import { basename } from "path";
 import * as vscode from "vscode";
 import { GPTExecution, SerializedGPTExecution } from "./GPTExecution";
-import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { exec } from "child_process";
+import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
 
 export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   private executions: GPTExecution[] = [];
@@ -88,6 +87,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       document: activeEditor.document,
       selection: activeEditor.selection,
       selectedText: activeEditor.document.getText(activeEditor.selection),
+      minionIndex: this.acquireMinionIndex(),
       onChanged: async (important) => {
         if (important) {
           this.notifyExecutionsUpdatedImmediate();
@@ -113,8 +113,20 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     this.notifyExecutionsUpdatedImmediate();
   }
 
+  acquireMinionIndex(): number {
+    const NUM_TOTAL_ROBOTS = 12;
+    //get all free indices
+    const ALL_FILL_ROBOT_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const freeIndices = ALL_FILL_ROBOT_ICONS.map((e, i) => i).filter((i) => !this.executions.find((e) => e.minionIndex === i));
 
-  
+    //return random
+    if (freeIndices.length > 0) {
+      return freeIndices[Math.floor(Math.random() * freeIndices.length)];
+    } else {
+      //return random one
+      return Math.floor(Math.random() * NUM_TOTAL_ROBOTS);
+    }
+  }
 
   notifyExecutionsUpdated() {
     if (this._isThrottled) {
@@ -159,6 +171,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
         document: await oldExecution.document(),
         selection: oldExecution.selection,
         selectedText: oldExecution.selectedText,
+        minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
           if (important) {
             this.notifyExecutionsUpdatedImmediate();
@@ -189,6 +202,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   notifyExecutionsUpdatedImmediate() {
     const executionInfo: ExecutionInfo[] = this.executions.map((e) => ({
       id: e.id,
+      minionIndex: e.minionIndex,
       fullContent: e.fullContent,
       userQuery: e.userQuery,
       executionStage: e.executionStage,

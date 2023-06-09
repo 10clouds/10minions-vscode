@@ -101,7 +101,7 @@ export const Execution = forwardRef(
       });
     }
 
-    let RobotIcon = ALL_FILL_ROBOT_ICONS[simpleStringHash(execution.id) % ALL_FILL_ROBOT_ICONS.length];
+    let RobotIcon = ALL_FILL_ROBOT_ICONS[execution.minionIndex];
 
     return (
       <div

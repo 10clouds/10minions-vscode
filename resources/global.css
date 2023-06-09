@@ -84,7 +84,7 @@ body a.logo:hover {
     rgba(255, 255, 255, 0.0) 60%
   );
   background-size: 200% 100%;
-  z-index: 100; /* Make sure the background is behind the content */
+  z-index: 10; /* Make sure the background is behind the content */
   opacity: 1; /* Adjust the opacity of the pseudo-element */
 }
 
