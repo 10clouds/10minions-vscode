@@ -100,7 +100,6 @@ Ask something ...
 `.trim();
 export const SideBarWebViewInnerComponent: React.FC = () => {
   const [userInputPrompt, setUserInputPrompt] = React.useState("");
-  const [infoMessage, setInfoMessage] = React.useState("");
   const [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
   const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
@@ -108,12 +107,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
 
   function handleMessage(message: any) {
-    console.log("CMD (webview)", message.type)
+    console.log("CMD (webview)", message.type);
 
     switch (message.type) {
-      case "infoMessage":
-        handleInfoMessage(message.value);
-        break;
       case "clearAndfocusOnInput":
         handleClearAndFocus();
         break;
@@ -127,10 +123,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         setSelectedSuggestion(message.value || "");
         break;
     }
-  }
-
-  function handleInfoMessage(value: string) {
-    setInfoMessage(value);
   }
 
   function handleClearAndFocus() {
@@ -227,6 +219,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
           <div className="relative">
             <textarea
               style={{
+                position: "relative",
                 height: "20rem",
                 backgroundColor: "var(--vscode-editor-background)",
                 color: "rgba(0,0,0,0)", // Transparent text color

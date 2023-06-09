@@ -69,7 +69,6 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   }
 
   public async runMinionOnCurrentSelectionAndEditor(userQuery: string) {
-    console.log("RUNNING MINION");
     const activeEditor = vscode.window.activeTextEditor;
 
     if (!activeEditor) {
@@ -81,7 +80,6 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
-    console.log("RUNNING MINION2");
 
     const execution = await GPTExecution.create({
       userQuery,

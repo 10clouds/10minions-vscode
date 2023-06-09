@@ -40,7 +40,6 @@ export const Execution = forwardRef(
     const [isInputOpen, setIsInputOpen] = React.useState(false);
     const [updatedPrompt, setUpdatedPrompt] = React.useState(execution.userQuery);
 
-
     React.useEffect(() => {
       if (execution.classification === "AnswerQuestion") {
         setIsExpanded(true);
@@ -214,79 +213,70 @@ export const Execution = forwardRef(
           {isExpanded && (
             <>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
-                {/* Left column - Labels */}
-                <div className="flex-shrink flex flex-col justify-between">
-                  <div className="mb-2">File:</div>
-                  <div className="mb-2">Task:</div>
-                  {execution.selectedText && <div>Selection:</div>}
-                </div>
+                <div className="mb-2">File:</div>
 
-                {/* Right column - Fields */}
-                <div className="flex flex-col justify-between flex-grow">
-                  {/* File field */}
-                  <span
-                    title="Open Document"
-                    className="cursor-pointer mb-2"
-                    onClick={() => {
-                      vscode.postMessage({
-                        type: "openDocument",
-                        documentURI: execution.documentURI,
-                      });
-                    }}
-                  >
-                    {execution.documentName}
-                  </span>
+                <span
+                  title="Open Document"
+                  className="cursor-pointer mb-2"
+                  onClick={() => {
+                    vscode.postMessage({
+                      type: "openDocument",
+                      documentURI: execution.documentURI,
+                    });
+                  }}
+                >
+                  {execution.documentName}
+                </span>
 
-                  {/* Command field */}
-                  <div className="mb-2 overflow-x-auto" onClick={() => setIsInputOpen(true)}>
-                    {isInputOpen ? (
-                      <textarea
-                    style={{
-                      backgroundColor: "inherit",
-                      color: "inherit",
-                      border: "none",
-                      outline: "none",
-                      cursor: "text",
-                      width: "100%", // Make it span the entire line
-                      resize: "none", // Disable the resizing of the textarea
-                      margin: 0,
-                      padding: 0,
-                      minHeight: 0,
-                      height: 0,
-                    }}
-                    value={updatedPrompt}
-                    onChange={(event) => setUpdatedPrompt(event.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onBlur={() => {
-                      setIsInputOpen(false);
-                      handleRun();
-                    }}
-                    autoFocus
-                    // Make the textarea auto-expand based on the content
-                    // Fix: Calculate the height properly for one line or multiple lines
-                    onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
-                      adjustTextAreaHeight(event.target as HTMLTextAreaElement);
-                    }}
-                      />
-                    ) : (
-                      userQueryPreview
-                    )}
-                  </div>
+                <div className="mb-2">Task:</div>
 
-                  {/* Selection field */}
-                  {execution.selectedText && (
-                    <div
-                      className="text-xs overflow-auto"
+                <div className="mb-2 overflow-x-auto" onClick={() => setIsInputOpen(true)}>
+                  {isInputOpen ? (
+                    <textarea
                       style={{
-                        whiteSpace: "pre",
+                        backgroundColor: "inherit",
+                        color: "inherit",
+                        border: "none",
+                        outline: "none",
+                        cursor: "text",
+                        width: "100%", // Make it span the entire line
+                        resize: "none", // Disable the resizing of the textarea
+                        margin: 0,
+                        padding: 0,
+                        minHeight: 0,
+                        height: 0,
                       }}
-                    >
-                      <pre>{execution.selectedText}</pre>
-                    </div>
+                      value={updatedPrompt}
+                      onChange={(event) => setUpdatedPrompt(event.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onBlur={() => {
+                        setIsInputOpen(false);
+                        handleRun();
+                      }}
+                      autoFocus
+                      onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
+                        adjustTextAreaHeight(event.target as HTMLTextAreaElement);
+                      }}
+                    />
+                  ) : (
+                    // Wrap the userQueryPreview inside a div with the same line-height as the textarea
+                    // Apply required padding and margin in this div
+                    <div style={{ lineHeight: "1.5" }}>{userQueryPreview}</div>
                   )}
                 </div>
-              </div>
 
+                {execution.selectedText && <div>Selection:</div>}
+                {execution.selectedText && (
+                  <div
+                    className="text-xs overflow-auto"
+                    style={{
+                      whiteSpace: "pre",
+                    }}
+                  >
+                    <pre>{execution.selectedText}</pre>
+                  </div>
+                )}
+              </div>
               <div>
                 {execution.classification === "AnswerQuestion" ? <pre style={{ whiteSpace: "pre-wrap" }}>{execution.modificationDescription}</pre> : <></>}
               </div>
@@ -311,4 +301,3 @@ export const Execution = forwardRef(
     );
   }
 );
-

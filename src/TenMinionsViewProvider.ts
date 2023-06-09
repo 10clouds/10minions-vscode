@@ -3,12 +3,9 @@ import * as vscode from "vscode";
 import { CommandHistoryManager } from "./CommandHistoryManager";
 import { ExecutionsManager } from "./ExecutionsManager";
 
-/**
- * A ChatViewProvider that provides the chat view for the extension.
- */
-export class ChatViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "chatView";
-
+export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
+  public static readonly viewType = "10minions.chatView";
+  
   private _view?: vscode.WebviewView;
   private commandHistoryManager: CommandHistoryManager;
   private executionsManager: ExecutionsManager;
@@ -36,82 +33,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
     // add an event listener for messages received by the webview
-    webviewView.webview.onDidReceiveMessage(async (data) => {
-
-      console.log("CMD", data);
-      const activeEditor = vscode.window.activeTextEditor;
-
-      switch (data.type) {
-        case "getTokenCount": {
-          let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
-
-          this._view?.webview.postMessage({
-            type: "tokenCount",
-            value: tokenCount,
-          });
-
-
-
-          break;
-        }
-        case "newExecution": {
-          let prompt = data.value ? data.value : "Refactor this code";
-
-          await this.commandHistoryManager.updateCommandHistory(prompt);
-
-          this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
-          break;
-        }
-        case "openDocument": {
-          //if it's open and focused close it
-
-          let documentURI = vscode.Uri.parse(data.documentURI);
-          await vscode.workspace.openTextDocument(documentURI);
-          await vscode.window.showTextDocument(documentURI);
-
-          break;
-        }
-        case "showDiff": {
-          this.executionsManager.showDiff(data.executionId);
-          break;
-        }
-        case "reRunExecution": {
-          this.executionsManager.reRunExecution(data.executionId);
-          break;
-        }
-
-        case "stopExecution": {
-          this.executionsManager.stopExecution(data.executionId);
-          break;
-        }
-        case "getSuggestions": {
-          const input = data.input || "";
-          const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
-          console.log(`Suggestion: ${suggestion}`);
-          this._view?.webview.postMessage({
-            type: "suggestion",
-            value: suggestion,
-          });
-          break;
-        }
-        case "closeExecution": {
-          let executionId = data.executionId;
-          this.executionsManager.closeExecution(executionId);
-          break;
-        }
-        case "readyForMessages": {
-          this._view?.webview.postMessage({
-            type: "apiKeySet",
-            value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
-          });
-
-          //update initial executions
-          this.executionsManager.notifyExecutionsUpdatedImmediate();
-
-          break;
-        }
-      }
-    });
+    webviewView.webview.onDidReceiveMessage(async (data) => await this.handleWebviewMessage(data));
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -124,7 +46,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     });
   }
-  
 
   async clearAndfocusOnInput() {
     //make sure that our extension bar is visible
@@ -150,12 +71,77 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
-  async handleWebviewMessage (data: any) {
+  async handleWebviewMessage(data: any) {
     console.log("CMD", data);
     const activeEditor = vscode.window.activeTextEditor;
 
     switch (data.type) {
-      //...
+      case "getTokenCount": {
+        let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
+
+        this._view?.webview.postMessage({
+          type: "tokenCount",
+          value: tokenCount,
+        });
+
+        break;
+      }
+      case "newExecution": {
+        let prompt = data.value ? data.value : "Refactor this code";
+
+        await this.commandHistoryManager.updateCommandHistory(prompt);
+
+        this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
+        break;
+      }
+      case "openDocument": {
+        //if it's open and focused close it
+
+        let documentURI = vscode.Uri.parse(data.documentURI);
+        await vscode.workspace.openTextDocument(documentURI);
+        await vscode.window.showTextDocument(documentURI);
+
+        break;
+      }
+      case "showDiff": {
+        this.executionsManager.showDiff(data.executionId);
+        break;
+      }
+      case "reRunExecution": {
+        this.executionsManager.reRunExecution(data.executionId, data.newUserQuery);
+        break;
+      }
+
+      case "stopExecution": {
+        this.executionsManager.stopExecution(data.executionId);
+        break;
+      }
+      case "getSuggestions": {
+        const input = data.input || "";
+        const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
+        console.log(`Suggestion: ${suggestion}`);
+        this._view?.webview.postMessage({
+          type: "suggestion",
+          value: suggestion,
+        });
+        break;
+      }
+      case "closeExecution": {
+        let executionId = data.executionId;
+        this.executionsManager.closeExecution(executionId);
+        break;
+      }
+      case "readyForMessages": {
+        this._view?.webview.postMessage({
+          type: "apiKeySet",
+          value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
+        });
+
+        //update initial executions
+        this.executionsManager.notifyExecutionsUpdatedImmediate();
+
+        break;
+      }
     }
   }
 
