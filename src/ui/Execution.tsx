@@ -6,10 +6,9 @@ import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { forwardRef } from "react";
 import { ALL_ROBOT_ICONS } from "./Minion";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
-import { MessageToVSCode } from "../Messages";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
-  //target.style.height = "auto";
+  target.style.height = "auto";
   target.style.height = target.scrollHeight + "px";
 }
 
@@ -237,13 +236,10 @@ export const Execution = forwardRef(
                         color: "inherit",
                         border: "none",
                         outline: "none",
-                        cursor: "text",
                         width: "100%", // Make it span the entire line
                         resize: "none", // Disable the resizing of the textarea
                         margin: 0,
                         padding: 0,
-                        minHeight: 0,
-                        height: 0,
                       }}
                       value={updatedPrompt}
                       onChange={(event) => setUpdatedPrompt(event.target.value)}
@@ -260,7 +256,7 @@ export const Execution = forwardRef(
                   ) : (
                     // Wrap the userQueryPreview inside a div with the same line-height as the textarea
                     // Apply required padding and margin in this div
-                    <div style={{ lineHeight: "1.5" }}>{userQueryPreview}</div>
+                    <div>{userQueryPreview}</div>
                   )}
                 </div>
 

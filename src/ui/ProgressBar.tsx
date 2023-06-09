@@ -6,7 +6,7 @@ import { useMemo } from "react";
 export function ProgressBar({ execution }: { execution: ExecutionInfo }) {
   const percentage = `${(execution.progress * 100).toFixed(1)}%`;
 
-  let opacity = useMemo(() => blendWithForeground(getOpacity(execution)), [execution]);
+  let opacity = useMemo(() => getOpacity(execution), [execution]);
   let color = useMemo(() => blendWithForeground(getBaseColor(execution)), [execution]);
 
   return (
