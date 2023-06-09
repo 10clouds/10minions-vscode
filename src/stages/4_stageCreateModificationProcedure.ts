@@ -1,4 +1,4 @@
-import { encode } from "gpt-tokenizer";
+import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 import * as vscode from "vscode";
 import { GPTExecution } from "../GPTExecution";
 import { EXTENSIVE_DEBUG } from "../const";
