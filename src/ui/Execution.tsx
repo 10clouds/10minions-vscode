@@ -40,6 +40,13 @@ export const Execution = forwardRef(
     const [isInputOpen, setIsInputOpen] = React.useState(false);
     const [updatedPrompt, setUpdatedPrompt] = React.useState(execution.userQuery);
 
+
+    React.useEffect(() => {
+      if (execution.classification === "AnswerQuestion") {
+        setIsExpanded(true);
+      }
+    }, [execution.classification]);
+
     React.useEffect(() => {
       setUpdatedPrompt(execution.userQuery);
     }, [execution.userQuery]);
@@ -206,7 +213,7 @@ export const Execution = forwardRef(
 
           {isExpanded && (
             <>
-              <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4">
+              <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
                 {/* Left column - Labels */}
                 <div className="flex-shrink flex flex-col justify-between">
                   <span className="mb-2">File:</span>
