@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { gptExecute } from "./openai";
+import { postMessageToWebView } from "./TenMinionsViewProvider";
 
 export class CommandHistoryManager {
   private commandHistory: Record<string, { timeStamp: number }> = {};

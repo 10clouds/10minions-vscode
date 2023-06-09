@@ -4,7 +4,7 @@ import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { forwardRef } from "react";
-import { ALL_ROBOT_ICONS } from "./Minion";
+import { ALL_FILL_ROBOT_ICONS } from "./FillRobotIcons";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
@@ -101,7 +101,7 @@ export const Execution = forwardRef(
       });
     }
 
-    let RobotIcon = ALL_ROBOT_ICONS[simpleStringHash(execution.id) % ALL_ROBOT_ICONS.length];
+    let RobotIcon = ALL_FILL_ROBOT_ICONS[simpleStringHash(execution.id) % ALL_FILL_ROBOT_ICONS.length];
 
     return (
       <div
@@ -125,12 +125,12 @@ export const Execution = forwardRef(
                   documentURI: execution.logFileURI,
                 });
               }}
-              className={`w-4 h-4 mr-2 cursor-pointer transition-color ${!execution.stopped ? "busy-robot" : ""}`}
+              className={`w-6 h-6 mr-2 cursor-pointer transition-color ${!execution.stopped && !execution.waiting ? "busy-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(execution)),
               }}
             >
-              <RobotIcon className={`w-4 h-4 inline-flex ${!execution.stopped ? "busy-robot-extra" : ""}`} />
+              <RobotIcon className={`w-6 h-6 inline-flex ${!execution.stopped && !execution.waiting ? "busy-robot-extra" : ""}`} />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
               <span

@@ -15,6 +15,7 @@ export type ExecutionInfo = {
   executionStage: string;
   progress: number;
   stopped: boolean;
+  waiting: boolean;
   classification?: TASK_CLASSIFICATION_NAME;
   modificationDescription: string;
   selectedText: string;

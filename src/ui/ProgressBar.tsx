@@ -10,10 +10,10 @@ export function ProgressBar({ execution }: { execution: ExecutionInfo }) {
   let color = useMemo(() => blendWithForeground(getBaseColor(execution)), [execution]);
 
   return (
-    <div className={`bg-gray-300 relative h-1 w-full transition-opacity ${opacity}`}>
+    <div className={`relative h-1 w-full transition-opacity `} style={{opacity, backgroundColor: blendWithForeground("#D1D5D8")}}>
       <div
         className={`absolute top-0 left-0 flex h-full items-center justify-center transition-all duration-1000 ease-in-out ${
-          !execution.stopped ? "wave-animation" : ""
+          !execution.stopped && !execution.waiting ? "wave-animation" : ""
         }`}
         style={{ width: percentage, backgroundColor: color }}
       ></div>

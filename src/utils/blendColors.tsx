@@ -4,18 +4,27 @@ export const BRAND_COLOR = "#5e20e5";
 export const ERROR_COLOR = "#D8595A";
 export const SUCESS_COLOR = "#2AB678";
 
-export function convertToHex(color: string): string {
-  return color.indexOf("#") === 0
-    ? color
-    : getComputedStyle(document.documentElement).getPropertyValue(color).trim();
+export function convertToHex(...colors: string[]): string {
+  for (let color of colors) {
+    if (color.indexOf("#") === 0) {
+      return color;
+    }
+
+    let computed = getComputedStyle(document.documentElement).getPropertyValue(color).trim();
+    if (computed.indexOf("#") === 0) {
+      return computed;
+    }
+  }
+
+  throw new Error("Could not convert color to HEX");
 }
 
 /**
  * Blends two colors based on a blend ratio. Converts the input colors to HEX if they are not already in HEX format.
  */
-export function blendColors(color1: string, color2: string, blendRatio: number = 0.25) {
+export function blendColors(color1: string, colorFallback: string[], blendRatio: number = 0.25) {
   color1 = convertToHex(color1);
-  color2 = convertToHex(color2);
+  let color2 = convertToHex(...colorFallback);
 
   const r1 = parseInt(color1.substring(1, 3), 16);
   const g1 = parseInt(color1.substring(3, 5), 16);
@@ -35,7 +44,7 @@ export function blendColors(color1: string, color2: string, blendRatio: number =
 export function blendWithBackground(color: string, blendRatio: number = 0.75) {
   return blendColors(
     color,
-    "--vscode-sideBar-background",
+    ["--vscode-sideBar-background", "--vscode-editor-background", "#000000"],
     blendRatio
   );
 }
@@ -43,17 +52,17 @@ export function blendWithBackground(color: string, blendRatio: number = 0.75) {
 export function blendWithForeground(color: string, blendRatio: number = 0.75) {
   return blendColors(
     color,
-    "--vscode-sideBar-foreground",
+    ["--vscode-sideBar-foreground", "--vscode-editor-foreground", "#FFFFFF"],
     blendRatio
   );
 }
 
 export function getOpacity(execution: ExecutionInfo) {
-  if (execution.executionStage === CANCELED_STAGE_NAME) {
-    return "opacity-0";
+  if (execution.executionStage === CANCELED_STAGE_NAME || execution.waiting) {
+    return 0.2;
   }
 
-  return "opacity-1";
+  return 1;
 }
 
 /**

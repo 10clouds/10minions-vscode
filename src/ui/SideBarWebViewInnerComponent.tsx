@@ -1,12 +1,13 @@
 import * as React from "react";
-import FlipMove from "react-flip-move";
 import { createRoot } from "react-dom/client";
-import { Logo } from "./Logo";
-import { useTemporaryFlag } from "./useTemporaryFlag";
-import { ExecutionInfo } from "./ExecutionInfo";
-import { Execution } from "./Execution";
-import { ALL_ROBOT_ICONS } from "./Minion";
+import FlipMove from "react-flip-move";
 import { MessageToVSCode, MessageToWebView } from "../Messages";
+import { Execution } from "./Execution";
+import { ExecutionInfo } from "./ExecutionInfo";
+import { Logo } from "./Logo";
+import { ALL_OUTLINE_ROBOT_ICONS } from "./OutlineRobotIcons";
+import { useTemporaryFlag } from "./useTemporaryFlag";
+import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
 
 declare const acquireVsCodeApi: any;
 
@@ -22,8 +23,8 @@ export function GoButton({ onClick }: { onClick?: () => void }) {
   return (
     <button
       style={{
-        backgroundColor: "#5e20e5",
-        color: "#ffffff",
+        backgroundColor: blendWithForeground(BRAND_COLOR, 0.75),
+        color: blendWithForeground("#ffffff", 0.75),
       }}
       className={"w-full mb-4 font-bold py-2 px-4 rounded transition-all duration-100 ease-in-out " + (justClickedGo ? "opacity-50" : "")}
       type="submit"
@@ -69,8 +70,8 @@ export function ExecutionsList({ executionList }: { executionList: ExecutionInfo
 }
 
 function getRandomRobotIcon() {
-  const randomIndex = Math.floor(Math.random() * ALL_ROBOT_ICONS.length);
-  return ALL_ROBOT_ICONS[randomIndex];
+  const randomIndex = Math.floor(Math.random() * ALL_OUTLINE_ROBOT_ICONS.length);
+  return ALL_OUTLINE_ROBOT_ICONS[randomIndex];
 }
 
 function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
@@ -141,12 +142,12 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       <React.Fragment>
         <h1 className="text-4xl font-bold text-center mb-2 text-primary">
           <div className="flex items-center justify-center">
-            <RobotIcon1 className="w-8 h-8 inline-flex align-middle mr-2" />
-            10Minions
-            <RobotIcon2 className="w-8 h-8 inline-flex align-middle ml-2" />
+            <RobotIcon1 style={{color: blendWithForeground(BRAND_COLOR, 0.75)}} className="w-8 h-8 inline-flex align-middle mr-2" />
+            <span style={{color: blendWithForeground(BRAND_COLOR, 0.75)}}>10</span>Minions
+            <RobotIcon2 style={{color: blendWithForeground(BRAND_COLOR, 0.75)}} className="w-8 h-8 inline-flex align-middle ml-2" />
           </div>
         </h1>
-        <h3 className="text-xl font-semibold text-center mb-6">Your Army of AI-Powered Coding Comrades</h3>
+        <h3 className="text-xl font-semibold text-center mb-6">Your Army of <span style={{color: blendWithForeground(BRAND_COLOR, 0.75)}}>AI-Powered</span><br/> <span style={{opacity: 0.7}}>Coding</span> Comrades</h3>
       </React.Fragment>
     );
   }

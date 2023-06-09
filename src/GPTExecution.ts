@@ -276,7 +276,7 @@ export class GPTExecution {
       } catch (error) {
         if (error !== CANCELED_STAGE_NAME) {
           vscode.window.showErrorMessage(`Error in execution: ${error}`);
-          console.log("Error in execution", error);
+          console.error("Error in execution", error);
         }
 
         this.stopExecution(String(error));
