@@ -1,14 +1,13 @@
 import * as React from "react";
 import { ExecutionInfo } from "./ExecutionInfo";
-import { getMinionBlendedColor } from "../utils/blendColors";
-import { getOpacityAndColor } from "../utils/getOpacityAndColor";
+import { blendWithForeground, getBaseColor, getOpacity } from "../utils/blendColors";
+import { useMemo } from "react";
 
 export function ProgressBar({ execution }: { execution: ExecutionInfo }) {
   const percentage = `${(execution.progress * 100).toFixed(1)}%`;
 
-  let { opacity, color } = getOpacityAndColor(execution);
-
-  color = getMinionBlendedColor(execution)
+  let opacity = useMemo(() => blendWithForeground(getOpacity(execution)), [execution]);
+  let color = useMemo(() => blendWithForeground(getBaseColor(execution)), [execution]);
 
   return (
     <div className={`bg-gray-300 relative h-1 w-full transition-opacity ${opacity}`}>

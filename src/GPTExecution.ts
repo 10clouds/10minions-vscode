@@ -8,7 +8,76 @@ import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecu
 import { createWorkingdocument } from "./utils/createWorkingdocument";
 import { gptExecute } from "./openai";
 
+export type SerializedGPTExecution = {
+  id: string;
+  documentURI: string;
+  workingDocumentURI: string;
+  userQuery: string;
+  selection: {
+    startLine: number;
+    startCharacter: number;
+    endLine: number;
+    endCharacter: number;
+  };
+  selectedText: string;
+  fullContent: string;
+  startTime: number;
+  shortName: string;
+  modificationDescription: string;
+  modificationProcedure: string;
+  modificationApplied: boolean;
+  executionStage: string;
+  classification?: TASK_CLASSIFICATION_NAME;
+};
+
 export class GPTExecution {
+  serialize(): SerializedGPTExecution {
+    return {
+      id: this.id,
+      documentURI: this.documentURI,
+      workingDocumentURI: this.workingDocumentURI,
+      userQuery: this.userQuery,
+      selection: {
+        startLine: this.selection.start.line,
+        startCharacter: this.selection.start.character,
+        endLine: this.selection.end.line,
+        endCharacter: this.selection.end.character,
+      },
+      selectedText: this.selectedText,
+      fullContent: this.fullContent,
+      startTime: this.startTime,
+      shortName: this.shortName,
+      modificationDescription: this.modificationDescription,
+      modificationProcedure: this.modificationProcedure,
+      modificationApplied: this.modificationApplied,
+      executionStage: this.executionStage,
+      classification: this.classification,
+    };
+  }
+
+  static deserialize(data: SerializedGPTExecution): GPTExecution {
+    return new GPTExecution({
+      id: data.id,
+      documentURI: data.documentURI,
+      workingDocumentURI: data.workingDocumentURI,
+      userQuery: data.userQuery,
+      selection: new vscode.Selection(
+        new vscode.Position(data.selection.startLine, data.selection.startCharacter),
+        new vscode.Position(data.selection.endLine, data.selection.endCharacter)
+      ),
+      selectedText: data.selectedText,
+      fullContent: data.fullContent,
+      startTime: data.startTime,
+      shortName: data.shortName,
+      modificationDescription: data.modificationDescription,
+      modificationProcedure: data.modificationProcedure,
+      modificationApplied: data.modificationApplied,
+      executionStage: data.executionStage,
+      classification: data.classification,
+      onChanged: async (important: boolean) => {},
+    });
+  }
+
   readonly userQuery: string;
   readonly id: string;
 
@@ -24,16 +93,16 @@ export class GPTExecution {
   //
   // tracking variables between stages
   //
-  shortName: string = "";
-  fullContent: string = "";
+  shortName: string;
+  fullContent: string;
   currentStageIndex: number = 0;
-  startTime: number = 0;
-  modificationDescription: string = "";
-  modificationProcedure: string = "";
-  modificationApplied: boolean = false;
-  stopped: boolean = false;
-  progress: number = 0;
-  executionStage: string = "";
+  startTime: number;
+  modificationDescription: string;
+  modificationProcedure: string;
+  modificationApplied: boolean;
+  stopped: boolean = true;
+  progress: number = 1;
+  executionStage: string;
   classification?: TASK_CLASSIFICATION_NAME;
   waiting: boolean = false;
 
@@ -47,6 +116,12 @@ export class GPTExecution {
     fullContent,
     startTime,
     onChanged = async (important: boolean) => {},
+    shortName = "",
+    modificationDescription = "",
+    modificationProcedure = "",
+    modificationApplied = false,
+    executionStage = "",
+    classification = undefined,
   }: {
     id: string;
     documentURI: string;
@@ -57,6 +132,12 @@ export class GPTExecution {
     fullContent: string;
     startTime: number;
     onChanged?: (important: boolean) => Promise<void>;
+    shortName?: string;
+    modificationDescription?: string;
+    modificationProcedure?: string;
+    modificationApplied?: boolean;
+    executionStage?: string;
+    classification?: TASK_CLASSIFICATION_NAME;
   }) {
     this.id = id;
     this.documentURI = documentURI;
@@ -67,6 +148,12 @@ export class GPTExecution {
     this.fullContent = fullContent;
     this.startTime = startTime;
     this.onChanged = onChanged;
+    this.shortName = shortName;
+    this.modificationDescription = modificationDescription;
+    this.modificationProcedure = modificationProcedure;
+    this.modificationApplied = modificationApplied;
+    this.executionStage = executionStage;
+    this.classification = classification;
   }
 
   static async create({
@@ -85,7 +172,7 @@ export class GPTExecution {
     const executionId = randomUUID();
     const workingDocument = await createWorkingdocument(executionId);
 
-    return new GPTExecution({
+    const execution = new GPTExecution({
       id: executionId,
       documentURI: document.uri.toString(),
       workingDocumentURI: workingDocument.uri.toString(),
@@ -96,6 +183,11 @@ export class GPTExecution {
       startTime: Date.now(),
       onChanged,
     });
+
+    execution.stopped = false;
+    execution.progress = 1;
+
+    return execution;
   }
 
   public async document() {
@@ -141,6 +233,10 @@ export class GPTExecution {
 
   public async run() {
     return new Promise<void>(async (resolve, reject) => {
+      if (this.stopped) {
+        return;
+      }
+
       this.resolveProgress = resolve;
       this.rejectProgress = reject;
       this.currentStageIndex = 0;

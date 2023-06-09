@@ -5,7 +5,7 @@ import { ProgressBar } from "./ProgressBar";
 import { vscode } from "./SideBarWebViewInnerComponent";
 import { forwardRef } from "react";
 import { ALL_ROBOT_ICONS } from "./Minion";
-import { getMinionBlendedColor } from "../utils/blendColors";
+import { blendWithForeground, getBaseColor } from "../utils/blendColors";
 
 //Task: If this can not be placed in one line, show an elipsis character at the end (use only standard tailwind classes for that)
 
@@ -130,7 +130,7 @@ export const Execution = forwardRef(
               }}
               className={`w-4 h-4 mr-2 cursor-pointer transition-color ${!execution.stopped ? "busy-robot" : ""}`}
               style={{
-                color: getMinionBlendedColor(execution),
+                color: blendWithForeground(getBaseColor(execution)),
               }}
             >
               <RobotIcon className={`w-4 h-4 inline-flex ${!execution.stopped ? "busy-robot-extra" : ""}`} />
@@ -216,9 +216,9 @@ export const Execution = forwardRef(
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
                 {/* Left column - Labels */}
                 <div className="flex-shrink flex flex-col justify-between">
-                  <span className="mb-2">File:</span>
-                  <span className="mb-2">Task:</span>
-                  {execution.selectedText && <span>Selection:</span>}
+                  <div className="mb-2">File:</div>
+                  <div className="mb-2">Task:</div>
+                  {execution.selectedText && <div>Selection:</div>}
                 </div>
 
                 {/* Right column - Fields */}
@@ -238,7 +238,7 @@ export const Execution = forwardRef(
                   </span>
 
                   {/* Command field */}
-                  <div className="mb-2" onClick={() => setIsInputOpen(true)}>
+                  <div className="mb-2 overflow-x-auto" onClick={() => setIsInputOpen(true)}>
                     {isInputOpen ? (
                       <textarea
                     style={{

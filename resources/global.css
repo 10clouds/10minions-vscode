@@ -99,3 +99,16 @@ body a.logo:hover {
 body {
   padding: 0;
 }
+
+[data-caret]:before {
+  content: "";
+  position: absolute;
+  width: 1px;
+  height: 1em;
+  background-color: var(--vscode-editor-foreground);
+  animation: 1s blink step-end infinite;
+}
+
+@keyframes blink {
+  50%, 100% {opacity: 0;}
+}

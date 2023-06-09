@@ -137,7 +137,8 @@ export async function stageApplyModificationProcedure(this: GPTExecution) {
   }
 
   if (!this.modificationProcedure) {
-    throw new Error(`Modification procedure is empty.`);
+    appendToFile(this.workingDocumentURI, `\n\nModification procedure is empty.\n`);
+    return;
   }
 
   try {

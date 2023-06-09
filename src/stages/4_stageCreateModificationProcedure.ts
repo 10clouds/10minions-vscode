@@ -64,7 +64,8 @@ async function createConsolidated(
   classification: TASK_CLASSIFICATION_NAME,
   refCode: string,
   modification: string,
-  onChunk: (chunk: string) => Promise<void>
+  onChunk: (chunk: string) => Promise<void>,
+  isCancelled: () => boolean
 ) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
@@ -138,7 +139,7 @@ Let's take this step by step, first, describe in detail what you are going to do
     onChunk,
     maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)),
     temperature: 0,
-    controller: new AbortController(),
+    isCancelled,
   });
 }
 
@@ -157,13 +158,22 @@ export async function stageCreateModificationProcedure(this: GPTExecution) {
 
   this.reportSmallProgress();
   
-  this.modificationProcedure = await createConsolidated(
-    this.classification,
-    this.fullContent,
-    this.modificationDescription,
-    async (chunk: string) => {
-      this.reportSmallProgress();
-      await appendToFile(this.workingDocumentURI, chunk);
-    }
-  );
+  try {
+    this.modificationProcedure = await createConsolidated(
+      this.classification,
+      this.fullContent,
+      this.modificationDescription,
+      async (chunk: string) => {
+        this.reportSmallProgress();
+        await appendToFile(this.workingDocumentURI, chunk);
+      },
+      () => {
+        return this.stopped;
+      }
+    );
+  } catch (error) {
+    appendToFile(this.workingDocumentURI, `Error while creating modification procedure:\n\n ${error}\n\n`);
+  }
+
+  appendToFile(this.workingDocumentURI, "\n\n");
 }
