@@ -28,25 +28,25 @@ function getUserQueryPreview(userQuery: string) {
 }
 
 export const MinionTaskComponent = forwardRef(
-  ({ execution, ...props }: { execution: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
+  ({ minionTask, ...props }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { className, ...propsWithoutClassName } = props;
 
-    const userQueryPreview = getUserQueryPreview(execution.userQuery);
+    const userQueryPreview = getUserQueryPreview(minionTask.userQuery);
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     // State variables for managing the input field state
     const [isInputOpen, setIsInputOpen] = React.useState(false);
-    const [updatedPrompt, setUpdatedPrompt] = React.useState(execution.userQuery);
+    const [updatedPrompt, setUpdatedPrompt] = React.useState(minionTask.userQuery);
 
     React.useEffect(() => {
-      if (execution.classification === "AnswerQuestion") {
+      if (minionTask.classification === "AnswerQuestion") {
         setIsExpanded(true);
       }
-    }, [execution.classification]);
+    }, [minionTask.classification]);
 
     React.useEffect(() => {
-      setUpdatedPrompt(execution.userQuery);
-    }, [execution.userQuery]);
+      setUpdatedPrompt(minionTask.userQuery);
+    }, [minionTask.userQuery]);
 
     React.useLayoutEffect(() => {
       if (isInputOpen) {
@@ -68,17 +68,17 @@ export const MinionTaskComponent = forwardRef(
     }
 
     function handleRun() {
-      if (updatedPrompt !== execution.userQuery) {
+      if (updatedPrompt !== minionTask.userQuery) {
         // Stop the current execution
         postMessageToVsCode({
           type: "stopExecution",
-          executionId: execution.id,
+          minionTaskId: minionTask.id,
         });
 
         // Retry the execution with the updated prompt
         postMessageToVsCode({
           type: "reRunExecution",
-          executionId: execution.id,
+          minionTaskId: minionTask.id,
           newUserQuery: updatedPrompt, // Pass the updated prompt value
         });
       }
@@ -87,11 +87,11 @@ export const MinionTaskComponent = forwardRef(
     function handleClickShowDiff() {
       postMessageToVsCode({
         type: "showDiff",
-        executionId: execution.id,
+        minionTaskId: minionTask.id,
       });
     }
 
-    let RobotIcon = ALL_MINION_ICONS_FILL[execution.minionIndex];
+    let RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
 
     const forceButton = (
       <button
@@ -99,7 +99,7 @@ export const MinionTaskComponent = forwardRef(
         onClick={() => {
           postMessageToVsCode({
             type: "forceExecution",
-            executionId: execution.id,
+            minionTaskId: minionTask.id,
           });
         }}
         style={{
@@ -117,7 +117,7 @@ export const MinionTaskComponent = forwardRef(
         onClick={() => {
           postMessageToVsCode({
             type: "stopExecution",
-            executionId: execution.id,
+            minionTaskId: minionTask.id,
           });
         }}
         style={{
@@ -137,7 +137,7 @@ export const MinionTaskComponent = forwardRef(
         onClick={() => {
           postMessageToVsCode({
             type: "closeExecution",
-            executionId: execution.id,
+            minionTaskId: minionTask.id,
           });
         }}
         className="h-6 w-6 min-w-min cursor-pointer ml-2"
@@ -163,7 +163,7 @@ export const MinionTaskComponent = forwardRef(
         onClick={() => {
           postMessageToVsCode({
             type: "reRunExecution",
-            executionId: execution.id,
+            minionTaskId: minionTask.id,
           });
         }}
         style={{
@@ -183,7 +183,7 @@ export const MinionTaskComponent = forwardRef(
           color: "var(--vscode-editor-foreground)",
           borderColor: "var(--vscode-focusBorder)",
         }}
-        key={execution.id}
+        key={minionTask.id}
         className={`execution mb-4 overflow-hidden rounded flex flex-col ${className}`}
         {...propsWithoutClassName}
       >
@@ -196,25 +196,25 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!execution.stopped && !execution.waiting ? "busy-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped && !minionTask.waiting ? "busy-robot" : ""}`}
               style={{
-                color: blendWithForeground(getBaseColor(execution)),
+                color: blendWithForeground(getBaseColor(minionTask)),
               }}
             >
-              <RobotIcon className={`w-6 h-6 inline-flex ${!execution.stopped && !execution.waiting ? "busy-robot-extra" : ""}`} />
+              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped && !minionTask.waiting ? "busy-robot-extra" : ""}`} />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
-              <span className="truncate">{execution.shortName}</span>
+              <span className="truncate">{minionTask.shortName}</span>
             </div>
-            {execution.waiting && !execution.stopped && forceButton}
+            {minionTask.waiting && !minionTask.stopped && forceButton}
 
-            {!execution.stopped ? (
+            {!minionTask.stopped ? (
               <button
                 title="Stop Execution"
                 onClick={() => {
                   postMessageToVsCode({
                     type: "stopExecution",
-                    executionId: execution.id,
+                    minionTaskId: minionTask.id,
                   });
                 }}
                 style={{
@@ -241,7 +241,7 @@ export const MinionTaskComponent = forwardRef(
                   onClick={() => {
                     postMessageToVsCode({
                       type: "openLog",
-                      executionId: execution.id,
+                      minionTaskId: minionTask.id,
                     });
                   }}
                 >
@@ -257,14 +257,14 @@ export const MinionTaskComponent = forwardRef(
                     onClick={() => {
                       postMessageToVsCode({
                         type: "openDocument",
-                        executionId: execution.id,
+                        minionTaskId: minionTask.id,
                       });
                     }}
                   >
-                    {execution.documentName}
+                    {minionTask.documentName}
                   </span>
 
-                  {execution.executionStage === FINISHED_STAGE_NAME && diffButton}
+                  {minionTask.executionStage === FINISHED_STAGE_NAME && diffButton}
                 </span>
 
                 <div className="mb-2">Task:</div>
@@ -306,27 +306,27 @@ export const MinionTaskComponent = forwardRef(
                   )}
                 </div>
 
-                {execution.selectedText && <div>Selection:</div>}
-                {execution.selectedText && (
+                {minionTask.selectedText && <div>Selection:</div>}
+                {minionTask.selectedText && (
                   <div
                     className="text-xs overflow-auto"
                     style={{
                       whiteSpace: "pre",
                     }}
                   >
-                    <pre>{execution.selectedText}</pre>
+                    <pre>{minionTask.selectedText}</pre>
                   </div>
                 )}
               </div>
               <div>
-                {execution.classification === "AnswerQuestion" ? <pre style={{ whiteSpace: "pre-wrap" }}>{execution.modificationDescription}</pre> : <></>}
+                {minionTask.classification === "AnswerQuestion" ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.modificationDescription}</pre> : <></>}
               </div>
             </>
           )}
         </div>
         <div className="flex items-center">
           <div className="w-full" title="Task Progress">
-            <ProgressBar execution={execution} />
+            <ProgressBar execution={minionTask} />
           </div>
         </div>
       </div>

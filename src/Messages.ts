@@ -10,12 +10,12 @@ export type MessageToWebView =
 export type MessageToVSCode =
   | { type: "getTokenCount" }
   | { type: "newExecution"; value?: string }
-  | { type: "openDocument"; executionId: string }
-  | { type: "openLog"; executionId: string}
-  | { type: "showDiff"; executionId: string }
-  | { type: "reRunExecution"; executionId: string; newUserQuery?: string }
-  | { type: "stopExecution"; executionId: string }
-  | { type: "forceExecution"; executionId: string }
+  | { type: "openDocument"; minionTaskId: string }
+  | { type: "openLog"; minionTaskId: string}
+  | { type: "showDiff"; minionTaskId: string }
+  | { type: "reRunExecution"; minionTaskId: string; newUserQuery?: string }
+  | { type: "stopExecution"; minionTaskId: string }
+  | { type: "forceExecution"; minionTaskId: string }
   | { type: "getSuggestions"; input?: string }
-  | { type: "closeExecution"; executionId: string }
+  | { type: "closeExecution"; minionTaskId: string }
   | { type: "readyForMessages" };

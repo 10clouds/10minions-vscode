@@ -27,7 +27,7 @@ export function MinionTaskListComponent({ executionList }: { executionList: Mini
       )}
 
       {executionList.map((execution) => (
-        <MinionTaskComponent key={execution.id} execution={execution} />
+        <MinionTaskComponent key={execution.id} minionTask={execution} />
       ))}
     </FlipMove>
   );

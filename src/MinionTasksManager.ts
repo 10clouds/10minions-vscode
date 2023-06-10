@@ -10,9 +10,9 @@ function extractExecutionIdFromUri(uri: vscode.Uri): string {
 }
 
 class LogProvider implements vscode.TextDocumentContentProvider {
-  private executionsManager: ExecutionsManager;
+  private executionsManager: MinionTasksManager;
 
-  constructor(executionsManager: ExecutionsManager) {
+  constructor(executionsManager: MinionTasksManager) {
     this.executionsManager = executionsManager;
   }
 
@@ -37,10 +37,10 @@ class LogProvider implements vscode.TextDocumentContentProvider {
   }
 }
 
-export class ExecutionsManager {
-  public static instance: ExecutionsManager;
+export class MinionTasksManager {
+  public static instance: MinionTasksManager;
 
-  private executions: MinionTask[] = [];
+  private minionTasks: MinionTask[] = [];
   private readonly _context: vscode.ExtensionContext;
   private _view?: vscode.WebviewView;
   private _isThrottled = false;
@@ -53,13 +53,13 @@ export class ExecutionsManager {
     this._context = context;
 
     const serializedExecutions = this._context.globalState.get<SerializedMinionTask[]>("10minions.executions") || [];
-    this.executions = serializedExecutions.map((data: SerializedMinionTask) => MinionTask.deserialize(data));
+    this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) => MinionTask.deserialize(data));
 
     let self = this;
     this.fullContentProvider = new (class FullContentProvider implements vscode.TextDocumentContentProvider {
       provideTextDocumentContent(uri: vscode.Uri): string {
         const textKey = extractExecutionIdFromUri(uri);
-        const originalContent = self.executions.find((e) => e.id === textKey)?.originalContent;
+        const originalContent = self.minionTasks.find((e) => e.id === textKey)?.originalContent;
         return originalContent || "";
       }
     });
@@ -69,20 +69,20 @@ export class ExecutionsManager {
     vscode.workspace.registerTextDocumentContentProvider("10minions-log", this.logProvider);
     vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this.fullContentProvider);
 
-    if (ExecutionsManager.instance) {
+    if (MinionTasksManager.instance) {
       throw new Error("ExecutionsManager already instantiated");
     }
 
-    ExecutionsManager.instance = this;
+    MinionTasksManager.instance = this;
   }
 
   async saveExecutions() {
-    const serializedExecutions = this.executions.map((execution) => execution.serialize());
+    const serializedExecutions = this.minionTasks.map((execution) => execution.serialize());
     await this._context.globalState.update("10minions.executions", serializedExecutions);
   }
 
-  async showDiff(executionId: string) {
-    let minionTask = this.getExecutionById(executionId);
+  async showDiff(minionTaskId: string) {
+    let minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
       const documentUri = vscode.Uri.parse(minionTask.documentURI);
@@ -95,8 +95,8 @@ export class ExecutionsManager {
     }
   }
 
-  async openDocument(executionId: string) {
-    let minionTask = this.getExecutionById(executionId);
+  async openDocument(minionTaskId: string) {
+    let minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
       let documentURI = vscode.Uri.parse(minionTask.documentURI);
@@ -105,8 +105,8 @@ export class ExecutionsManager {
     }  
   }
 
-  async openLog(executionId: string) {
-    let minionTask = this.getExecutionById(executionId);
+  async openLog(minionTaskId: string) {
+    let minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
       let documentURI = vscode.Uri.parse(minionTask.logURI);
@@ -120,19 +120,19 @@ export class ExecutionsManager {
   }
 
   addExecution(execution: MinionTask) {
-    this.executions = [execution, ...this.executions];
+    this.minionTasks = [execution, ...this.minionTasks];
   }
 
   removeExecution(id: string) {
-    this.executions = this.executions.filter((e) => e.id !== id);
+    this.minionTasks = this.minionTasks.filter((e) => e.id !== id);
   }
 
-  getExecutionById(executionId: string): MinionTask | undefined {
-    return this.executions.find((e) => e.id === executionId);
+  getExecutionById(minionTaskId: string): MinionTask | undefined {
+    return this.minionTasks.find((e) => e.id === minionTaskId);
   }
 
   clearExecutions() {
-    this.executions = [];
+    this.minionTasks = [];
   }
 
   public async runMinionOnCurrentSelectionAndEditor(userQuery: string) {
@@ -164,7 +164,7 @@ export class ExecutionsManager {
     });
 
     const runningExecution = this.getRunningExecution(activeEditor.document.uri.toString());
-    this.executions = [execution, ...this.executions];
+    this.minionTasks = [execution, ...this.minionTasks];
 
     // Set the waiting flag if there's a running execution on the same file
     if (runningExecution) {
@@ -182,7 +182,7 @@ export class ExecutionsManager {
     const NUM_TOTAL_ROBOTS = 12;
     //get all free indices
     const ALL_FILL_ROBOT_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    const freeIndices = ALL_FILL_ROBOT_ICONS.map((e, i) => i).filter((i) => !this.executions.find((e) => e.minionIndex === i));
+    const freeIndices = ALL_FILL_ROBOT_ICONS.map((e, i) => i).filter((i) => !this.minionTasks.find((e) => e.minionIndex === i));
 
     //return random
     if (freeIndices.length > 0) {
@@ -209,18 +209,18 @@ export class ExecutionsManager {
     }, 500);
   }
 
-  async forceExecution(executionId: string) {
-    let oldExecutionMaybe = this.executions.find((e) => e.id === executionId);
+  async forceExecution(minionTaskId: string) {
+    let oldExecutionMaybe = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (!oldExecutionMaybe) {
-      vscode.window.showErrorMessage("No execution found for id", executionId);
-      throw new Error(`No execution found for id ${executionId}`);
+      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
+      throw new Error(`No execution found for id ${minionTaskId}`);
     }
 
     let oldExecution = oldExecutionMaybe;
 
     if (!oldExecution.waiting) {
-      vscode.window.showErrorMessage("Execution is not waiting", executionId);
+      vscode.window.showErrorMessage("Execution is not waiting", minionTaskId);
       return;
     }
 
@@ -229,23 +229,23 @@ export class ExecutionsManager {
     this.notifyExecutionsUpdatedImmediate(oldExecution, true);
   }
 
-  reRunExecution(executionId: any, newUserQuery?: string) {
-    let oldExecutionMaybe = this.executions.find((e) => e.id === executionId);
+  reRunExecution(minionTaskId: any, newUserQuery?: string) {
+    let oldExecutionMaybe = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (!oldExecutionMaybe) {
-      vscode.window.showErrorMessage("No execution found for id", executionId);
-      throw new Error(`No execution found for id ${executionId}`);
+      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
+      throw new Error(`No execution found for id ${minionTaskId}`);
 }
 
     let oldExecution = oldExecutionMaybe;
 
     if (!oldExecution.stopped) {
-      vscode.window.showErrorMessage("Execution is still running", executionId);
+      vscode.window.showErrorMessage("Execution is still running", minionTaskId);
       return;
     }
 
     //remove old execution
-    this.executions = this.executions.filter((e) => e.id !== executionId);
+    this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
     this.notifyExecutionsUpdatedImmediate(oldExecution, true);
 
     //after 1 second add a new one
@@ -266,7 +266,7 @@ export class ExecutionsManager {
       });
 
       const runningExecution = this.getRunningExecution(newExecution.documentURI);
-      this.executions = [newExecution, ...this.executions.filter((e) => e.id !== executionId)];
+      this.minionTasks = [newExecution, ...this.minionTasks.filter((e) => e.id !== minionTaskId)];
 
       // Set the waiting flag if there's a running execution on the same file
       if (runningExecution) {
@@ -282,7 +282,7 @@ export class ExecutionsManager {
   }
 
   notifyExecutionsUpdatedImmediate(minionTask?: MinionTask, importantChange?: boolean) {
-    const executionInfo: MinionTaskUIInfo[] = this.executions.map((e) => ({
+    const executionInfo: MinionTaskUIInfo[] = this.minionTasks.map((e) => ({
       id: e.id,
       minionIndex: e.minionIndex,
       fullContent: e.originalContent,
@@ -312,30 +312,30 @@ export class ExecutionsManager {
     }
   }
 
-  stopExecution(executionId: any) {
-    let execution = this.executions.find((e) => e.id === executionId);
+  stopExecution(minionTaskId: any) {
+    let execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {
       execution.stopExecution(CANCELED_STAGE_NAME);
     } else {
-      console.error("No execution found for id", executionId);
+      console.error("No execution found for id", minionTaskId);
     }
   }
 
-  closeExecution(executionId: any) {
-    let execution = this.executions.find((e) => e.id === executionId);
+  closeExecution(minionTaskId: any) {
+    let execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {
       execution.stopExecution(CANCELED_STAGE_NAME, false);
-      this.executions = this.executions.filter((e) => e.id !== executionId);
+      this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
       this.notifyExecutionsUpdatedImmediate(execution, true);
     } else {
-      vscode.window.showErrorMessage("No execution found for id", executionId);
+      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
     }
   }
 
   private getRunningExecution(documentURI: string): MinionTask | null {
-    for (const execution of this.executions) {
+    for (const execution of this.minionTasks) {
       if (execution.documentURI === documentURI && !execution.stopped && !execution.waiting) {
         return execution;
       }
@@ -344,7 +344,7 @@ export class ExecutionsManager {
   }
 
   private async runNextWaitingExecution() {
-    for (const execution of [...this.executions].reverse()) {
+    for (const execution of [...this.minionTasks].reverse()) {
       if (execution.waiting && !execution.stopped) {
         const runningExecution = this.getRunningExecution(execution.documentURI);
 

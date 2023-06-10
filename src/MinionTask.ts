@@ -5,7 +5,7 @@ import { gptExecute } from "./gptExecute";
 import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
 import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
-import { ExecutionsManager } from "./ExecutionsManager";
+import { MinionTasksManager } from "./MinionTasksManager";
 
 export type SerializedMinionTask = {
   id: string;
@@ -186,12 +186,12 @@ export class MinionTask {
   appendToLog(content: string): void {
     this.logContent += content;
 
-    ExecutionsManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+    MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
   }
   
   clearLog() {
     this.logContent = "";
-    ExecutionsManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+    MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
   }
 
   static async create({
@@ -209,10 +209,10 @@ export class MinionTask {
     minionIndex: number;
     onChanged: (important: boolean) => Promise<void>;
   }): Promise<MinionTask> {
-    const executionId = randomUUID();
+    const minionTaskId = randomUUID();
 
     const execution = new MinionTask({
-      id: executionId,
+      id: minionTaskId,
       minionIndex,
       documentURI: document.uri.toString(),
       userQuery,

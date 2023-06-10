@@ -1,7 +1,7 @@
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { CommandHistoryManager } from "./CommandHistoryManager";
-import { ExecutionsManager } from "./ExecutionsManager";
+import { MinionTasksManager } from "./MinionTasksManager";
 import { MessageToVSCode, MessageToWebView } from "./Messages";
 import { AnalyticsManager } from "./AnalyticsManager";
 
@@ -14,12 +14,12 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
   private _view?: vscode.WebviewView;
   private commandHistoryManager: CommandHistoryManager;
-  private executionsManager: ExecutionsManager;
+  private executionsManager: MinionTasksManager;
   private analyticsManager: AnalyticsManager;
 
   constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
     this.commandHistoryManager = new CommandHistoryManager(context);
-    this.executionsManager = new ExecutionsManager(context);
+    this.executionsManager = new MinionTasksManager(context);
     this.analyticsManager = new AnalyticsManager(context);
   }
 
@@ -119,26 +119,26 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case "openDocument": {
-        this.executionsManager.openDocument(data.executionId);
+        this.executionsManager.openDocument(data.minionTaskId);
         break;
       }
       case "openLog": {
-        this.executionsManager.openLog(data.executionId);
+        this.executionsManager.openLog(data.minionTaskId);
         break;
       }
       case "showDiff": {
-        this.executionsManager.showDiff(data.executionId);
+        this.executionsManager.showDiff(data.minionTaskId);
         break;
       }
       case "reRunExecution": {
-        this.executionsManager.reRunExecution(data.executionId, data.newUserQuery);
+        this.executionsManager.reRunExecution(data.minionTaskId, data.newUserQuery);
         break;
       }
       case "forceExecution":
-        this.executionsManager.forceExecution(data.executionId);
+        this.executionsManager.forceExecution(data.minionTaskId);
         break;
       case "stopExecution": {
-        this.executionsManager.stopExecution(data.executionId);
+        this.executionsManager.stopExecution(data.minionTaskId);
         break;
       }
       case "getSuggestions": {
@@ -152,8 +152,8 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case "closeExecution": {
-        let executionId = data.executionId;
-        this.executionsManager.closeExecution(executionId);
+        let minionTaskId = data.minionTaskId;
+        this.executionsManager.closeExecution(minionTaskId);
         break;
       }
       case "readyForMessages": {
