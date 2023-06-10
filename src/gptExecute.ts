@@ -6,7 +6,7 @@ import { AVAILABLE_MODELS, queryOpenAI, processOpenAIResponseStream } from "./op
 
 
 export async function gptExecute({
-  fullPrompt, onChunk = async (chunk: string) => { }, isCancelled = () => false, maxTokens = 2000, model = "gpt-4", temperature, controller = new AbortController(),
+  fullPrompt, onChunk = async (chunk: string) => { }, isCancelled = () => false, maxTokens = 2000, model = "gpt-4", temperature = 1, controller = new AbortController(),
 }: {
   fullPrompt: string;
   onChunk?: (chunk: string) => Promise<void>;

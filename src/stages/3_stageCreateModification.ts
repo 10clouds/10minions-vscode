@@ -1,7 +1,6 @@
 import { MinionTask } from "../MinionTask";
 
 import * as vscode from "vscode";
-import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../gptExecute";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
@@ -79,6 +78,7 @@ If asked to remove comments, don't add your own comments as this is probably not
 };
 
 async function planAndWrite(
+  document: vscode.TextDocument,
   classification: TASK_CLASSIFICATION_NAME,
   userQuery: string,
   selectionPosition: vscode.Position,
@@ -98,7 +98,7 @@ ${CLASSIFICATION_PROMPTS[classification](selectedText)}
 ${
   selectedText
     ? `
-==== FILE CONTEXT ====
+==== FILE CONTEXT (Language: ${document.languageId}) ====
 ${fullFileContents}  
 `
     : ""
@@ -112,12 +112,6 @@ ${userQuery}
 
 Let's take it step by step.
 `.trim();
-
-  if (EXTENSIVE_DEBUG) {
-    onChunk("<<<< PROMPT >>>>\n\n");
-    onChunk(promptWithContext + "\n\n");
-    onChunk("<<<< EXECUTION >>>>\n\n");
-  }
 
   return gptExecute({
     fullPrompt: promptWithContext,
@@ -134,6 +128,7 @@ export async function stageCreateModification(this: MinionTask) {
 
   this.modificationDescription = "";
   this.modificationDescription = await planAndWrite(
+    await this.document(),
     this.classification,
     this.userQuery,
     this.selection.start,

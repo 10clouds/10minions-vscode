@@ -26,6 +26,7 @@ export const TASK_CLASSIFICATION: {
 ];
 
 export async function classifyTask(
+  document: vscode.TextDocument,
   userQuery: string,
   selectionPosition: vscode.Position,
   selectedText: string,
@@ -40,7 +41,7 @@ export async function classifyTask(
 
   let fileContext = selectedText
     ? `
-==== FILE CONTEXT ====
+==== FILE CONTEXT (Language: ${document.languageId}) ====
 ${fullFileContents}  
 `
     : "";
@@ -83,6 +84,7 @@ Classify the task.
 
 export async function stageClassifyTask(this: MinionTask) {
   let classification = await classifyTask(
+    await this.document(),
     this.userQuery,
     this.selection.start,
     this.selectedText,

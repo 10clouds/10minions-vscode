@@ -32,12 +32,12 @@ export async function queryOpenAI({
   controller,
   maxTokens = 2000,
   model = "gpt-4",
-  temperature = 1,
+  temperature,
 }: {
   fullPrompt: string;
-  maxTokens?: number;
-  model?: AVAILABLE_MODELS;
-  temperature?: number;
+  maxTokens: number;
+  model: AVAILABLE_MODELS;
+  temperature: number;
   controller: AbortController;
 }) {
   const signal = controller.signal;
@@ -49,7 +49,6 @@ export async function queryOpenAI({
   }
 
   console.log("Querying OpenAI");
-  fullPrompt.split("\n").forEach((line) => console.log(`> ${line}`));
 
   return await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
