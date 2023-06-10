@@ -137,15 +137,15 @@ export async function stageApplyModificationProcedure(this: MinionTask) {
   }
 
   if (!this.modificationProcedure) {
-    appendToFile(this.workingDocumentURI, `\n\nModification procedure is empty.\n`);
+    this.appendToLog( `\n\nModification procedure is empty.\n`);
     return;
   }
 
   try {
     let document = await this.document();
-    this.fullContent = document.getText();
+    this.originalContent = document.getText();
 
-    let modifiedContent = applyModificationProcedure(this.fullContent, this.modificationProcedure);
+    let modifiedContent = applyModificationProcedure(this.originalContent, this.modificationProcedure);
 
     console.log(`modifiedContent: "${modifiedContent}"`);
 
@@ -163,9 +163,9 @@ export async function stageApplyModificationProcedure(this: MinionTask) {
     this.modificationApplied = true;
 
     this.reportSmallProgress();
-    await appendToFile(this.workingDocumentURI, `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`);
+    await this.appendToLog( `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`);
   } catch (error) {
     this.reportSmallProgress();
-    await appendToFile(this.workingDocumentURI, `\n\nError in applying consolidation: ${error}\n`);
+    await this.appendToLog( `\n\nError in applying consolidation: ${error}\n`);
   }
 }

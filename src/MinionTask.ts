@@ -1,18 +1,16 @@
 import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
-import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
-import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/ExecutionInfo";
-import { appendToFile } from "./utils/appendToFile";
-import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
-import { createWorkingdocument } from "./utils/createWorkingdocument";
 import { gptExecute } from "./openai";
+import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
+import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
+import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
+import { ExecutionsManager } from "./ExecutionsManager";
 
 export type SerializedMinionTask = {
   id: string;
   minionIndex: number;
   documentURI: string;
-  workingDocumentURI: string;
   userQuery: string;
   selection: {
     startLine: number;
@@ -21,7 +19,8 @@ export type SerializedMinionTask = {
     endCharacter: number;
   };
   selectedText: string;
-  fullContent: string;
+  originalContent: string;
+  finalContent: string;
   startTime: number;
   shortName: string;
   modificationDescription: string;
@@ -29,15 +28,17 @@ export type SerializedMinionTask = {
   modificationApplied: boolean;
   executionStage: string;
   classification?: TASK_CLASSIFICATION_NAME;
+  logContent: string;
 };
 
 export class MinionTask {
+
+
   serialize(): SerializedMinionTask {
     return {
       id: this.id,
       minionIndex: this.minionIndex,
       documentURI: this.documentURI,
-      workingDocumentURI: this.workingDocumentURI,
       userQuery: this.userQuery,
       selection: {
         startLine: this.selection.start.line,
@@ -46,7 +47,8 @@ export class MinionTask {
         endCharacter: this.selection.end.character,
       },
       selectedText: this.selectedText,
-      fullContent: this.fullContent,
+      originalContent: this.originalContent,
+      finalContent: this.finalContent,
       startTime: this.startTime,
       shortName: this.shortName,
       modificationDescription: this.modificationDescription,
@@ -54,6 +56,7 @@ export class MinionTask {
       modificationApplied: this.modificationApplied,
       executionStage: this.executionStage,
       classification: this.classification,
+      logContent: this.logContent,
     };
   }
 
@@ -62,14 +65,14 @@ export class MinionTask {
       id: data.id,
       minionIndex: data.minionIndex || 0,
       documentURI: data.documentURI,
-      workingDocumentURI: data.workingDocumentURI,
       userQuery: data.userQuery,
       selection: new vscode.Selection(
         new vscode.Position(data.selection.startLine, data.selection.startCharacter),
         new vscode.Position(data.selection.endLine, data.selection.endCharacter)
       ),
       selectedText: data.selectedText,
-      fullContent: data.fullContent,
+      originalContent: data.originalContent,
+      finalContent: data.finalContent,
       startTime: data.startTime,
       shortName: data.shortName,
       modificationDescription: data.modificationDescription,
@@ -78,6 +81,7 @@ export class MinionTask {
       executionStage: data.executionStage,
       classification: data.classification,
       onChanged: async (important: boolean) => {},
+      logContent: data.logContent,
     });
   }
 
@@ -86,7 +90,6 @@ export class MinionTask {
   readonly minionIndex: number;
 
   readonly documentURI: string;
-  readonly workingDocumentURI: string;
   readonly selection: vscode.Selection;
   readonly selectedText: string;
   readonly onChanged: (important: boolean) => Promise<void>;
@@ -98,7 +101,8 @@ export class MinionTask {
   // tracking variables between stages
   //
   shortName: string;
-  fullContent: string;
+  originalContent: string;
+  finalContent: string;
   currentStageIndex: number = 0;
   startTime: number;
   modificationDescription: string;
@@ -109,16 +113,19 @@ export class MinionTask {
   executionStage: string;
   classification?: TASK_CLASSIFICATION_NAME;
   waiting: boolean = false;
+  logContent: string = "";
+
+
 
   constructor({
     id,
     minionIndex,
     documentURI,
-    workingDocumentURI,
     userQuery,
     selection,
     selectedText,
-    fullContent,
+    originalContent,
+    finalContent = "",
     startTime,
     onChanged = async (important: boolean) => {},
     shortName = "",
@@ -127,15 +134,16 @@ export class MinionTask {
     modificationApplied = false,
     executionStage = "",
     classification = undefined,
+    logContent = "",      // Add this line (Step 1)
   }: {
     id: string;
     minionIndex: number;
     documentURI: string;
-    workingDocumentURI: string;
     userQuery: string;
     selection: vscode.Selection;
     selectedText: string;
-    fullContent: string;
+    originalContent: string;
+    finalContent?: string;
     startTime: number;
     onChanged?: (important: boolean) => Promise<void>;
     shortName?: string;
@@ -144,15 +152,16 @@ export class MinionTask {
     modificationApplied?: boolean;
     executionStage?: string;
     classification?: TASK_CLASSIFICATION_NAME;
+    logContent?: string; // Add this line (Step 1)
   }) {
     this.id = id;
     this.minionIndex = minionIndex;
     this.documentURI = documentURI;
-    this.workingDocumentURI = workingDocumentURI;
     this.userQuery = userQuery;
     this.selection = selection;
     this.selectedText = selectedText;
-    this.fullContent = fullContent;
+    this.originalContent = originalContent;
+    this.finalContent = finalContent;
     this.startTime = startTime;
     this.onChanged = onChanged;
     this.shortName = shortName;
@@ -161,6 +170,22 @@ export class MinionTask {
     this.modificationApplied = modificationApplied;
     this.executionStage = executionStage;
     this.classification = classification;
+    this.logContent = logContent;
+  }
+
+  get logURI() {
+    return `10minions-log:minionTaskId/${this.id}`
+  }
+
+  appendToLog(content: string): void {
+    this.logContent += content;
+
+    ExecutionsManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+  }
+  
+  clearLog() {
+    this.logContent = "";
+    ExecutionsManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
   }
 
   static async create({
@@ -179,17 +204,15 @@ export class MinionTask {
     onChanged: (important: boolean) => Promise<void>;
   }): Promise<MinionTask> {
     const executionId = randomUUID();
-    const workingDocument = await createWorkingdocument(executionId);
 
     const execution = new MinionTask({
       id: executionId,
       minionIndex,
       documentURI: document.uri.toString(),
-      workingDocumentURI: workingDocument.uri.toString(),
       userQuery,
       selection,
       selectedText,
-      fullContent: await document.getText(),
+      originalContent: await document.getText(),
       startTime: Date.now(),
       onChanged,
     });
@@ -257,8 +280,7 @@ export class MinionTask {
         while (this.currentStageIndex < STAGES.length && !this.stopped) {
           this.executionStage = STAGES[this.currentStageIndex].name;
 
-          appendToFile(
-            this.workingDocumentURI,
+          this.appendToLog(
             [
               `////////////////////////////////////////////////////////////////////////////////`,
               `// Stage ${this.currentStageIndex + 1}: ${this.executionStage}`,
@@ -294,7 +316,7 @@ export class MinionTask {
         const executionTime = Date.now() - this.startTime;
         const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
 
-        await appendToFile(this.workingDocumentURI, `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
+        await this.appendToLog( `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
         this.progress = 1;
       }
     });

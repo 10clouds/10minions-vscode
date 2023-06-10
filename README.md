@@ -63,3 +63,7 @@ Keep an eye on this section for release updates and changelogs.
 ### 1.0.0
 
 Initial release.
+
+## 🚀 Roadmap
+
+* Ability to perform workspace wide operations

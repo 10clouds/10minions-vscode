@@ -8,6 +8,9 @@ const webpack = require('webpack');
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
+// Import package.json and use it as global variable 'NPM_PACKAGE'
+const NPM_PACKAGE_JSON = JSON.stringify(require("./package.json"));
+
 /** @type WebpackConfig */
 const extensionConfig = {
   target: 'node', // VS Code extensions run in a Node.js-context 📖 -> https://webpack.js.org/configuration/node/
@@ -45,6 +48,13 @@ const extensionConfig = {
   infrastructureLogging: {
     level: "log", // enables logging required for problem matchers
   },
+
+plugins: [
+  // Add DefinePlugin to extensionConfig
+  new webpack.DefinePlugin({
+    NPM_PACKAGE: NPM_PACKAGE_JSON,
+  }),
+]
 };
 
 

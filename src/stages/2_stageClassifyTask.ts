@@ -3,7 +3,7 @@ import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { gptExecute } from "../openai";
 import { EXTENSIVE_DEBUG } from "../const";
-import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
+import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
 export const TASK_CLASSIFICATION: {
   name: TASK_CLASSIFICATION_NAME;
@@ -55,13 +55,7 @@ Your job is to classify the task, so tomorrow, when you get back to this task, y
 Possible classifications:
 ${TASK_CLASSIFICATION.map((c) => `* ${c.name} - ${c.description}`).join("\n")}
 
-===== CODE ${
-    selectedText
-      ? `(starts on line ${selectionPosition.line + 1} column: ${
-          selectionPosition.character + 1
-        } in the file)`
-      : ""
-  }====
+===== CODE ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : ""}====
 ${selectedText ? selectedText : fullFileContents}
 
 ${fileContext}
@@ -93,32 +87,25 @@ export async function stageClassifyTask(this: MinionTask) {
     this.userQuery,
     this.selection.start,
     this.selectedText,
-    this.fullContent,
+    this.originalContent,
     async (chunk: string) => {
       this.reportSmallProgress();
-      await appendToFile(this.workingDocumentURI, chunk);
+      await this.appendToLog(chunk);
     },
     () => {
       return this.stopped;
     }
   );
-  await appendToFile(this.workingDocumentURI, "\n\n");
+  await this.appendToLog("\n\n");
 
   //find classification in text
-  let classifications = TASK_CLASSIFICATION.filter(
-    (c) => classification.indexOf(c.name) !== -1
-  );
+  let classifications = TASK_CLASSIFICATION.filter((c) => classification.indexOf(c.name) !== -1);
 
   if (classifications.length !== 1) {
-    throw new Error(
-      `Could not find classification in the text: ${classification}`
-    );
+    throw new Error(`Could not find classification in the text: ${classification}`);
   }
 
   this.classification = classifications[0].name;
 
-  await appendToFile(
-    this.workingDocumentURI,
-    `Classification: ${this.classification}\n\n`
-  );
+  this.appendToLog(`Classification: ${this.classification}\n\n`);
 }

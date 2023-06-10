@@ -1,4 +1,4 @@
-import { CANCELED_STAGE_NAME, ExecutionInfo, FINISHED_STAGE_NAME } from "../ui/ExecutionInfo";
+import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
 
 export const BRAND_COLOR = "#5e20e5";
 export const ERROR_COLOR = "#D8595A";
@@ -57,7 +57,7 @@ export function blendWithForeground(color: string, blendRatio: number = 0.75) {
   );
 }
 
-export function getOpacity(execution: ExecutionInfo) {
+export function getOpacity(execution: MinionTaskUIInfo) {
   if (execution.executionStage === CANCELED_STAGE_NAME || execution.waiting) {
     return 0.2;
   }
@@ -69,7 +69,7 @@ export function getOpacity(execution: ExecutionInfo) {
  * Get the base color based on the execution object. Returns one of the predefined colors
  * depending on the execution's state.
  */
-export function getBaseColor(execution: ExecutionInfo) {
+export function getBaseColor(execution: MinionTaskUIInfo) {
   return execution.stopped
     ? execution.executionStage === FINISHED_STAGE_NAME
       ? SUCESS_COLOR

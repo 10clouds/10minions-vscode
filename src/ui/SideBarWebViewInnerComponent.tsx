@@ -143,11 +143,11 @@ Following are the changes made to the code:
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { MessageToVSCode, MessageToWebView } from "../Messages";
-import { ExecutionInfo } from "./ExecutionInfo";
+import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { Logo } from "./Logo";
 import { ALL_MINION_ICONS_OUTLINE } from "./MinionIconsOutline";
 import { GoButton } from "./GoButton";
-import { MinionTaskListComponent } from "./MinionsList";
+import { MinionTaskListComponent } from "./MinionTaskListComponent";
 import { Header } from "./Header";
 import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
 
@@ -172,7 +172,7 @@ Ask something ...
 `.trim();
 export const SideBarWebViewInnerComponent: React.FC = () => {
   const [userInputPrompt, setUserInputPrompt] = React.useState("");
-  const [executionList, setExecutionList] = React.useState<ExecutionInfo[]>([]);
+  const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
   const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
@@ -202,7 +202,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     input?.focus();
   }
 
-  function handleExecutionsUpdated(executions: ExecutionInfo[]) {
+  function handleExecutionsUpdated(executions: MinionTaskUIInfo[]) {
     setExecutionList(executions);
   }
 

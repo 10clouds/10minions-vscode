@@ -4,7 +4,7 @@ import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
-import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
+import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
 export const CLASSIFICATION_PROMPTS = {
   AnswerQuestion: (selectedText?: string) =>
@@ -139,10 +139,10 @@ export async function stageCreateModification(this: MinionTask) {
     this.userQuery,
     this.selection.start,
     this.selectedText,
-    this.fullContent,
+    this.originalContent,
     async (chunk: string) => {
       this.modificationDescription += chunk;
-      await appendToFile(this.workingDocumentURI, chunk);
+      await this.appendToLog( chunk);
       this.reportSmallProgress();
     },
     () => {
@@ -151,5 +151,5 @@ export async function stageCreateModification(this: MinionTask) {
   );
 
   this.reportSmallProgress();
-  await appendToFile(this.workingDocumentURI, "\n\n");
+  await this.appendToLog( "\n\n");
 }

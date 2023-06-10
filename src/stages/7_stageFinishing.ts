@@ -5,6 +5,9 @@ import { MinionTask } from "../MinionTask";
 export async function stageFinishing(this: MinionTask) {
   vscode.window.showInformationMessage(`Finished processing ${this.baseName}`);
 
+  let document = await this.document();
+  this.finalContent = document.getText();
+
   this.stopExecution();
 
   playNotificationSound();

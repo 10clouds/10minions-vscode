@@ -26,7 +26,7 @@ ${this.modificationDescription}
 `.trim()
   );
 
-  await appendToFile(this.workingDocumentURI, `\nPLAIN COMMENT FALLBACK\n`);
+  await this.appendToLog( `\nPLAIN COMMENT FALLBACK\n`);
 
   await applyWorkspaceEdit(async (edit) => {
     edit.insert(

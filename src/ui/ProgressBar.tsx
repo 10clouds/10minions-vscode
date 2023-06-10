@@ -1,9 +1,9 @@
 import * as React from "react";
-import { ExecutionInfo } from "./ExecutionInfo";
+import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { blendWithForeground, getBaseColor, getOpacity } from "../utils/blendColors";
 import { useMemo } from "react";
 
-export function ProgressBar({ execution }: { execution: ExecutionInfo }) {
+export function ProgressBar({ execution }: { execution: MinionTaskUIInfo }) {
   const percentage = `${(execution.progress * 100).toFixed(1)}%`;
 
   let opacity = useMemo(() => getOpacity(execution), [execution]);

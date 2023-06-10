@@ -1,10 +1,9 @@
 import * as React from "react";
 import FlipMove from "react-flip-move";
 import { MinionTaskComponent } from "./MinionTaskComponent";
-import { ExecutionInfo } from "./ExecutionInfo";
+import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
 
-
-export function MinionTaskListComponent({ executionList }: { executionList: ExecutionInfo[]; }) {
+export function MinionTaskListComponent({ executionList }: { executionList: MinionTaskUIInfo[]; }) {
   return (
     <FlipMove
       enterAnimation={{

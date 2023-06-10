@@ -1,8 +1,8 @@
-import { ExecutionInfo } from "./ui/ExecutionInfo";
+import { MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 
 export type MessageToWebView =
   | { type: "clearAndfocusOnInput" }
-  | { type: "executionsUpdated"; executions: ExecutionInfo[] }
+  | { type: "executionsUpdated"; executions: MinionTaskUIInfo[] }
   | { type: "apiKeySet"; value: boolean }
   | { type: "tokenCount"; value: number }
   | { type: "suggestion"; value: string };
@@ -10,7 +10,8 @@ export type MessageToWebView =
 export type MessageToVSCode =
   | { type: "getTokenCount" }
   | { type: "newExecution"; value?: string }
-  | { type: "openDocument"; documentURI: string }
+  | { type: "openDocument"; executionId: string }
+  | { type: "openLog"; executionId: string}
   | { type: "showDiff"; executionId: string }
   | { type: "reRunExecution"; executionId: string; newUserQuery?: string }
   | { type: "stopExecution"; executionId: string }

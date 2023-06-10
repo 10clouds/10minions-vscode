@@ -6,12 +6,11 @@ export type TASK_CLASSIFICATION_NAME =
 export const FINISHED_STAGE_NAME = "Finished";
 export const CANCELED_STAGE_NAME = "Canceled";
 
-export type ExecutionInfo = {
+export type MinionTaskUIInfo = {
   id: string;
   minionIndex: number;
   documentName: string;
   documentURI: string;
-  logFileURI: string;
   userQuery: string;
   executionStage: string;
   progress: number;

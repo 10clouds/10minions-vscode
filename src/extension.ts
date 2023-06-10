@@ -1,57 +1,12 @@
 import * as vscode from "vscode";
 import { TenMinionsViewProvider } from "./TenMinionsViewProvider";
 import { initPlayingSounds } from "./utils/playSound";
-
-class MyCodeActionProvider implements vscode.CodeActionProvider {
-  public static readonly providedCodeActionKinds = [
-    vscode.CodeActionKind.QuickFix,
-  ];
-
-  private fixCommandId: string;
-
-  constructor(fixCommandId: string) {
-    this.fixCommandId = fixCommandId;
-  }
-
-  private createCommandCodeAction(
-    diagnostic: vscode.Diagnostic,
-    uri: vscode.Uri
-  ): vscode.CodeAction {
-    const action = new vscode.CodeAction(
-      "Fix with 10Minions",
-      MyCodeActionProvider.providedCodeActionKinds[0]
-    );
-    action.command = {
-      command: this.fixCommandId,
-      title: "Let AI fix this",
-      arguments: [uri, diagnostic],
-    };
-    action.diagnostics = [diagnostic];
-    return action;
-  }
-
-  public provideCodeActions(
-    document: vscode.TextDocument,
-    range: vscode.Range,
-    context: vscode.CodeActionContext,
-    token: vscode.CancellationToken
-  ): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
-    return context.diagnostics
-      .filter((diagnostic) => this.canFixDiagnostic(diagnostic))
-      .map((diagnostic) =>
-        this.createCommandCodeAction(diagnostic, document.uri)
-      );
-  }
-
-  private canFixDiagnostic(diagnostic: vscode.Diagnostic): boolean {
-    return true;
-  }
-}
+import { AnalyticsManager } from "./AnalyticsManager";
+import { CodeActionProvider } from "./CodeActionProvider";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("10Minions is now active");
 
-  //Code actions
   initPlayingSounds(context);
 
   const diagnostics = vscode.languages.createDiagnosticCollection("10minions");
@@ -72,6 +27,11 @@ export function activate(context: vscode.ExtensionContext) {
         provider.preFillPrompt(
           `Fix this error:\n\n${message}\n${lineAndColumn}`
         );
+
+        AnalyticsManager.instance.reportEvent("fixError", {
+          message,
+          lineAndColumn,
+        });
       }
     )
   );
@@ -79,9 +39,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
       { scheme: "file" },
-      new MyCodeActionProvider(fixCommandId),
+      new CodeActionProvider(fixCommandId),
       {
-        providedCodeActionKinds: MyCodeActionProvider.providedCodeActionKinds,
+        providedCodeActionKinds: CodeActionProvider.providedCodeActionKinds,
       }
     )
   );

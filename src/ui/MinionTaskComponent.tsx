@@ -1,12 +1,11 @@
-import { XMarkIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
+import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import * as React from "react";
-import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
+import { forwardRef } from "react";
+import { blendWithForeground, getBaseColor } from "../utils/blendColors";
+import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
+import { FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
-import { forwardRef } from "react";
-import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
-import { blendWithForeground, getBaseColor } from "../utils/blendColors";
-import { exec } from "child_process";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
   target.style.height = "auto";
@@ -29,7 +28,7 @@ function getUserQueryPreview(userQuery: string) {
 }
 
 export const MinionTaskComponent = forwardRef(
-  ({ execution, ...props }: { execution: ExecutionInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
+  ({ execution, ...props }: { execution: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { className, ...propsWithoutClassName } = props;
 
     const userQueryPreview = getUserQueryPreview(execution.userQuery);
@@ -122,8 +121,8 @@ export const MinionTaskComponent = forwardRef(
               title="Open Log"
               onClick={() => {
                postMessageToVsCode({
-                  type: "openDocument",
-                  documentURI: execution.logFileURI,
+                  type: "openLog",
+                  executionId: execution.id,
                 });
               }}
               className={`w-6 h-6 mr-2 cursor-pointer transition-color ${!execution.stopped && !execution.waiting ? "busy-robot" : ""}`}
@@ -139,8 +138,8 @@ export const MinionTaskComponent = forwardRef(
                 title="Open Log"
                 onClick={() => {
                  postMessageToVsCode({
-                    type: "openDocument",
-                    documentURI: execution.logFileURI,
+                    type: "openLog",
+                    executionId: execution.id,
                   });
                 }}
               >
@@ -235,7 +234,7 @@ export const MinionTaskComponent = forwardRef(
                   onClick={() => {
                    postMessageToVsCode({
                       type: "openDocument",
-                      documentURI: execution.documentURI,
+                      executionId: execution.id,
                     });
                   }}
                 >
@@ -300,8 +299,8 @@ export const MinionTaskComponent = forwardRef(
             title="Open Log"
             onClick={() => {
              postMessageToVsCode({
-                type: "openDocument",
-                documentURI: execution.logFileURI,
+                type: "openLog",
+                executionId: execution.id,
               });
             }}
           >

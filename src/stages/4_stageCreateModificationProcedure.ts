@@ -4,7 +4,7 @@ import { MinionTask } from "../MinionTask";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
 import { appendToFile } from "../utils/appendToFile";
-import { TASK_CLASSIFICATION_NAME } from "../ui/ExecutionInfo";
+import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
 export const CLASSIFICATION_OUTPUT_FORMATS = {
   "AnswerQuestion": `
@@ -161,19 +161,19 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
   try {
     this.modificationProcedure = await createConsolidated(
       this.classification,
-      this.fullContent,
+      this.originalContent,
       this.modificationDescription,
       async (chunk: string) => {
         this.reportSmallProgress();
-        await appendToFile(this.workingDocumentURI, chunk);
+        await this.appendToLog( chunk);
       },
       () => {
         return this.stopped;
       }
     );
   } catch (error) {
-    appendToFile(this.workingDocumentURI, `Error while creating modification procedure:\n\n ${error}\n\n`);
+    this.appendToLog( `Error while creating modification procedure:\n\n ${error}\n\n`);
   }
 
-  appendToFile(this.workingDocumentURI, "\n\n");
+  this.appendToLog( "\n\n");
 }

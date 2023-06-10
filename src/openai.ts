@@ -1,7 +1,8 @@
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
-import { CANCELED_STAGE_NAME } from "./ui/ExecutionInfo";
+import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
+import { AnalyticsManager } from "./AnalyticsManager";
 
 type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
@@ -131,6 +132,7 @@ async function processOpenAIResponseStream({
   });
 }
 
+
 /* The gptExecute function is the main exported function, which combines all the
  * other functions to send a GPT-4 query and receive and process the response. */
 export async function gptExecute({
@@ -150,11 +152,35 @@ export async function gptExecute({
   temperature?: number;
   controller?: AbortController;
 }) {
+
+  function reportOpenAICallToAnalytics(result?: string, error?: any) {
+    AnalyticsManager.instance.reportOpenAICall(
+      {
+        model,
+        messages: [
+          {
+            role: "user",
+            content: fullPrompt,
+          },
+        ],
+        max_tokens: maxTokens,
+        temperature,
+      },
+      {
+        result,
+        error,
+      }
+    );
+  }
+
+  
   // Step 1: Add a loop that iterates up to 3 times.
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await queryOpenAI({fullPrompt, maxTokens, model, temperature, controller});
       const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
+
+      reportOpenAICallToAnalytics(result, undefined);
 
       // Step 3: On successful run, break the loop early and return the result.
       return result;
@@ -162,6 +188,8 @@ export async function gptExecute({
       // Step 2: Add error handling for exceptions.
       // Step 4: Log the error and retry the process for up to 2 more times.
       console.error(`Error on attempt ${attempt}: ${error}`);
+
+      reportOpenAICallToAnalytics(undefined, error);
 
       // Step 5: On the 3rd error, give up and re-throw the error.
       if (attempt === 3) {

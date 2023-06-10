@@ -8,7 +8,7 @@
   "repository": {
     "url": "https://github.com/10clouds/10minions"
   },
-  "version": "0.0.3",
+  "version": "0.0.4-dev",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
@@ -91,7 +91,7 @@
       "10minions": [
         {
           "type": "webview",
-          "id": "10minions.chatView",
+          "id": "10minions.sideBar",
           "name": "10Minions"
         }
       ]
@@ -138,6 +138,7 @@
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "async-lock": "^1.4.0",
+    "firebase": "^9.22.2",
     "gpt-tokenizer": "^2.1.1",
     "langchain": "^0.0.77",
     "node-fetch": "^3.3.1",

@@ -2,20 +2,77 @@ import { basename } from "path";
 import * as vscode from "vscode";
 import { MinionTask, SerializedMinionTask } from "./MinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
+import { CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
+import { AnalyticsManager } from "./AnalyticsManager";
 
-export class ExecutionsManager implements vscode.TextDocumentContentProvider {
+function extractExecutionIdFromUri(uri: vscode.Uri): string {
+  return uri.path.match(/^minionTaskId\/([a-z\d\-]+)/)![1];
+}
+
+class LogProvider implements vscode.TextDocumentContentProvider {
+  private executionsManager: ExecutionsManager;
+
+  constructor(executionsManager: ExecutionsManager) {
+    this.executionsManager = executionsManager;
+  }
+
+  // Create an EventEmitter to handle document updates
+  private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
+
+  // Use the getter to expose the onDidChange event using EventEmitter's event property
+  get onDidChange(): vscode.Event<vscode.Uri> | undefined {
+    return this._onDidChangeEmitter.event;
+  }
+
+  reportChange(uri: vscode.Uri) {
+    // Emit the event to notify subscribers of the change in the URI
+    this._onDidChangeEmitter.fire(uri);
+  }
+
+  provideTextDocumentContent(uri: vscode.Uri): string {
+    const textKey = extractExecutionIdFromUri(uri);
+    const logContent = this.executionsManager.getExecutionById(textKey)?.logContent;
+    return logContent || "";
+  }
+}
+
+export class ExecutionsManager {
+  public static instance: ExecutionsManager;
+
   private executions: MinionTask[] = [];
   private readonly _context: vscode.ExtensionContext;
   private _view?: vscode.WebviewView;
   private _isThrottled = false;
   private _pendingUpdate = false;
+  
+  fullContentProvider: vscode.TextDocumentContentProvider;
+  logProvider: LogProvider;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
 
     const serializedExecutions = this._context.globalState.get<SerializedMinionTask[]>("10minions.executions") || [];
     this.executions = serializedExecutions.map((data: SerializedMinionTask) => MinionTask.deserialize(data));
+
+    let self = this;
+    this.fullContentProvider = new (class FullContentProvider implements vscode.TextDocumentContentProvider {
+      provideTextDocumentContent(uri: vscode.Uri): string {
+        const textKey = extractExecutionIdFromUri(uri);
+        const originalContent = self.executions.find((e) => e.id === textKey)?.originalContent;
+        return originalContent || "";
+      }
+    });
+  
+    this.logProvider = new LogProvider(this);
+
+    vscode.workspace.registerTextDocumentContentProvider("10minions-log", this.logProvider);
+    vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this.fullContentProvider);
+
+    if (ExecutionsManager.instance) {
+      throw new Error("ExecutionsManager already instantiated");
+    }
+
+    ExecutionsManager.instance = this;
   }
 
   async saveExecutions() {
@@ -23,29 +80,38 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     await this._context.globalState.update("10minions.executions", serializedExecutions);
   }
 
-  async showDiff(executionId: any) {
-    let execution = this.executions.find((e) => e.id === executionId);
+  async showDiff(executionId: string) {
+    let minionTask = this.getExecutionById(executionId);
 
-    if (execution) {
-      const makeUriString = (textKey: string): string => `10minions:text/${textKey}`; // `_ts` to avoid cache
-
-      const documentUri = vscode.Uri.parse(execution.documentURI);
+    if (minionTask) {
+      const documentUri = vscode.Uri.parse(minionTask.documentURI);
       await vscode.commands.executeCommand(
         "vscode.diff",
-        vscode.Uri.parse(makeUriString(executionId)),
+        vscode.Uri.parse(minionTask.logURI),
         documentUri,
-        `(original) ↔ ${basename(documentUri.fsPath)}`
+        `(original) ↔ ${basename(documentUri.fsPath)} (${minionTask.shortName})`
       );
     }
   }
 
-  provideTextDocumentContent(uri: vscode.Uri): string {
-    const extractTextKey = (uri: vscode.Uri): string => uri.path.match(/^text\/([a-z\d\-]+)/)![1];
+  async openDocument(executionId: string) {
+    let minionTask = this.getExecutionById(executionId);
 
-    console.log("CONTENT", uri);
-    const textKey = extractTextKey(uri);
-    const originalContent = this.executions.find((e) => e.id === textKey)?.fullContent;
-    return originalContent || "";
+    if (minionTask) {
+      let documentURI = vscode.Uri.parse(minionTask.documentURI);
+      await vscode.workspace.openTextDocument(documentURI);
+      await vscode.window.showTextDocument(documentURI);
+    }  
+  }
+
+  async openLog(executionId: string) {
+    let minionTask = this.getExecutionById(executionId);
+
+    if (minionTask) {
+      let documentURI = vscode.Uri.parse(minionTask.logURI);
+      await vscode.workspace.openTextDocument(documentURI);
+      await vscode.window.showTextDocument(documentURI);
+    }
   }
 
   updateView(view: vscode.WebviewView) {
@@ -60,8 +126,8 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     this.executions = this.executions.filter((e) => e.id !== id);
   }
 
-  findExecution(id: string) {
-    return this.executions.find((e) => e.id === id);
+  getExecutionById(executionId: string): MinionTask | undefined {
+    return this.executions.find((e) => e.id === executionId);
   }
 
   clearExecutions() {
@@ -76,7 +142,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       return;
     }
 
-    if (activeEditor.document.fileName.endsWith(".log")) {
+    if (activeEditor.document.uri.scheme.startsWith("10minions-")) {
       vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
@@ -89,9 +155,9 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       minionIndex: this.acquireMinionIndex(),
       onChanged: async (important) => {
         if (important) {
-          this.notifyExecutionsUpdatedImmediate();
+          this.notifyExecutionsUpdatedImmediate(execution);
         } else {
-          this.notifyExecutionsUpdated();
+          this.notifyExecutionsUpdated(execution);
         }
       },
     });
@@ -108,7 +174,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       await execution.run();
     }
 
-    this.notifyExecutionsUpdatedImmediate();
+    this.notifyExecutionsUpdatedImmediate(execution);
   }
 
   acquireMinionIndex(): number {
@@ -126,18 +192,18 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     }
   }
 
-  notifyExecutionsUpdated() {
+  notifyExecutionsUpdated(minionTask: MinionTask) {
     if (this._isThrottled) {
       this._pendingUpdate = true;
       return;
     }
 
     this._isThrottled = true;
-    this.notifyExecutionsUpdatedImmediate();
+    this.notifyExecutionsUpdatedImmediate(minionTask);
 
     setTimeout(() => {
       this._isThrottled = false;
-      if (this._pendingUpdate) this.notifyExecutionsUpdatedImmediate();
+      if (this._pendingUpdate) this.notifyExecutionsUpdatedImmediate(minionTask);
       this._pendingUpdate = false;
     }, 500);
   }
@@ -159,7 +225,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
     await oldExecution.run();
 
-    this.notifyExecutionsUpdatedImmediate();
+    this.notifyExecutionsUpdatedImmediate(oldExecution);
   }
 
   reRunExecution(executionId: any, newUserQuery?: string) {
@@ -168,7 +234,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     if (!oldExecutionMaybe) {
       vscode.window.showErrorMessage("No execution found for id", executionId);
       throw new Error(`No execution found for id ${executionId}`);
-    }
+}
 
     let oldExecution = oldExecutionMaybe;
 
@@ -179,7 +245,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
     //remove old execution
     this.executions = this.executions.filter((e) => e.id !== executionId);
-    this.notifyExecutionsUpdatedImmediate();
+    this.notifyExecutionsUpdatedImmediate(oldExecution);
 
     //after 1 second add a new one
     setTimeout(async () => {
@@ -191,9 +257,9 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
           if (important) {
-            this.notifyExecutionsUpdatedImmediate();
+            this.notifyExecutionsUpdatedImmediate(newExecution);
           } else {
-            this.notifyExecutionsUpdated();
+            this.notifyExecutionsUpdated(newExecution);
           }
         },
       });
@@ -210,20 +276,19 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
         await newExecution.run();
       }
 
-      this.notifyExecutionsUpdatedImmediate();
+      this.notifyExecutionsUpdatedImmediate(newExecution);
     }, 500);
   }
 
-  notifyExecutionsUpdatedImmediate() {
-    const executionInfo: ExecutionInfo[] = this.executions.map((e) => ({
+  notifyExecutionsUpdatedImmediate(minionTask?: MinionTask) {
+    const executionInfo: MinionTaskUIInfo[] = this.executions.map((e) => ({
       id: e.id,
       minionIndex: e.minionIndex,
-      fullContent: e.fullContent,
+      fullContent: e.originalContent,
       userQuery: e.userQuery,
       executionStage: e.executionStage,
       documentName: e.baseName,
       documentURI: e.documentURI,
-      logFileURI: e.workingDocumentURI,
       progress: e.progress,
       stopped: e.stopped,
       classification: e.classification,
@@ -240,6 +305,10 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
     this.saveExecutions();
     this.runNextWaitingExecution();
+
+    if (minionTask) {
+      AnalyticsManager.instance.reportOrUpdateMinionTask(minionTask);
+    }
   }
 
   stopExecution(executionId: any) {
@@ -258,12 +327,10 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     if (execution) {
       execution.stopExecution(CANCELED_STAGE_NAME, false);
       this.executions = this.executions.filter((e) => e.id !== executionId);
+      this.notifyExecutionsUpdatedImmediate(execution);
     } else {
       vscode.window.showErrorMessage("No execution found for id", executionId);
     }
-
-    //notify webview
-    this.notifyExecutionsUpdatedImmediate();
   }
 
   private getRunningExecution(documentURI: string): MinionTask | null {

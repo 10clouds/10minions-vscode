@@ -3,23 +3,24 @@ import * as vscode from "vscode";
 import { CommandHistoryManager } from "./CommandHistoryManager";
 import { ExecutionsManager } from "./ExecutionsManager";
 import { MessageToVSCode, MessageToWebView } from "./Messages";
-
+import { AnalyticsManager } from "./AnalyticsManager";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
   return view?.webview.postMessage(message);
 }
 
-
 export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "10minions.chatView";
-  
+  public static readonly viewType = "10minions.sideBar";
+
   private _view?: vscode.WebviewView;
   private commandHistoryManager: CommandHistoryManager;
   private executionsManager: ExecutionsManager;
+  private analyticsManager: AnalyticsManager;
 
   constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
     this.commandHistoryManager = new CommandHistoryManager(context);
     this.executionsManager = new ExecutionsManager(context);
+    this.analyticsManager = new AnalyticsManager(context);
   }
 
   public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
@@ -33,8 +34,6 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       enableScripts: true,
       localResourceRoots: [this._extensionUri],
     };
-
-    vscode.workspace.registerTextDocumentContentProvider("10minions", this.executionsManager);
 
     // set the HTML for the webview
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -50,6 +49,24 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
           type: "apiKeySet",
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });
+
+        if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
+          AnalyticsManager.instance.reportEvent("setOpenAIApiKey");
+        } else {
+          AnalyticsManager.instance.reportEvent("unsetOpenAIApiKey");
+        }
+      }
+
+      if (e.affectsConfiguration("10minions.enableCompletionSounds")) {
+        AnalyticsManager.instance.reportEvent("setEnableCompletionSounds", { 
+          value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds")
+        });
+      }
+
+      if (e.affectsConfiguration("10minions.sendDiagnosticsData")) {
+        AnalyticsManager.instance.reportEvent("setSendDiagnosticsData", { 
+          value: !!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData")
+        }, true); // Force send even if just disabled
       }
     });
   }
@@ -78,7 +95,6 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
-  
   async handleWebviewMessage(data: MessageToVSCode) {
     console.log("CMD", data);
     const activeEditor = vscode.window.activeTextEditor;
@@ -103,12 +119,11 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case "openDocument": {
-        //if it's open and focused close it
-
-        let documentURI = vscode.Uri.parse(data.documentURI);
-        await vscode.workspace.openTextDocument(documentURI);
-        await vscode.window.showTextDocument(documentURI);
-
+        this.executionsManager.openDocument(data.executionId);
+        break;
+      }
+      case "openLog": {
+        this.executionsManager.openLog(data.executionId);
         break;
       }
       case "showDiff": {
