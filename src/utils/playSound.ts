@@ -1,8 +1,9 @@
 import { ExtensionContext, workspace } from "vscode";
 import * as path from "path";
 import { PathLike } from "fs";
-const { exec } = require('child_process')
-const execPromise = require('util').promisify(exec)
+import { exec } from 'child_process';
+
+const execPromise = require('util').promisify(exec);
 
 /* AIX PLAY COMMAND */
 const aixPlayCommand = (filePath: PathLike, volume: number) => `aplay \"${filePath}\" -v ${volume}`;
@@ -23,16 +24,16 @@ const openbsdPlayCommand = (filePath: PathLike, volume: number) => `aucat -i \"$
 const sunosPlayCommand = (filePath: PathLike, volume: number) => `audioplay \"${filePath}\" -v ${volume}`;
 
 /* WIN32 PLAY COMMAND */
-const addPresentationCore = `Add-Type -AssemblyName presentationCore;`
-const createMediaPlayer = `$player = New-Object system.windows.media.mediaplayer;`
-const loadAudioFile = (filePath: PathLike) => `$player.open('${filePath}');`
-const playAudio = `$player.Play();`
-const stopAudio = `Start-Sleep 1; Start-Sleep -s $player.NaturalDuration.TimeSpan.TotalSeconds;Exit;`
+const addPresentationCore = `Add-Type -AssemblyName presentationCore;`;
+const createMediaPlayer = `$player = New-Object system.windows.media.mediaplayer;`;
+const loadAudioFile = (filePath: PathLike) => `$player.open('${filePath}');`;
+const playAudio = `$player.Play();`;
+const stopAudio = `Start-Sleep 1; Start-Sleep -s $player.NaturalDuration.TimeSpan.TotalSeconds;Exit;`;
 
 const win32PlayCommand = (filePath: PathLike, volume: number) =>
   `powershell -c ${addPresentationCore} ${createMediaPlayer} ${loadAudioFile(
     filePath,
-  )} $player.Volume = ${volume}; ${playAudio} ${stopAudio}`
+  )} $player.Volume = ${volume}; ${playAudio} ${stopAudio}`;
 
 async function playSound(path: string, volume = 0.5) {
 
@@ -41,7 +42,7 @@ async function playSound(path: string, volume = 0.5) {
      * Mac: afplay's volume is from 0 to 255, default is 1. However, volume > 2 usually result in distortion.
      * Therefore, it is better to limit the volume on Mac, and set a common scale of 0 to 1 for simplicity
      */
-  const volumeAdjustedByOS = process.platform === 'darwin' ? Math.min(2, volume * 2) : volume
+  const volumeAdjustedByOS = process.platform === 'darwin' ? Math.min(2, volume * 2) : volume;
 
   let playCommand;
   switch (process.platform) {
