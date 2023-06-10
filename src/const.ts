@@ -1,2 +1,2 @@
 
-export const EXTENSIVE_DEBUG = false
+export const EXTENSIVE_DEBUG = false;

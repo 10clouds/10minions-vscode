@@ -12,7 +12,7 @@
     "curly": "off",
     "eqeqeq": "warn",
     "no-throw-literal": "warn",
-    "semi": "off",
+    "semi": "off"
   },
   "ignorePatterns": ["out", "dist", "**/*.d.ts"]
 }
