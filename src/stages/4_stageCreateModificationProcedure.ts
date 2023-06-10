@@ -1,6 +1,6 @@
 import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 import * as vscode from "vscode";
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../openai";
 import { appendToFile } from "../utils/appendToFile";
@@ -143,7 +143,7 @@ Let's take this step by step, first, describe in detail what you are going to do
   });
 }
 
-export async function stageCreateModificationProcedure(this: GPTExecution) {
+export async function stageCreateModificationProcedure(this: MinionTask) {
   if (this.classification === undefined) {
     throw new Error("Classification is undefined");
   }

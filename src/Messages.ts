@@ -14,6 +14,7 @@ export type MessageToVSCode =
   | { type: "showDiff"; executionId: string }
   | { type: "reRunExecution"; executionId: string; newUserQuery?: string }
   | { type: "stopExecution"; executionId: string }
+  | { type: "forceExecution"; executionId: string }
   | { type: "getSuggestions"; input?: string }
   | { type: "closeExecution"; executionId: string }
   | { type: "readyForMessages" };

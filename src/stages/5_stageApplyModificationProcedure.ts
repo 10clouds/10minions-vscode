@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { appendToFile } from "../utils/appendToFile";
 import { replaceWithSlidingIndent } from "../utils/replaceWithSlidingIndent";
@@ -127,7 +127,7 @@ ${originalCode}
   return currentCode;
 }
 
-export async function stageApplyModificationProcedure(this: GPTExecution) {
+export async function stageApplyModificationProcedure(this: MinionTask) {
   if (this.classification === "AnswerQuestion") {
     return;
   }

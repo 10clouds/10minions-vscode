@@ -2,7 +2,7 @@ import * as React from "react";
 
 type RobotIconProps = React.SVGProps<SVGSVGElement>;
 
-export const OutlineRobotIcon1 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline1 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -31,7 +31,7 @@ export const OutlineRobotIcon1 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon10 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline10 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -54,7 +54,7 @@ export const OutlineRobotIcon10 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon11 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline11 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -73,7 +73,7 @@ export const OutlineRobotIcon11 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon12 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline12 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -91,7 +91,7 @@ export const OutlineRobotIcon12 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon2 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline2 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -115,7 +115,7 @@ export const OutlineRobotIcon2 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon3 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline3 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -138,7 +138,7 @@ export const OutlineRobotIcon3 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon4 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline4 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -185,7 +185,7 @@ export const OutlineRobotIcon4 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon5 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline5 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -208,7 +208,7 @@ export const OutlineRobotIcon5 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon6 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline6 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -231,7 +231,7 @@ export const OutlineRobotIcon6 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon7 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline7 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -260,7 +260,7 @@ export const OutlineRobotIcon7 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon8 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline8 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -289,7 +289,7 @@ export const OutlineRobotIcon8 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const OutlineRobotIcon9 = ({ ...props }: RobotIconProps) => (
+export const MinionIconOutline9 = ({ ...props }: RobotIconProps) => (
   <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fillRule="evenodd"
@@ -318,20 +318,20 @@ export const OutlineRobotIcon9 = ({ ...props }: RobotIconProps) => (
   </svg>
 );
 
-export const ALL_OUTLINE_ROBOT_ICONS = [
-  OutlineRobotIcon1,
-  OutlineRobotIcon2,
-  OutlineRobotIcon3,
+export const ALL_MINION_ICONS_OUTLINE = [
+  MinionIconOutline1,
+  MinionIconOutline2,
+  MinionIconOutline3,
 
-  OutlineRobotIcon4,
-  OutlineRobotIcon5,
-  OutlineRobotIcon6,
+  MinionIconOutline4,
+  MinionIconOutline5,
+  MinionIconOutline6,
 
-  OutlineRobotIcon7,
-  OutlineRobotIcon8,
-  OutlineRobotIcon9,
+  MinionIconOutline7,
+  MinionIconOutline8,
+  MinionIconOutline9,
 
-  OutlineRobotIcon10,
-  OutlineRobotIcon11,
-  OutlineRobotIcon12,
+  MinionIconOutline10,
+  MinionIconOutline11,
+  MinionIconOutline12,
 ];

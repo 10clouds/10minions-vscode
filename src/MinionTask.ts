@@ -8,7 +8,7 @@ import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecu
 import { createWorkingdocument } from "./utils/createWorkingdocument";
 import { gptExecute } from "./openai";
 
-export type SerializedGPTExecution = {
+export type SerializedMinionTask = {
   id: string;
   minionIndex: number;
   documentURI: string;
@@ -31,8 +31,8 @@ export type SerializedGPTExecution = {
   classification?: TASK_CLASSIFICATION_NAME;
 };
 
-export class GPTExecution {
-  serialize(): SerializedGPTExecution {
+export class MinionTask {
+  serialize(): SerializedMinionTask {
     return {
       id: this.id,
       minionIndex: this.minionIndex,
@@ -57,8 +57,8 @@ export class GPTExecution {
     };
   }
 
-  static deserialize(data: SerializedGPTExecution): GPTExecution {
-    return new GPTExecution({
+  static deserialize(data: SerializedMinionTask): MinionTask {
+    return new MinionTask({
       id: data.id,
       minionIndex: data.minionIndex || 0,
       documentURI: data.documentURI,
@@ -177,11 +177,11 @@ export class GPTExecution {
     selectedText: string;
     minionIndex: number;
     onChanged: (important: boolean) => Promise<void>;
-  }): Promise<GPTExecution> {
+  }): Promise<MinionTask> {
     const executionId = randomUUID();
     const workingDocument = await createWorkingdocument(executionId);
 
-    const execution = new GPTExecution({
+    const execution = new MinionTask({
       id: executionId,
       minionIndex,
       documentURI: document.uri.toString(),

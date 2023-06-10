@@ -1,10 +1,10 @@
 import * as React from "react";
 import FlipMove from "react-flip-move";
-import { Execution } from "./Execution";
+import { MinionTaskComponent } from "./MinionTaskComponent";
 import { ExecutionInfo } from "./ExecutionInfo";
 
 
-export function ExecutionsList({ executionList }: { executionList: ExecutionInfo[]; }) {
+export function MinionTaskListComponent({ executionList }: { executionList: ExecutionInfo[]; }) {
   return (
     <FlipMove
       enterAnimation={{
@@ -28,7 +28,7 @@ export function ExecutionsList({ executionList }: { executionList: ExecutionInfo
       )}
 
       {executionList.map((execution) => (
-        <Execution key={execution.id} execution={execution} />
+        <MinionTaskComponent key={execution.id} execution={execution} />
       ))}
     </FlipMove>
   );

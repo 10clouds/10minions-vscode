@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { appendToFile } from "../utils/appendToFile";
 import { getCommentForLanguage } from "../utils/comments";
 
-export async function stageFallingBackToComment(this: GPTExecution) {
+export async function stageFallingBackToComment(this: MinionTask) {
   if (this.classification === "AnswerQuestion") {
     return;
   }

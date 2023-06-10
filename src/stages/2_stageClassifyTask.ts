@@ -1,4 +1,4 @@
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
 import { gptExecute } from "../openai";
@@ -88,7 +88,7 @@ Classify the task.
   });
 }
 
-export async function stageClassifyTask(this: GPTExecution) {
+export async function stageClassifyTask(this: MinionTask) {
   let classification = await classifyTask(
     this.userQuery,
     this.selection.start,

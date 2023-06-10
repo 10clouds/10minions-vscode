@@ -1,11 +1,11 @@
 import { basename } from "path";
 import * as vscode from "vscode";
-import { GPTExecution, SerializedGPTExecution } from "./GPTExecution";
+import { MinionTask, SerializedMinionTask } from "./MinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
 import { CANCELED_STAGE_NAME, ExecutionInfo } from "./ui/ExecutionInfo";
 
 export class ExecutionsManager implements vscode.TextDocumentContentProvider {
-  private executions: GPTExecution[] = [];
+  private executions: MinionTask[] = [];
   private readonly _context: vscode.ExtensionContext;
   private _view?: vscode.WebviewView;
   private _isThrottled = false;
@@ -14,8 +14,8 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
 
-    const serializedExecutions = this._context.globalState.get<SerializedGPTExecution[]>("10minions.executions") || [];
-    this.executions = serializedExecutions.map((data: SerializedGPTExecution) => GPTExecution.deserialize(data));
+    const serializedExecutions = this._context.globalState.get<SerializedMinionTask[]>("10minions.executions") || [];
+    this.executions = serializedExecutions.map((data: SerializedMinionTask) => MinionTask.deserialize(data));
   }
 
   async saveExecutions() {
@@ -48,12 +48,11 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     return originalContent || "";
   }
 
-
   updateView(view: vscode.WebviewView) {
     this._view = view;
   }
 
-  addExecution(execution: GPTExecution) {
+  addExecution(execution: MinionTask) {
     this.executions = [execution, ...this.executions];
   }
 
@@ -82,7 +81,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       return;
     }
 
-    const execution = await GPTExecution.create({
+    const execution = await MinionTask.create({
       userQuery,
       document: activeEditor.document,
       selection: activeEditor.selection,
@@ -97,13 +96,12 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
       },
     });
 
-
     const runningExecution = this.getRunningExecution(activeEditor.document.uri.toString());
     this.executions = [execution, ...this.executions];
 
     // Set the waiting flag if there's a running execution on the same file
     if (runningExecution) {
-      execution.shortName = "Queued ..."
+      execution.shortName = "Queued ...";
       execution.progress = 0;
       execution.waiting = true;
     } else {
@@ -144,8 +142,27 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
     }, 500);
   }
 
+  async forceExecution(executionId: string) {
+    let oldExecutionMaybe = this.executions.find((e) => e.id === executionId);
+
+    if (!oldExecutionMaybe) {
+      vscode.window.showErrorMessage("No execution found for id", executionId);
+      throw new Error(`No execution found for id ${executionId}`);
+    }
+
+    let oldExecution = oldExecutionMaybe;
+
+    if (!oldExecution.stopped) {
+      vscode.window.showErrorMessage("Execution is still running", executionId);
+      return;
+    }
+
+    await oldExecution.run();
+
+    this.notifyExecutionsUpdatedImmediate();
+  }
+
   reRunExecution(executionId: any, newUserQuery?: string) {
-    
     let oldExecutionMaybe = this.executions.find((e) => e.id === executionId);
 
     if (!oldExecutionMaybe) {
@@ -166,7 +183,7 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
     //after 1 second add a new one
     setTimeout(async () => {
-      let newExecution = await GPTExecution.create({
+      let newExecution = await MinionTask.create({
         userQuery: newUserQuery || oldExecution.userQuery,
         document: await oldExecution.document(),
         selection: oldExecution.selection,
@@ -181,13 +198,12 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
         },
       });
 
-
       const runningExecution = this.getRunningExecution(newExecution.documentURI);
       this.executions = [newExecution, ...this.executions.filter((e) => e.id !== executionId)];
 
       // Set the waiting flag if there's a running execution on the same file
       if (runningExecution) {
-        newExecution.shortName = "Queued ..."
+        newExecution.shortName = "Queued ...";
         newExecution.progress = 0;
         newExecution.waiting = true;
       } else {
@@ -196,7 +212,6 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
       this.notifyExecutionsUpdatedImmediate();
     }, 500);
-
   }
 
   notifyExecutionsUpdatedImmediate() {
@@ -238,7 +253,6 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
   }
 
   closeExecution(executionId: any) {
-    
     let execution = this.executions.find((e) => e.id === executionId);
 
     if (execution) {
@@ -250,10 +264,9 @@ export class ExecutionsManager implements vscode.TextDocumentContentProvider {
 
     //notify webview
     this.notifyExecutionsUpdatedImmediate();
-
   }
 
-  private getRunningExecution(documentURI: string): GPTExecution | null {
+  private getRunningExecution(documentURI: string): MinionTask | null {
     for (const execution of this.executions) {
       if (execution.documentURI === documentURI && !execution.stopped && !execution.waiting) {
         return execution;

@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { appendToFile } from "../utils/appendToFile";
 import { clearFile } from "../utils/clearFile";
 
-export async function stageStarting(this: GPTExecution) {
+export async function stageStarting(this: MinionTask) {
   let document = await vscode.workspace.openTextDocument(
     vscode.Uri.parse(this.documentURI)
   );

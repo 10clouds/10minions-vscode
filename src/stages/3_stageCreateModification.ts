@@ -1,4 +1,4 @@
-import { GPTExecution } from "../GPTExecution";
+import { MinionTask } from "../MinionTask";
 import { appendToFile } from "../utils/appendToFile";
 
 import * as vscode from "vscode";
@@ -128,7 +128,7 @@ Let's take it step by step.
   });
 }
 
-export async function stageCreateModification(this: GPTExecution) {
+export async function stageCreateModification(this: MinionTask) {
   if (this.classification === undefined) {
     throw new Error("Classification is undefined");
   }

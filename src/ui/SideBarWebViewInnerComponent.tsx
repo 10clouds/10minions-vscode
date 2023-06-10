@@ -1,12 +1,155 @@
+/*
+10Minions: I was unable to modify the code myself, but you can do it yourself based on my remarks below:
+
+First of all, I will analyze the current implementation of the code provided to understand what the user wants to achieve and what is missing or erroneous in the current implementation. After that, I will propose a plan to modify and fix the code and make it functional as per the user's requirements.
+
+#### Analysis of the Current Implementation
+
+The objective is to have a text area with auto-completion in which suggestions appear online. When the user types in the text area, they receive suggestions based on their input.
+
+Currently, the code has a text area and two containers to hold the prefix and suggestion. The user wants to display the suggestion in line, and they want all three containers to overlay each other, creating an illusion of a single line.
+
+However, the current implementation seems to have a few issues in terms of component positioning and styling for the desired outcome.
+
+#### Proposed Plan
+
+To fix the current solution, we will perform the following modifications:
+
+1. Modify the container and positioning styles for the prefix and suggestion elements.
+2. Update the z-index values to make sure the overlay is properly displayed as desired.
+3. Make necessary changes and improvements in the styles to achieve the required illusion.
+
+#### Implementing the Changes
+
+Following are the changes made to the code:
+
+```
+  // Modify the styling of the prefix-container for better overlay illusion
+  <div
+    className="prefix-container"
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      display: "flex",
+      
+      flexDirection: "row",
+      flexWrap: "wrap",
+      color: "rgba(var(--vscode-editor-foreground), 0.5)", 
+      zIndex: 1000, // Add zIndex to make sure the prefix overlay is properly positioned
+      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Update transform to match scroll or textarea
+    }}
+  >
+    <span className="prefix pointer-events-none">{prefix}</span>
+    <span className="suggestion pointer-events-none">{selectedSuggestion}</span>
+  </div>
+
+  // Update the position and zIndex of the absolute positioned overlay
+  <div
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      height: "20rem",
+      pointerEvents: "none",
+      color: "rgba(var(--vscode-editor-foreground), 0.5)", 
+      overflow: "hidden",
+      whiteSpace: "pre-wrap",
+      zIndex: 1000,
+      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`,
+    }}
+    className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
+  >
+    <span style={{ opacity: 0.5 }}>{prefix}</span>
+    <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
+    <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
+    <br/>
+    {selectedSuggestion &&  <span style={{ opacity: 0.5 }}>Press Tab to accept suggestion</span>}
+  </div>
+```
+*/
+
+/*
+10Minions: I was unable to modify the code myself, but you can do it yourself based on my remarks below:
+
+First, we will analyze the current implementation of the code provided to understand what the user wants to achieve and what is missing or erroneous in the current implementation. After that, we will propose a plan to modify and fix the code and make it functional as per the user's requirements.
+
+#### Analysis of the Current Implementation
+
+The objective is to have a text area with auto-completion in which suggestions appear online. When the user types in the text area, they receive suggestions based on their input.
+
+Currently, the code has a text area and two containers to hold the prefix and suggestion. The user wants to display the suggestion in line, and they want all three containers to overlay each other, creating an illusion of a single line.
+
+However, the current implementation seems to have a few issues in terms of component positioning and styling for the desired outcome.
+
+#### Proposed Plan
+
+To fix the current solution, we will perform the following modifications:
+
+1. Modify the container and positioning styles for the prefix and suggestion elements.
+2. Update the z-index values to make sure the overlay is properly displayed as desired.
+3. Make necessary changes and improvements in the styles to achieve the required illusion.
+
+#### Implementing the Changes
+
+Following are the changes made to the code:
+
+```
+  // Modify the styling of the prefix-container for better overlay illusion
+  <div
+    className="prefix-container"
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      display: "flex",
+      
+      flexDirection: "row",
+      flexWrap: "wrap",
+      color: "rgba(var(--vscode-editor-foreground), 0.5)", 
+      zIndex: 1000, // Add zIndex to make sure the prefix overlay is properly positioned
+      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Update transform to match scroll or textarea
+    }}
+  >
+    <span className="prefix pointer-events-none">{prefix}</span>
+    <span className="suggestion pointer-events-none">{selectedSuggestion}</span>
+  </div>
+
+  // Update the position and zIndex of the absolute positioned overlay
+  <div
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      height: "20rem",
+      pointerEvents: "none",
+      color: "rgba(var(--vscode-editor-foreground), 0.5)", 
+      overflow: "hidden",
+      whiteSpace: "pre-wrap",
+      zIndex: 1000,
+      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`,
+    }}
+    className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
+  >
+    <span style={{ opacity: 0.5 }}>{prefix}</span>
+    <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
+    <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
+    <br/>
+    {selectedSuggestion &&  <span style={{ opacity: 0.5 }}>Press Tab to accept suggestion</span>}
+  </div>
+```
+*/
+
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { MessageToVSCode, MessageToWebView } from "../Messages";
 import { ExecutionInfo } from "./ExecutionInfo";
 import { Logo } from "./Logo";
-import { ALL_OUTLINE_ROBOT_ICONS } from "./OutlineRobotIcons";
-import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
+import { ALL_MINION_ICONS_OUTLINE } from "./MinionIconsOutline";
 import { GoButton } from "./GoButton";
-import { ExecutionsList } from "./ExecutionsList";
+import { MinionTaskListComponent } from "./MinionsList";
+import { Header } from "./Header";
+import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
 
 declare const acquireVsCodeApi: any;
 
@@ -15,7 +158,6 @@ const vscode = acquireVsCodeApi();
 export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
-
 
 const COMMAND_PLACEHOLDER = `
 Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For pinpoint precision, highlight the code involved.
@@ -60,24 +202,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     input?.focus();
   }
 
-  function renderHeader(RobotIcon1: React.ElementType, RobotIcon2: React.ElementType) {
-    return (
-      <React.Fragment>
-        <h1 className="text-4xl font-bold text-center mb-2 text-primary">
-          <div className="flex items-center justify-center">
-            <RobotIcon1 style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }} className="w-8 h-8 inline-flex align-middle mr-2" />
-            <span style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}>10</span>Minions
-            <RobotIcon2 style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }} className="w-8 h-8 inline-flex align-middle ml-2" />
-          </div>
-        </h1>
-        <h3 className="text-xl font-semibold text-center mb-6">
-          Your Army of <span style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}>AI-Powered</span>
-          <br /> <span style={{ opacity: 0.7 }}>Coding</span> Comrades
-        </h3>
-      </React.Fragment>
-    );
-  }
-
   function handleExecutionsUpdated(executions: ExecutionInfo[]) {
     setExecutionList(executions);
   }
@@ -104,28 +228,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     };
   }, []);
 
-  function ApiKeyInfoMessage() {
-    return (
-      <div className="mb-4">
-        <p className="mb-2">
-          <span className="font-bold">10Minions</span> needs an API key to work. You can get one from{" "}
-          <a href="https://platform.openai.com/overview" target="_blank" rel="noopener noreferrer" className="text-blue-500">
-            OpenAI
-          </a>
-          (You will need GPT-4 access on this key).
-        </p>
-
-        <p className="mb-2">
-          Once you have an API key, set it in the VS Code settings under <span className="font-bold">10Minions.apiKey</span>.
-        </p>
-
-        <p className="mb-2">
-          You can also set the key by pressing SHIFT-ALT-P and then typing <span className="font-bold">10Minions: Set API Key</span>.
-        </p>
-      </div>
-    );
-  }
-
   const handleTextAreaClick = React.useCallback((e: React.MouseEvent<HTMLTextAreaElement, MouseEvent>) => {
     if (textAreaRef.current) {
       const { scrollLeft, scrollTop } = textAreaRef.current;
@@ -134,19 +236,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }, []);
 
   function handleTextAreaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    // Prevent the caret from going into the prefix area
-    if (textAreaRef.current) {
-      const selectionStart = Math.max(prefix.length, textAreaRef.current.selectionStart);
-      const selectionEnd = Math.max(prefix.length, textAreaRef.current.selectionEnd);
-      textAreaRef.current.selectionStart = selectionStart;
-      textAreaRef.current.selectionEnd = selectionEnd;
-    }
+    setUserInputPrompt(e.target.value);
 
-    // Remove prefix from input
-    const input = e.target.value.slice(prefix.length);
-    setUserInputPrompt(input);
-
-    // Post the message to the handler
     postMessageToVsCode({
       type: "getSuggestions",
       input: e.target.value,
@@ -155,65 +246,92 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   //get two random different robot icons
   const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
-    const randomIndex = Math.floor(Math.random() * ALL_OUTLINE_ROBOT_ICONS.length);
-    return [ALL_OUTLINE_ROBOT_ICONS[randomIndex], ALL_OUTLINE_ROBOT_ICONS[(randomIndex + 1) % ALL_OUTLINE_ROBOT_ICONS.length]];
+    const randomIndex = Math.floor(Math.random() * ALL_MINION_ICONS_OUTLINE.length);
+    return [ALL_MINION_ICONS_OUTLINE[randomIndex], ALL_MINION_ICONS_OUTLINE[(randomIndex + 1) % ALL_MINION_ICONS_OUTLINE.length]];
   }, []);
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const prefix = selectedSuggestion.slice(0, selectedSuggestion.indexOf(userInputPrompt));
 
+  const prefixWidth = React.useMemo(() => {
+    const span = document.createElement("span");
+    span.className = "prefix";
+    span.innerText = prefix;
+    document.body.appendChild(span);
+    const width = span.offsetWidth;
+    document.body.removeChild(span);
+    return width;
+  }, [prefix]);
+
   return (
     <div className="w-full">
       <div className="p-4 mb-16">
-        {renderHeader(RobotIcon1, RobotIcon2)}
+        <Header RobotIcon1={RobotIcon1} RobotIcon2={RobotIcon2} />
 
         {apiKeySet === false && <ApiKeyInfoMessage />}
 
-        {apiKeySet === true && (
-          <>
+        {apiKeySet === true && 
             <div style={{ position: "relative" }}>
-              <textarea
-                ref={textAreaRef}
+              <div
+                className="input-container"
                 style={{
+                  display: "flex",
+                  flexDirection: "column",
                   position: "relative",
-                  height: "20rem",
-                  backgroundColor: "var(--vscode-editor-background)",
-                  color: "rgba(0,0,0,100)", // Transparent text color
-                  borderColor: "var(--vscode-focusBorder)",
-                  caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
-
                 }}
-                onClick={handleTextAreaClick}
-                className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none"
-                placeholder={COMMAND_PLACEHOLDER}
-                value={prefix + userInputPrompt}
-                onChange={handleTextAreaChange}
-                onScroll={handleTextAreaClick}
-                onInput={handleTextAreaChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Tab" && selectedSuggestion.length > 0) {
-                    e.preventDefault(); // Prevent default tab behavior
-                    handleSuggestionClick(selectedSuggestion);
-                  }
-                }}
-              />
+              >
+                <div
+                  className="prefix-container"
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+                  }}
+                >
+                  <span className="prefix pointer-events-none">{prefix}</span>
+                  <textarea
+                    ref={textAreaRef}
+                    style={{
+                      position: "relative",
+                      height: "20rem",
+                      backgroundColor: "var(--vscode-editor-background)",
+                      color: "rgba(0,0,0,100)", // Transparent text color
+                      borderColor: "var(--vscode-focusBorder)",
+                      caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
+                      "--prefix-width": prefixWidth + "px",
+                } as React.CSSProperties}
+                    onClick={handleTextAreaClick}
+                    className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none textarea-with-prefix"
+                    placeholder={COMMAND_PLACEHOLDER}
+                    value={userInputPrompt}
+                    onChange={handleTextAreaChange}
+                    onScroll={handleTextAreaClick}
+                    onInput={handleTextAreaChange}
+                    onKeyDown={(e) => {
+                      if (e.key === "Tab" && selectedSuggestion.length > 0) {
+                        e.preventDefault(); // Prevent default tab behavior
+                        handleSuggestionClick(selectedSuggestion);
+                      }
+                    }}
+                  />
 
               <div
-                style={{
+                    style={{
                   position: "absolute",
-                  top: 0,
-                  left: 0,
-                  height: "20rem",
+                      top: 0,
+                      left: 0,
+                      height: "20rem",
                   pointerEvents: "none",
-                  color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
-                  overflow: "hidden",
-                  whiteSpace: "pre-wrap", // Preserve line breaks and spaces
+                      color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+                      overflow: "hidden",
+                      whiteSpace: "pre-wrap", // Preserve line breaks and spaces
                   zIndex: 1000,
-                  transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
-                }}
-                className="w-full h-96 p-4 text-sm resize-none focus:outline-none"
-              >
+                      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
+                    }}
+                className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
+                  >
                 <span style={{ opacity: 0.5 }}>{prefix}</span>
                 <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
                 <span style={{ opacity: 0.5 }}>{selectedSuggestion.slice(selectedSuggestion.indexOf(userInputPrompt) + userInputPrompt.length)}</span>
@@ -232,9 +350,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                 }}
               />
               
-            <ExecutionsList executionList={executionList} />
-          </>
-        )}
+            <MinionTaskListComponent executionList={executionList} />
+
       </div>
 
       <div
@@ -252,8 +369,13 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         </a>
       </div>
     </div>
+
+        }
+    </div>
+    </div>
   );
 };
+
 
 const container = document.getElementById("root");
 const root = createRoot(container!);

@@ -119,7 +119,9 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         this.executionsManager.reRunExecution(data.executionId, data.newUserQuery);
         break;
       }
-
+      case "forceExecution":
+        this.executionsManager.forceExecution(data.executionId);
+        break;
       case "stopExecution": {
         this.executionsManager.stopExecution(data.executionId);
         break;

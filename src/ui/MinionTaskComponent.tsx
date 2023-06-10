@@ -4,8 +4,9 @@ import { ExecutionInfo, FINISHED_STAGE_NAME } from "./ExecutionInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { forwardRef } from "react";
-import { ALL_FILL_ROBOT_ICONS } from "./FillRobotIcons";
+import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
+import { exec } from "child_process";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
   target.style.height = "auto";
@@ -27,7 +28,7 @@ function getUserQueryPreview(userQuery: string) {
   return preview;
 }
 
-export const Execution = forwardRef(
+export const MinionTaskComponent = forwardRef(
   ({ execution, ...props }: { execution: ExecutionInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { className, ...propsWithoutClassName } = props;
 
@@ -101,7 +102,7 @@ export const Execution = forwardRef(
       });
     }
 
-    let RobotIcon = ALL_FILL_ROBOT_ICONS[execution.minionIndex];
+    let RobotIcon = ALL_MINION_ICONS_FILL[execution.minionIndex];
 
     return (
       <div
@@ -146,6 +147,21 @@ export const Execution = forwardRef(
                 {execution.shortName}
               </span>
             </div>
+            {execution.waiting && <button
+                title="Force execution anyway"
+                onClick={() => {
+                 postMessageToVsCode({
+                    type: "forceExecution",
+                    executionId: execution.id,
+                  });
+                }}
+                style={{
+                  borderColor: "var(--vscode-button-separator)",
+                }}
+                className="cursor-pointer border rounded px-2 ml-2"
+              >
+                Force
+              </button>}
             {execution.executionStage === FINISHED_STAGE_NAME && (
               <button
                 title="Show Diff"
