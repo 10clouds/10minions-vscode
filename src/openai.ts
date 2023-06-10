@@ -2,9 +2,8 @@ import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
-import { AnalyticsManager } from "./AnalyticsManager";
 
-type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
+export type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
 let openAILock = new AsyncLock();
 
@@ -28,7 +27,7 @@ function extractParsedLines(chunk: string) {
 
 /* The queryOpenAI function takes a fullPrompt and other optional parameters to
  * send a request to OpenAI's API. It returns a response object. */
-async function queryOpenAI({
+export async function queryOpenAI({
   fullPrompt,
   controller,
   maxTokens = 2000,
@@ -43,7 +42,7 @@ async function queryOpenAI({
 }) {
   const signal = controller.signal;
 
-  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey")
+  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
 
   if (!apiKey) {
     throw new Error("OpenAI API key not found. Please set it in the settings.");
@@ -76,7 +75,7 @@ async function queryOpenAI({
 
 /* The processOpenAIResponseStream function processes the response from the
  * API and extracts tokens from the response stream. */
-async function processOpenAIResponseStream({
+export async function processOpenAIResponseStream({
   response,
   onChunk,
   isCancelled,
@@ -133,70 +132,4 @@ async function processOpenAIResponseStream({
 }
 
 
-/* The gptExecute function is the main exported function, which combines all the
- * other functions to send a GPT-4 query and receive and process the response. */
-export async function gptExecute({
-  fullPrompt,
-  onChunk = async (chunk: string) => {},
-  isCancelled = () => false,
-  maxTokens = 2000,
-  model = "gpt-4",
-  temperature,
-  controller = new AbortController(),
-}: {
-  fullPrompt: string;
-  onChunk?: (chunk: string) => Promise<void>;
-  isCancelled?: () => boolean;
-  maxTokens?: number;
-  model?: AVAILABLE_MODELS;
-  temperature?: number;
-  controller?: AbortController;
-}) {
 
-  function reportOpenAICallToAnalytics(result?: string, error?: any) {
-    AnalyticsManager.instance.reportOpenAICall(
-      {
-        model,
-        messages: [
-          {
-            role: "user",
-            content: fullPrompt,
-          },
-        ],
-        max_tokens: maxTokens,
-        temperature,
-      },
-      {
-        result,
-        error,
-      }
-    );
-  }
-
-  
-  // Step 1: Add a loop that iterates up to 3 times.
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const response = await queryOpenAI({fullPrompt, maxTokens, model, temperature, controller});
-      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
-
-      reportOpenAICallToAnalytics(result, undefined);
-
-      // Step 3: On successful run, break the loop early and return the result.
-      return result;
-    } catch (error) {
-      // Step 2: Add error handling for exceptions.
-      // Step 4: Log the error and retry the process for up to 2 more times.
-      console.error(`Error on attempt ${attempt}: ${error}`);
-
-      reportOpenAICallToAnalytics(undefined, error);
-
-      // Step 5: On the 3rd error, give up and re-throw the error.
-      if (attempt === 3) {
-        throw error;
-      }
-    }
-  }
-
-  throw new Error("Assertion: Should never get here");
-}

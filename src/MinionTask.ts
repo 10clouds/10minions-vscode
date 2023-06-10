@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
-import { gptExecute } from "./openai";
+import { gptExecute } from "./gptExecute";
 import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
 import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
@@ -59,6 +59,7 @@ export class MinionTask {
       logContent: this.logContent,
     };
   }
+
 
   static deserialize(data: SerializedMinionTask): MinionTask {
     return new MinionTask({
@@ -134,7 +135,7 @@ export class MinionTask {
     modificationApplied = false,
     executionStage = "",
     classification = undefined,
-    logContent = "",      // Add this line (Step 1)
+    logContent = "",
   }: {
     id: string;
     minionIndex: number;
@@ -152,7 +153,7 @@ export class MinionTask {
     modificationApplied?: boolean;
     executionStage?: string;
     classification?: TASK_CLASSIFICATION_NAME;
-    logContent?: string; // Add this line (Step 1)
+    logContent?: string;
   }) {
     this.id = id;
     this.minionIndex = minionIndex;
@@ -173,8 +174,13 @@ export class MinionTask {
     this.logContent = logContent;
   }
 
+
   get logURI() {
-    return `10minions-log:minionTaskId/${this.id}`
+    return `10minions-log:minionTaskId/${this.id}/${("[" + this.shortName + "].md").replace(/ /g, "%20")}`;
+  }
+
+  get originalContentURI() {
+    return `10minions-originalContent:minionTaskId/${this.id}/${(this.shortName + ".txt").replace(/ /g, "%20")}`;
   }
 
   appendToLog(content: string): void {
@@ -288,6 +294,7 @@ export class MinionTask {
             ].join("\n") + "\n\n"
           );
 
+
           await STAGES[this.currentStageIndex].execution.apply(this);
 
           if (this.stopped) {
@@ -316,7 +323,8 @@ export class MinionTask {
         const executionTime = Date.now() - this.startTime;
         const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
 
-        await this.appendToLog( `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
+        this.appendToLog( `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
+
         this.progress = 1;
       }
     });

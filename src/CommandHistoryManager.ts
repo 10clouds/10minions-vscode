@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { gptExecute } from "./openai";
+import { gptExecute } from "./gptExecute";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
 
 export class CommandHistoryManager {

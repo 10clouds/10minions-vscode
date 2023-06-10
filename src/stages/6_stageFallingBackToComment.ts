@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { MinionTask } from "../MinionTask";
-import { appendToFile } from "../utils/appendToFile";
 import { getCommentForLanguage } from "../utils/comments";
 
 export async function stageFallingBackToComment(this: MinionTask) {
@@ -26,7 +25,7 @@ ${this.modificationDescription}
 `.trim()
   );
 
-  await this.appendToLog( `\nPLAIN COMMENT FALLBACK\n`);
+  this.appendToLog( `\nPLAIN COMMENT FALLBACK\n`);
 
   await applyWorkspaceEdit(async (edit) => {
     edit.insert(

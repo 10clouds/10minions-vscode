@@ -6,7 +6,7 @@ import { CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 import { AnalyticsManager } from "./AnalyticsManager";
 
 function extractExecutionIdFromUri(uri: vscode.Uri): string {
-  return uri.path.match(/^minionTaskId\/([a-z\d\-]+)/)![1];
+  return uri.path.match(/^minionTaskId\/([a-z\d\-]+)\/.*/)![1];
 }
 
 class LogProvider implements vscode.TextDocumentContentProvider {
@@ -31,8 +31,9 @@ class LogProvider implements vscode.TextDocumentContentProvider {
 
   provideTextDocumentContent(uri: vscode.Uri): string {
     const textKey = extractExecutionIdFromUri(uri);
-    const logContent = this.executionsManager.getExecutionById(textKey)?.logContent;
-    return logContent || "";
+    const execution = this.executionsManager.getExecutionById(textKey);
+    const logContent = execution?.logContent || "";
+    return logContent;
   }
 }
 
@@ -87,9 +88,9 @@ export class ExecutionsManager {
       const documentUri = vscode.Uri.parse(minionTask.documentURI);
       await vscode.commands.executeCommand(
         "vscode.diff",
-        vscode.Uri.parse(minionTask.logURI),
+        vscode.Uri.parse(minionTask.originalContentURI),
         documentUri,
-        `(original) ↔ ${basename(documentUri.fsPath)} (${minionTask.shortName})`
+        `${basename(documentUri.fsPath)} ↔ ${minionTask.shortName}`
       );
     }
   }
@@ -155,7 +156,7 @@ export class ExecutionsManager {
       minionIndex: this.acquireMinionIndex(),
       onChanged: async (important) => {
         if (important) {
-          this.notifyExecutionsUpdatedImmediate(execution);
+          this.notifyExecutionsUpdatedImmediate(execution, important);
         } else {
           this.notifyExecutionsUpdated(execution);
         }
@@ -174,7 +175,7 @@ export class ExecutionsManager {
       await execution.run();
     }
 
-    this.notifyExecutionsUpdatedImmediate(execution);
+    this.notifyExecutionsUpdatedImmediate(execution, true);
   }
 
   acquireMinionIndex(): number {
@@ -199,11 +200,11 @@ export class ExecutionsManager {
     }
 
     this._isThrottled = true;
-    this.notifyExecutionsUpdatedImmediate(minionTask);
+    this.notifyExecutionsUpdatedImmediate(minionTask, false);
 
     setTimeout(() => {
       this._isThrottled = false;
-      if (this._pendingUpdate) this.notifyExecutionsUpdatedImmediate(minionTask);
+      if (this._pendingUpdate) this.notifyExecutionsUpdatedImmediate(minionTask, false);
       this._pendingUpdate = false;
     }, 500);
   }
@@ -218,14 +219,14 @@ export class ExecutionsManager {
 
     let oldExecution = oldExecutionMaybe;
 
-    if (!oldExecution.stopped) {
-      vscode.window.showErrorMessage("Execution is still running", executionId);
+    if (!oldExecution.waiting) {
+      vscode.window.showErrorMessage("Execution is not waiting", executionId);
       return;
     }
 
     await oldExecution.run();
 
-    this.notifyExecutionsUpdatedImmediate(oldExecution);
+    this.notifyExecutionsUpdatedImmediate(oldExecution, true);
   }
 
   reRunExecution(executionId: any, newUserQuery?: string) {
@@ -245,7 +246,7 @@ export class ExecutionsManager {
 
     //remove old execution
     this.executions = this.executions.filter((e) => e.id !== executionId);
-    this.notifyExecutionsUpdatedImmediate(oldExecution);
+    this.notifyExecutionsUpdatedImmediate(oldExecution, true);
 
     //after 1 second add a new one
     setTimeout(async () => {
@@ -257,7 +258,7 @@ export class ExecutionsManager {
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
           if (important) {
-            this.notifyExecutionsUpdatedImmediate(newExecution);
+            this.notifyExecutionsUpdatedImmediate(newExecution, true);
           } else {
             this.notifyExecutionsUpdated(newExecution);
           }
@@ -276,11 +277,11 @@ export class ExecutionsManager {
         await newExecution.run();
       }
 
-      this.notifyExecutionsUpdatedImmediate(newExecution);
+      this.notifyExecutionsUpdatedImmediate(newExecution, true);
     }, 500);
   }
 
-  notifyExecutionsUpdatedImmediate(minionTask?: MinionTask) {
+  notifyExecutionsUpdatedImmediate(minionTask?: MinionTask, importantChange?: boolean) {
     const executionInfo: MinionTaskUIInfo[] = this.executions.map((e) => ({
       id: e.id,
       minionIndex: e.minionIndex,
@@ -306,7 +307,7 @@ export class ExecutionsManager {
     this.saveExecutions();
     this.runNextWaitingExecution();
 
-    if (minionTask) {
+    if (minionTask && importantChange) {
       AnalyticsManager.instance.reportOrUpdateMinionTask(minionTask);
     }
   }
@@ -327,7 +328,7 @@ export class ExecutionsManager {
     if (execution) {
       execution.stopExecution(CANCELED_STAGE_NAME, false);
       this.executions = this.executions.filter((e) => e.id !== executionId);
-      this.notifyExecutionsUpdatedImmediate(execution);
+      this.notifyExecutionsUpdatedImmediate(execution, true);
     } else {
       vscode.window.showErrorMessage("No execution found for id", executionId);
     }

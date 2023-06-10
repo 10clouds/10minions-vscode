@@ -2,8 +2,7 @@ import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 import * as vscode from "vscode";
 import { MinionTask } from "../MinionTask";
 import { EXTENSIVE_DEBUG } from "../const";
-import { gptExecute } from "../openai";
-import { appendToFile } from "../utils/appendToFile";
+import { gptExecute } from "../gptExecute";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
 export const CLASSIFICATION_OUTPUT_FORMATS = {
@@ -165,7 +164,7 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
       this.modificationDescription,
       async (chunk: string) => {
         this.reportSmallProgress();
-        await this.appendToLog( chunk);
+        this.appendToLog( chunk);
       },
       () => {
         return this.stopped;

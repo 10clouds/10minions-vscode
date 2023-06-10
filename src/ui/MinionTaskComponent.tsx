@@ -70,13 +70,13 @@ export const MinionTaskComponent = forwardRef(
     function handleRun() {
       if (updatedPrompt !== execution.userQuery) {
         // Stop the current execution
-       postMessageToVsCode({
+        postMessageToVsCode({
           type: "stopExecution",
           executionId: execution.id,
         });
 
         // Retry the execution with the updated prompt
-       postMessageToVsCode({
+        postMessageToVsCode({
           type: "reRunExecution",
           executionId: execution.id,
           newUserQuery: updatedPrompt, // Pass the updated prompt value
@@ -84,24 +84,96 @@ export const MinionTaskComponent = forwardRef(
       }
     }
 
-    function simpleStringHash(str: string) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        const charCode = str.charCodeAt(i);
-        hash = (hash << 5) - hash + charCode;
-        hash |= 0; // Convert to a 32-bit integer
-      }
-      return Math.abs(hash);
-    }
-
     function handleClickShowDiff() {
-     postMessageToVsCode({
+      postMessageToVsCode({
         type: "showDiff",
         executionId: execution.id,
       });
     }
 
     let RobotIcon = ALL_MINION_ICONS_FILL[execution.minionIndex];
+
+    const forceButton = (
+      <button
+        title="Force execution anyway"
+        onClick={() => {
+          postMessageToVsCode({
+            type: "forceExecution",
+            executionId: execution.id,
+          });
+        }}
+        style={{
+          borderColor: "var(--vscode-button-separator)",
+        }}
+        className="cursor-pointer border rounded px-2 ml-2"
+      >
+        Force
+      </button>
+    );
+
+    const stopButton = (
+      <button
+        title="Stop Execution"
+        onClick={() => {
+          postMessageToVsCode({
+            type: "stopExecution",
+            executionId: execution.id,
+          });
+        }}
+        style={{
+          borderColor: "var(--vscode-button-separator)",
+        }}
+        className="cursor-pointer border rounded px-2 ml-2"
+      >
+        Stop
+      </button>
+    );
+
+    const chevronButton = isExpanded ? <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" /> : <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />;
+
+    const closeButton = (
+      <XMarkIcon
+        title="Close Execution"
+        onClick={() => {
+          postMessageToVsCode({
+            type: "closeExecution",
+            executionId: execution.id,
+          });
+        }}
+        className="h-6 w-6 min-w-min cursor-pointer ml-2"
+      />
+    );
+
+    const diffButton = (
+      <button
+        title="Show Diff"
+        style={{
+          borderColor: "var(--vscode-button-separator)",
+        }}
+        className="cursor-pointer border rounded px-2 ml-2"
+        onClick={handleClickShowDiff}
+      >
+        Diff
+      </button>
+    );
+
+    const retryButton = (
+      <button
+        title="Retry Execution"
+        onClick={() => {
+          postMessageToVsCode({
+            type: "reRunExecution",
+            executionId: execution.id,
+          });
+        }}
+        style={{
+          borderColor: "var(--vscode-button-separator)",
+        }}
+        className="cursor-pointer border rounded px-2 ml-2"
+      >
+        Retry
+      </button>
+    );
 
     return (
       <div
@@ -116,16 +188,15 @@ export const MinionTaskComponent = forwardRef(
         {...propsWithoutClassName}
       >
         <div className="pl-3 pr-3 pt-3 pb-3">
-          <div className="flex justify-between">
+          <div
+            className="flex justify-between cursor-pointer"
+            title={!isExpanded ? "Click for more info" : "Click to hide"}
+            onClick={() => {
+              setIsExpanded(!isExpanded);
+            }}
+          >
             <div
-              title="Open Log"
-              onClick={() => {
-               postMessageToVsCode({
-                  type: "openLog",
-                  executionId: execution.id,
-                });
-              }}
-              className={`w-6 h-6 mr-2 cursor-pointer transition-color ${!execution.stopped && !execution.waiting ? "busy-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!execution.stopped && !execution.waiting ? "busy-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(execution)),
               }}
@@ -133,51 +204,15 @@ export const MinionTaskComponent = forwardRef(
               <RobotIcon className={`w-6 h-6 inline-flex ${!execution.stopped && !execution.waiting ? "busy-robot-extra" : ""}`} />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
-              <span
-                className="cursor-pointer truncate"
-                title="Open Log"
-                onClick={() => {
-                 postMessageToVsCode({
-                    type: "openLog",
-                    executionId: execution.id,
-                  });
-                }}
-              >
-                {execution.shortName}
-              </span>
+              <span className="truncate">{execution.shortName}</span>
             </div>
-            {execution.waiting && <button
-                title="Force execution anyway"
-                onClick={() => {
-                 postMessageToVsCode({
-                    type: "forceExecution",
-                    executionId: execution.id,
-                  });
-                }}
-                style={{
-                  borderColor: "var(--vscode-button-separator)",
-                }}
-                className="cursor-pointer border rounded px-2 ml-2"
-              >
-                Force
-              </button>}
-            {execution.executionStage === FINISHED_STAGE_NAME && (
-              <button
-                title="Show Diff"
-                style={{
-                  borderColor: "var(--vscode-button-separator)",
-                }}
-                className="cursor-pointer border rounded px-2 ml-2"
-                onClick={handleClickShowDiff}
-              >
-                Diff
-              </button>
-            )}
+            {execution.waiting && !execution.stopped && forceButton}
+
             {!execution.stopped ? (
               <button
                 title="Stop Execution"
                 onClick={() => {
-                 postMessageToVsCode({
+                  postMessageToVsCode({
                     type: "stopExecution",
                     executionId: execution.id,
                   });
@@ -190,60 +225,51 @@ export const MinionTaskComponent = forwardRef(
                 Stop
               </button>
             ) : (
-              <button
-                title="Retry Execution"
-                onClick={() => {
-                 postMessageToVsCode({
-                    type: "reRunExecution",
-                    executionId: execution.id,
-                  });
-                }}
-                style={{
-                  borderColor: "var(--vscode-button-separator)",
-                }}
-                className="cursor-pointer border rounded px-2 ml-2"
-              >
-                Retry
-              </button>
+              <> </>
             )}
-            {isExpanded ? (
-              <ChevronDownIcon title="Contract" onClick={() => setIsExpanded(false)} className="h-6 w-6  min-w-min cursor-pointer ml-2" />
-            ) : (
-              <ChevronUpIcon title="Expand" onClick={() => setIsExpanded(true)} className="h-6 w-6 min-w-min cursor-pointer ml-2" />
-            )}
-            <XMarkIcon
-              title="Close Execution"
-              onClick={() => {
-               postMessageToVsCode({
-                  type: "closeExecution",
-                  executionId: execution.id,
-                });
-              }}
-              className="h-6 w-6 min-w-min cursor-pointer ml-2"
-            />
+            {chevronButton}
+            {closeButton}
           </div>
 
           {isExpanded && (
             <>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
-                <div className="mb-2">File:</div>
-
+                <div className="mb-2">Log:</div>
                 <span
                   title="Open Document"
                   className="cursor-pointer mb-2"
                   onClick={() => {
-                   postMessageToVsCode({
-                      type: "openDocument",
+                    postMessageToVsCode({
+                      type: "openLog",
                       executionId: execution.id,
                     });
                   }}
                 >
-                  {execution.documentName}
+                  Log file
+                </span>
+
+                <div className="mb-2">File:</div>
+
+                <span className="mb-2">
+                  <span
+                    title="Open Document"
+                    className="cursor-pointer"
+                    onClick={() => {
+                      postMessageToVsCode({
+                        type: "openDocument",
+                        executionId: execution.id,
+                      });
+                    }}
+                  >
+                    {execution.documentName}
+                  </span>
+
+                  {execution.executionStage === FINISHED_STAGE_NAME && diffButton}
                 </span>
 
                 <div className="mb-2">Task:</div>
 
-                <div className="mb-2 overflow-x-auto" onClick={() => setIsInputOpen(true)}>
+                <div className="mb-2 overflow-x-auto">
                   {isInputOpen ? (
                     <textarea
                       style={{
@@ -271,7 +297,12 @@ export const MinionTaskComponent = forwardRef(
                   ) : (
                     // Wrap the userQueryPreview inside a div with the same line-height as the textarea
                     // Apply required padding and margin in this div
-                    <div>{userQueryPreview}</div>
+                    <div>
+                      <span title="Edit task" onClick={() => setIsInputOpen(true)}>
+                        {userQueryPreview}{" "}
+                      </span>
+                      {retryButton}
+                    </div>
                   )}
                 </div>
 
@@ -294,16 +325,7 @@ export const MinionTaskComponent = forwardRef(
           )}
         </div>
         <div className="flex items-center">
-          <div
-            className="cursor-pointer w-full"
-            title="Open Log"
-            onClick={() => {
-             postMessageToVsCode({
-                type: "openLog",
-                executionId: execution.id,
-              });
-            }}
-          >
+          <div className="w-full" title="Task Progress">
             <ProgressBar execution={execution} />
           </div>
         </div>

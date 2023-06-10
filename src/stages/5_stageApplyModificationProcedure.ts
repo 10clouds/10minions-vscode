@@ -1,8 +1,7 @@
 import * as vscode from "vscode";
 import { MinionTask } from "../MinionTask";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
-import { appendToFile } from "../utils/appendToFile";
-import { replaceWithSlidingIndent } from "../utils/replaceWithSlidingIndent";
+import { fuzzyReplaceText } from "../utils/fuzzyReplaceText";
 
 function applyModificationProcedure(originalCode: string, modificationProcedure: string) {
   let currentCode = originalCode;
@@ -24,7 +23,7 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let replaceText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let withText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = replaceWithSlidingIndent(currentCode, replaceText, withText);
+      let replacement = fuzzyReplaceText(currentCode, replaceText, withText);
 
       if (replacement === undefined) {
         throw new Error(`
@@ -46,7 +45,7 @@ ${originalCode}
       let insertText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let beforeText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = replaceWithSlidingIndent(currentCode, beforeText, `${insertText}\n${beforeText}`);
+      let replacement = fuzzyReplaceText(currentCode, beforeText, `${insertText}\n${beforeText}`);
 
       if (replacement === undefined) {
         throw new Error(`
@@ -163,9 +162,9 @@ export async function stageApplyModificationProcedure(this: MinionTask) {
     this.modificationApplied = true;
 
     this.reportSmallProgress();
-    await this.appendToLog( `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`);
+    this.appendToLog( `\n\nCONSOLIDATION SUCCESFULY APPLIED\n\n`);
   } catch (error) {
     this.reportSmallProgress();
-    await this.appendToLog( `\n\nError in applying consolidation: ${error}\n`);
+    this.appendToLog( `\n\nError in applying consolidation: ${error}\n`);
   }
 }

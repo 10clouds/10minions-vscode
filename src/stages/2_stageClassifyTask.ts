@@ -1,7 +1,6 @@
 import { MinionTask } from "../MinionTask";
-import { appendToFile } from "../utils/appendToFile";
 import * as vscode from "vscode";
-import { gptExecute } from "../openai";
+import { gptExecute } from "../gptExecute";
 import { EXTENSIVE_DEBUG } from "../const";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
@@ -78,7 +77,7 @@ Classify the task.
     onChunk,
     isCancelled,
     maxTokens: 50,
-    controller: new AbortController(),
+    controller: new AbortController()
   });
 }
 
@@ -90,13 +89,13 @@ export async function stageClassifyTask(this: MinionTask) {
     this.originalContent,
     async (chunk: string) => {
       this.reportSmallProgress();
-      await this.appendToLog(chunk);
+      this.appendToLog(chunk);
     },
     () => {
       return this.stopped;
     }
   );
-  await this.appendToLog("\n\n");
+  this.appendToLog("\n\n");
 
   //find classification in text
   let classifications = TASK_CLASSIFICATION.filter((c) => classification.indexOf(c.name) !== -1);
