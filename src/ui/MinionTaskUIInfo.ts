@@ -3,6 +3,7 @@ export type TASK_CLASSIFICATION_NAME =
   | "FileWideChange"
   | "LocalChange";
 
+export const APPLIED_STAGE_NAME = "Applied";
 export const FINISHED_STAGE_NAME = "Finished";
 export const CANCELED_STAGE_NAME = "Canceled";
 
@@ -15,10 +16,8 @@ export type MinionTaskUIInfo = {
   executionStage: string;
   progress: number;
   stopped: boolean;
-  waiting: boolean;
   classification?: TASK_CLASSIFICATION_NAME;
   modificationDescription: string;
-  modificationApplied: boolean;
   selectedText: string;
   shortName: string;
 };

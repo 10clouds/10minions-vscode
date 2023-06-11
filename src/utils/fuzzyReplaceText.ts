@@ -1,14 +1,10 @@
 import {
   applyIndent,
   codeStringSimilarity,
-  commonStringEnd,
-  commonStringStart,
   equalsStringSimilarity,
-  levenshteinDistance,
   levenshteinDistanceSimilarity,
   removeEmptyLines,
   removeIndent,
-  sorensenDiceCoefficient,
   trimEmptyLinesAtTheBeginingAndEnd,
 } from "./stringUtils";
 
@@ -19,7 +15,7 @@ interface ReplaceWindowParams {
   currentCode: string;
   replaceText: string;
   withText: string;
-  similarityFunction: MultiLineSimilarityFunction;
+  similarityFunction?: MultiLineSimilarityFunction;
   similarityThreshold?: number;
   lineNumTolerance?: number;
 }
@@ -166,52 +162,6 @@ function findIndentationDifference(
 }
 */
 
-function replaceWindow({ currentCode, replaceText, withText, similarityFunction, similarityThreshold = 0.5, lineNumTolerance = 3 }: ReplaceWindowParams) {
-  const currentCodeLines = currentCode.split("\n");
-  
-  const withTextLines = withText.split("\n");
-  const replaceTextLines = replaceText.split("\n");
-
-  let maxSimilarity = -1;
-  let maxSimilarityLineStartIndex = -1;
-  let maxSimilarityLineEndIndex = -1;
-
-  let minLinesToReplace = Math.max(0, replaceTextLines.length - lineNumTolerance);
-  let maxLinesToReplace = replaceTextLines.length + lineNumTolerance;
-
-  for (let start = 0; start < currentCodeLines.length - minLinesToReplace; start++) {
-    for (let end = start + minLinesToReplace; end < Math.min(currentCodeLines.length + 1, start + maxLinesToReplace); end++) {
-      const currentSlice = currentCodeLines.slice(start, end);
-      const similarity = similarityFunction(currentSlice, replaceText.split("\n"));
-
-      if (similarity > maxSimilarity) {
-        maxSimilarity = similarity;
-        maxSimilarityLineStartIndex = start;
-        maxSimilarityLineEndIndex = end;
-      }
-    }
-  }
-
-  if (maxSimilarity >= similarityThreshold) {
-    console.log(`sim: ${maxSimilarity} start: ${maxSimilarityLineStartIndex} end: ${maxSimilarityLineEndIndex}`);
-    const currentSlice = currentCodeLines.slice(maxSimilarityLineStartIndex, maxSimilarityLineEndIndex);
-    let indentDifference = findIndentationDifference(currentSlice, replaceText.split("\n"), equalsStringSimilarity) || "";
-    console.log("indent difference", indentDifference.length, `"${indentDifference}"`);
-
-    const adjustedWithTextLines = applyIndent(withTextLines, indentDifference);
-    const adjustedWithText = adjustedWithTextLines.join("\n");
-
-    let preChange = currentCodeLines.slice(0, maxSimilarityLineStartIndex).join("\n");
-    let postChange = currentCodeLines.slice(maxSimilarityLineEndIndex).join("\n");
-
-    //console.log("preChange", preChange.split("\n").map((line) => `"${line}"`).join("\n"));
-    //console.log("adjustedWithText", adjustedWithText.split("\n").map((line) => `"${line}"`).join("\n"));
-    //console.log("postChange", postChange.split("\n").map((line) => `"${line}"`).join("\n"));
-    
-    return `${preChange}${"\n"}${adjustedWithText}${postChange ? "\n" : ""}${postChange}`;
-  }
-}
-
 /*
 function findCommonIndent(lines: string[]) {
   let commonIndent = undefined;
@@ -266,52 +216,108 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
   return averageSimilarity;
 }
 
-export function fuzzyReplaceText(currentCode: string, replaceText: string, withText: string) {
-  {
-    let result = replaceWindow({
-      currentCode,
-      replaceText,
-      withText,
-      lineNumTolerance: 10,
-      similarityFunction: (original: string[], replacement: string[]) => {
-        if (original.join("\n") === replacement.join("\n")) {
-          return 1;
-        }
+export const coreSimilarityFunction = (original: string[], replacement: string[]) => {
+  if (original.join("\n") === replacement.join("\n")) {
+    return 1;
+  }
 
-        function calculateSimlarity(a: string[], b: string[]) {
-          let similartyWithWsDistance = exactLinesSimilarity(removeEmptyLines(a), removeEmptyLines(b), (a, b) =>
-            ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
-          );
+  function calculateSimlarity(a: string[], b: string[]) {
+    let similartyWithWsDistance = exactLinesSimilarity(removeEmptyLines(a), removeEmptyLines(b), (a, b) =>
+      ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
+    );
 
-          let similarityNotIgnoringWhitespace = exactLinesSimilarity(
-            removeEmptyLines(normalizeIndent(a)),
-            removeEmptyLines(normalizeIndent(b)),
-            levenshteinDistanceSimilarity
-          );
+    let similarityNotIgnoringWhitespace = exactLinesSimilarity(
+      removeEmptyLines(normalizeIndent(a)),
+      removeEmptyLines(normalizeIndent(b)),
+      levenshteinDistanceSimilarity
+    );
 
-          let similarity = 0.5 * similartyWithWsDistance + 0.5 * similarityNotIgnoringWhitespace;
+    let similarity = 0.5 * similartyWithWsDistance + 0.5 * similarityNotIgnoringWhitespace;
 
-          return similarity;
-        }
+    return similarity;
+  }
 
-        let normalSimilarity = calculateSimlarity(original, replacement);
+  let normalSimilarity = calculateSimlarity(original, replacement);
 
-        let trimmedSimilarity = calculateSimlarity(trimEmptyLinesAtTheBeginingAndEnd(original), trimEmptyLinesAtTheBeginingAndEnd(replacement));
+  let trimmedSimilarity = calculateSimlarity(trimEmptyLinesAtTheBeginingAndEnd(original), trimEmptyLinesAtTheBeginingAndEnd(replacement));
 
-        if (trimmedSimilarity > normalSimilarity) {
-          let difference = trimmedSimilarity - normalSimilarity;
-          return normalSimilarity + difference * 0.9; //still it's not as good as plain similarity
-        } else {
-          return normalSimilarity;
-        }
-      },
-      similarityThreshold: 0.5,
-    });
+  if (trimmedSimilarity > normalSimilarity) {
+    let difference = trimmedSimilarity - normalSimilarity;
+    return normalSimilarity + difference * 0.9; //still it's not as good as plain similarity
+  } else {
+    return normalSimilarity;
+  }
+};
 
-    if (result !== undefined) {
-      return result;
+export function fuzzyFindText({
+  currentCode,
+  findText,
+  similarityFunction = coreSimilarityFunction,
+  lineNumTolerance = Math.ceil(findText.split("\n").length * 0.1),
+}: {
+  currentCode: string;
+  findText: string;
+  similarityFunction?: (original: string[], replacement: string[]) => number;
+  lineNumTolerance?: number;
+}): { lineStartIndex: number; lineEndIndex: number; confidence: number } {
+  const currentCodeLines = currentCode.split("\n");
+  const findTextLines = findText.split("\n");
+
+  // Step 3: Iterate through the currentCodeLines with a nested loop to find the highest similarity between the lines in the currentCode and the findText.
+  let maxSimilarity = -1;
+  let maxSimilarityLineStartIndex = -1;
+  let maxSimilarityLineEndIndex = -1;
+
+  let minLinesToReplace = Math.max(0, findTextLines.length - lineNumTolerance);
+  let maxLinesToReplace = findTextLines.length + lineNumTolerance;
+
+  for (let start = 0; start < currentCodeLines.length - minLinesToReplace; start++) {
+    for (let end = start + minLinesToReplace; end < Math.min(currentCodeLines.length + 1, start + maxLinesToReplace); end++) {
+      const currentSlice = currentCodeLines.slice(start, end);
+      const similarity = similarityFunction(currentSlice, findTextLines);
+
+      if (similarity > maxSimilarity) {
+        maxSimilarity = similarity;
+        maxSimilarityLineStartIndex = start;
+        maxSimilarityLineEndIndex = end;
+      }
     }
   }
 
-  return undefined;
+  return {
+    lineStartIndex: maxSimilarityLineStartIndex,
+    lineEndIndex: maxSimilarityLineEndIndex,
+    confidence: maxSimilarity,
+  };
+}
+
+export function fuzzyReplaceText({
+  currentCode,
+  replaceText,
+  withText,
+  similarityFunction = coreSimilarityFunction,
+  similarityThreshold = 0.75,
+}: ReplaceWindowParams) {
+  let { lineStartIndex: startIndex, lineEndIndex: endIndex, confidence } = fuzzyFindText({ currentCode, findText: replaceText, similarityFunction });
+
+  if (confidence >= similarityThreshold) {
+    const currentCodeLines = currentCode.split("\n");
+
+    console.log(`sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
+    const currentSlice = currentCodeLines.slice(startIndex, endIndex);
+    let indentDifference = findIndentationDifference(currentSlice, replaceText.split("\n"), equalsStringSimilarity) || "";
+    console.log("indent difference", indentDifference.length, `"${indentDifference}"`);
+
+    const adjustedWithTextLines = applyIndent(withText.split("\n"), indentDifference);
+    const adjustedWithText = adjustedWithTextLines.join("\n");
+
+    let preChange = currentCodeLines.slice(0, startIndex).join("\n");
+    let postChange = currentCodeLines.slice(endIndex).join("\n");
+
+    //console.log("preChange", preChange.split("\n").map((line) => `"${line}"`).join("\n"));
+    //console.log("adjustedWithText", adjustedWithText.split("\n").map((line) => `"${line}"`).join("\n"));
+    //console.log("postChange", postChange.split("\n").map((line) => `"${line}"`).join("\n"));
+
+    return `${preChange}${"\n"}${adjustedWithText}${postChange ? "\n" : ""}${postChange}`;
+  }
 }

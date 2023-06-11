@@ -11,6 +11,7 @@ export class CommandHistoryManager {
     this._context = context;
     this.commandHistory = this.context.globalState.get("10minions.commandHistory") || {
       "Refactor this": { timeStamp: Date.now() },
+      "Clean this up": { timeStamp: Date.now() },
       Explain: { timeStamp: Date.now() },
       "Make it pretty": { timeStamp: Date.now() },
       "Rename this to something sensible": { timeStamp: Date.now() },

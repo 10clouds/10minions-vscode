@@ -1,4 +1,4 @@
-import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
+import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME, APPLIED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
 
 export const BRAND_COLOR = "#5e20e5";
 export const ERROR_COLOR = "#D8595A";
@@ -58,7 +58,7 @@ export function blendWithForeground(color: string, blendRatio: number = 0.75) {
 }
 
 export function getOpacity(execution: MinionTaskUIInfo) {
-  if (execution.executionStage === CANCELED_STAGE_NAME || execution.waiting) {
+  if (execution.executionStage === CANCELED_STAGE_NAME) {
     return 0.2;
   }
 
@@ -70,11 +70,21 @@ export function getOpacity(execution: MinionTaskUIInfo) {
  * depending on the execution's state.
  */
 export function getBaseColor(execution: MinionTaskUIInfo) {
-  return execution.stopped
-    ? execution.executionStage === FINISHED_STAGE_NAME && !execution.modificationApplied
-      ? SUCESS_COLOR
-      : execution.executionStage === CANCELED_STAGE_NAME || execution.modificationApplied
-      ? '--vscode-sideBar-background'
-      : ERROR_COLOR
-    : BRAND_COLOR;
+  if (execution.stopped) {
+    if (execution.executionStage === FINISHED_STAGE_NAME) {
+      return SUCESS_COLOR;
+    }
+
+    if (execution.executionStage === CANCELED_STAGE_NAME) {
+      return '--vscode-sideBar-background';
+    }
+
+    if (execution.executionStage === APPLIED_STAGE_NAME) {
+      return '--vscode-sideBar-foreground';
+    }
+
+    return ERROR_COLOR;
+  } else {
+    return BRAND_COLOR;
+  }
 }

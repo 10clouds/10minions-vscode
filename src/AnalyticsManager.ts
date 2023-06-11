@@ -5,6 +5,7 @@ import { MinionTask } from "./MinionTask";
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, setDoc, doc } from "firebase/firestore";
+import { serializeMinionTask } from "./SerializedMinionTask";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
@@ -83,8 +84,7 @@ export class AnalyticsManager {
       return;
     }
     // Serialize the minion task
-    const serializedMinionTask = minionTask.serialize();
-
+    const serializedMinionTask = serializeMinionTask(minionTask);
 
     // Prepare the data to be stored in Firestore
     const firestoreData = {

@@ -1,9 +1,11 @@
 import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
-import { CommandHistoryManager } from "./CommandHistoryManager";
-import { MinionTasksManager } from "./MinionTasksManager";
-import { MessageToVSCode, MessageToWebView } from "./Messages";
 import { AnalyticsManager } from "./AnalyticsManager";
+import { CommandHistoryManager } from "./CommandHistoryManager";
+import { MessageToVSCode, MessageToWebView } from "./Messages";
+import { MinionTasksManager } from "./MinionTasksManager";
+import { MinionTask } from "./MinionTask";
+import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
   return view?.webview.postMessage(message);
@@ -58,15 +60,19 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       }
 
       if (e.affectsConfiguration("10minions.enableCompletionSounds")) {
-        AnalyticsManager.instance.reportEvent("setEnableCompletionSounds", { 
-          value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds")
+        AnalyticsManager.instance.reportEvent("setEnableCompletionSounds", {
+          value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds"),
         });
       }
 
       if (e.affectsConfiguration("10minions.sendDiagnosticsData")) {
-        AnalyticsManager.instance.reportEvent("setSendDiagnosticsData", { 
-          value: !!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData")
-        }, true); // Force send even if just disabled
+        AnalyticsManager.instance.reportEvent(
+          "setSendDiagnosticsData",
+          {
+            value: !!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData"),
+          },
+          true
+        ); // Force send even if just disabled
       }
     });
   }
@@ -122,6 +128,21 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         this.executionsManager.openDocument(data.minionTaskId);
         break;
       }
+      case "openSelection": {
+        let minionTask = this.executionsManager.getExecutionById(data.minionTaskId);
+
+        if (minionTask) {
+          const document = await minionTask.document();
+          const editor = await vscode.window.showTextDocument(document);
+          editor.selection = await findNewPositionForOldSelection(minionTask.selection, minionTask.selectedText, document);
+
+          // Reveal the range of the selected text in the editor
+          editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+        } else {
+          vscode.window.showErrorMessage(`Minion task not found.`);
+        }
+        break;
+      }
       case "openLog": {
         this.executionsManager.openLog(data.minionTaskId);
         break;
@@ -138,9 +159,6 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         this.executionsManager.reRunExecution(data.minionTaskId, data.newUserQuery);
         break;
       }
-      case "forceExecution":
-        this.executionsManager.forceExecution(data.minionTaskId);
-        break;
       case "stopExecution": {
         this.executionsManager.stopExecution(data.minionTaskId);
         break;
@@ -190,3 +208,5 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     </html>`;
   }
 }
+
+

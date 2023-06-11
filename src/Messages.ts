@@ -15,8 +15,8 @@ export type MessageToVSCode =
   | { type: "showDiff"; minionTaskId: string }
   | { type: "reRunExecution"; minionTaskId: string; newUserQuery?: string }
   | { type: "stopExecution"; minionTaskId: string }
-  | { type: "forceExecution"; minionTaskId: string }
   | { type: "getSuggestions"; input?: string }
   | { type: "closeExecution"; minionTaskId: string }
   | { type: "readyForMessages" }
-  | { type: "applyAndReviewTask"; minionTaskId: string };
+  | { type: "applyAndReviewTask"; minionTaskId: string }
+  | { type: "openSelection"; minionTaskId: string };

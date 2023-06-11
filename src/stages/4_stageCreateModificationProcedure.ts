@@ -151,10 +151,6 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
     return;
   }
 
-  if (this.modificationApplied) {
-    return;
-  }
-
   this.reportSmallProgress();
   
   try {

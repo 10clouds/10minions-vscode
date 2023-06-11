@@ -23,7 +23,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with same indentation", () => {
@@ -49,7 +49,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with same indentation (multiline)", () => {
@@ -79,7 +79,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with nearest indentation (multiline)", () => {
@@ -117,7 +117,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `        }`,
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Multiline with different indentation", () => {
@@ -147,7 +147,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("First line without indentation", () => {
@@ -181,7 +181,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Fuzzy match with different syntax", () => {
@@ -205,7 +205,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("No match found", () => {
@@ -223,7 +223,7 @@ suite("Replace With Sliding Indent Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, undefined);
   });
   test("Real life #1", () => {
@@ -465,7 +465,7 @@ Task: \${this.userQuery}
 
     `;
 
-    const result = fuzzyReplaceText(currentCode, replaceText, withText);
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   

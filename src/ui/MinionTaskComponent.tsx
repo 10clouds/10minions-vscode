@@ -3,7 +3,7 @@ import * as React from "react";
 import { forwardRef } from "react";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
 import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
-import { FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 
@@ -32,7 +32,17 @@ function useUserQueryPreview(userQuery: string) {
   return preview;
 }
 
-function OutlineButton({ title, onClick, description, className = "" }: { description: string; title: string; onClick: React.MouseEventHandler<HTMLButtonElement>; className?: string }) {
+function OutlineButton({
+  title,
+  onClick,
+  description,
+  className = "",
+}: {
+  description: string;
+  title: string;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  className?: string;
+}) {
   return (
     <button
       title={title}
@@ -104,28 +114,7 @@ export const MinionTaskComponent = forwardRef(
       }
     }
 
-    function handleClickShowDiff() {
-      postMessageToVsCode({
-        type: "showDiff",
-        minionTaskId: minionTask.id,
-      });
-    }
-
     let RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
-
-    const forceButton = (
-      <OutlineButton
-        className="mb-2 ml-2"
-        description="Force"
-        title="Force execution anyway"
-        onClick={() => {
-          postMessageToVsCode({
-            type: "forceExecution",
-            minionTaskId: minionTask.id,
-          });
-        }}
-      />
-    );
 
     const stopButton = (
       <OutlineButton
@@ -141,16 +130,33 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
-    const applyAndReviewButton = (
+    const assessButton = (
       <OutlineButton
         className="mb-2 ml-2"
-        title="Apply & Review"
-        description="Apply & Review"
+        title="Assess"
+        description="Assess"
         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
           postMessageToVsCode({
             type: "applyAndReviewTask",
             minionTaskId: minionTask.id,
           });
+          setIsExpanded(true);
+          e.stopPropagation();
+        }}
+      />
+    );
+
+    const markAsReadButton = (
+      <OutlineButton
+        className="mb-2 ml-2"
+        title="Mark as read"
+        description="Acknowledge"
+        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+          postMessageToVsCode({
+            type: "applyAndReviewTask",
+            minionTaskId: minionTask.id,
+          });
+          setIsExpanded(true);
           e.stopPropagation();
         }}
       />
@@ -180,6 +186,21 @@ export const MinionTaskComponent = forwardRef(
             type: "reRunExecution",
             minionTaskId: minionTask.id,
           });
+        }}
+      />
+    );
+
+    const diffButton = (
+      <OutlineButton
+        title="Show diff"
+        description="Diff"
+        onClick={(e) => {
+          postMessageToVsCode({
+            type: "showDiff",
+            minionTaskId: minionTask.id,
+          });
+
+          e.stopPropagation();
         }}
       />
     );
@@ -218,18 +239,19 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped && !minionTask.waiting ? "busy-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
             >
-              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped && !minionTask.waiting ? "busy-robot-extra" : ""}`} />
+              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped ? "busy-robot-extra" : ""}`} />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
               <span className="truncate">{minionTask.shortName}</span>
             </div>
-            {minionTask.waiting && !minionTask.stopped && forceButton}
-            {minionTask.modificationDescription && minionTask.executionStage === FINISHED_STAGE_NAME && !minionTask.modificationApplied && applyAndReviewButton}
+            {minionTask.modificationDescription &&
+              minionTask.executionStage === FINISHED_STAGE_NAME &&
+              (minionTask.classification === "AnswerQuestion" ? markAsReadButton : assessButton)}
 
             {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}
@@ -255,7 +277,7 @@ export const MinionTaskComponent = forwardRef(
                       });
                     }}
                   >
-                    {minionTask.documentName}
+                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && diffButton}
                   </span>
                 </span>
 
@@ -318,7 +340,13 @@ export const MinionTaskComponent = forwardRef(
                 {minionTask.selectedText && <div>Selection:</div>}
                 {minionTask.selectedText && (
                   <div
-                    className="text-xs overflow-auto"
+                    className="text-xs overflow-auto cursor-pointer"
+                    onClick={() => {
+                      postMessageToVsCode({
+                        type: "openSelection",
+                        minionTaskId: minionTask.id,
+                      });
+                    }}
                     style={{
                       whiteSpace: "pre",
                     }}

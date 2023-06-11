@@ -41,6 +41,14 @@
         "title": "10Minions: Ask 10Minions to do something"
       }
     ],
+    "keybindings": [
+      {
+        "command": "10minions.ask",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      }
+    ],
     "configuration": {
       "title": "10Minions",
       "type": "object",

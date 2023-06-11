@@ -2,59 +2,8 @@ import * as vscode from "vscode";
 import { fuzzyReplaceText } from "./fuzzyReplaceText";
 import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { MinionTask } from "../MinionTask";
-import { getCommentForLanguage } from "../utils/comments";
-
-/**
- * Decompose a markdown string into an array of string parts, with
- * comments and code blocks properly formatted based on the document language.
- *
- * @param {string} markdownString The markdown string to decompose.
- * @param {string} languageId The language ID of the document.
- * @returns {string[]} An array of string parts, formatted as comments and code blocks.
- */
-function decomposeMarkdownString(markdownString: string, languageId: string): string[] {
-  const decomposedStringParts: string[] = [];
-  const lines = markdownString.split("\n");
-  let inCodeBlock = false;
-  let codeLanguage = "";
-
-  // Temporary buffer to store lines for comment blocks
-  let commentBuffer: string[] = [];
-
-  lines.forEach((line, index) => {
-    if (line.startsWith("```")) {
-      // Switch between code block and comment states.
-      inCodeBlock = !inCodeBlock;
-
-      // Add the entire comment buffer as a comment block when switching states
-      if (!inCodeBlock && commentBuffer.length > 0) {
-        const languageSpecificComment = getCommentForLanguage(languageId, commentBuffer.join("\n"));
-        decomposedStringParts.push(languageSpecificComment);
-        // Clear the comment buffer for the next block
-        commentBuffer = [];
-      }
-
-      // Update codeLanguage when entering a code block.
-      if (inCodeBlock) {
-        codeLanguage = line.slice(3);
-      }
-    } else if (inCodeBlock && codeLanguage === languageId) {
-      // Add line as is when inside a code block with matching language.
-      decomposedStringParts.push(line);
-    } else {
-      // Add the line to the comment buffer when outside of a compatible code block.
-      commentBuffer.push(line);
-    }
-
-    // Add the remaining comment buffer as a comment block at the end of the file
-    if (index === lines.length - 1 && commentBuffer.length > 0) {
-      const languageSpecificComment = getCommentForLanguage(languageId, commentBuffer.join("\n"));
-      decomposedStringParts.push(languageSpecificComment);
-    }
-  });
-
-  return decomposedStringParts;
-}
+import { decomposeMarkdownString } from "./decomposeMarkdownString";
+import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
 
 function applyModificationProcedure(originalCode: string, modificationProcedure: string) {
   let currentCode = originalCode;
@@ -76,7 +25,7 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let replaceText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let withText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = fuzzyReplaceText(currentCode, replaceText, withText);
+      let replacement = fuzzyReplaceText({ currentCode, replaceText, withText });
 
       if (replacement === undefined) {
         throw new Error(
@@ -100,7 +49,7 @@ ${originalCode}
       let insertText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let beforeText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = fuzzyReplaceText(currentCode, beforeText, `${insertText}\n${beforeText}`);
+      let replacement = fuzzyReplaceText({ currentCode, replaceText: beforeText, withText: `${insertText}\n${beforeText}` });
 
       if (replacement === undefined) {
         throw new Error(
@@ -189,24 +138,26 @@ ${originalCode}
 }
 
 export async function applyFallback(minionTask: MinionTask) {
-  const language = (await minionTask.document()).languageId || "javascript";
+  const document = await minionTask.document();
+  const language = document.languageId || "javascript";
 
   const decomposedString = decomposeMarkdownString(
     `
-  Task: ${minionTask.userQuery}
-  
-  ${minionTask.modificationDescription}
-  `.trim(),
+Task: ${minionTask.userQuery}
+
+${minionTask.modificationDescription}
+`.trim(),
     language
   ).join("\n");
 
   minionTask.appendToLog(`\nPLAIN COMMENT FALLBACK\n`);
 
+  minionTask.originalContent = document.getText();
   await applyWorkspaceEdit(async (edit) => {
     edit.insert(vscode.Uri.parse(minionTask.documentURI), new vscode.Position(0, 0), decomposedString + "\n");
   });
 
-  minionTask.modificationApplied = true;
+  minionTask.executionStage = APPLIED_STAGE_NAME;
   minionTask.onChanged(true);
   vscode.window.showInformationMessage(`Modification applied successfully.`);
 }
@@ -217,8 +168,8 @@ export async function applyMinionTask(minionTask: MinionTask) {
     return;
   }
 
-  if (minionTask.modificationApplied) {
-    vscode.window.showErrorMessage(`Modification already applied!`);
+  if (minionTask.executionStage !== FINISHED_STAGE_NAME) {
+    vscode.window.showErrorMessage(`Cannot apply unfinished task.`);
     return;
   }
 
@@ -228,12 +179,12 @@ export async function applyMinionTask(minionTask: MinionTask) {
     }
 
     let document = await minionTask.document();
-    minionTask.originalContent = document.getText();
 
     let modifiedContent = applyModificationProcedure(minionTask.originalContent, minionTask.modificationProcedure);
 
     console.log(`modifiedContent: "${modifiedContent}"`);
 
+    minionTask.originalContent = document.getText();
     await applyWorkspaceEdit(async (edit) => {
       edit.replace(
         document.uri,
@@ -245,7 +196,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
       );
     });
 
-    minionTask.modificationApplied = true;
+    minionTask.executionStage = APPLIED_STAGE_NAME;
     minionTask.onChanged(true);
 
     vscode.window.showInformationMessage(`Modification applied successfully.`);

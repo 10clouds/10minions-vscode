@@ -22,6 +22,16 @@ Experience increased productivity, better code quality, and seamless integration
 
 1. Install 10Minions from the Visual Studio Code marketplace
 2. Update Visual Studio Code to its latest version
+3. Set up keybindings for 10Minions commands (refer to the Keybindings section below for more details)
+
+## ⌨️ Keybindings
+
+10Minions provides a default keybinding for the `10minions.ask` command, which allows you to quickly ask for assistance from 10Minions while maintaining your focus on the editor. To use this command, simply press the following keybinding depending on your operating system:
+
+- For Windows and Linux: `Ctrl+Shift+A`
+- For Mac: `Cmd+Shift+A`
+
+The `10minions.ask` command can be triggered when your text cursor is focused within the editor.
 
 ## 📚 Use Cases
 

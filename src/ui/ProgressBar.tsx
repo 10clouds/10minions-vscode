@@ -13,7 +13,7 @@ export function ProgressBar({ execution }: { execution: MinionTaskUIInfo }) {
     <div className={`relative h-1 w-full transition-opacity `} style={{opacity, backgroundColor: blendWithForeground("#D1D5D8")}}>
       <div
         className={`absolute top-0 left-0 flex h-full items-center justify-center transition-all duration-1000 ease-in-out ${
-          !execution.stopped && !execution.waiting ? "wave-animation" : ""
+          !execution.stopped ? "wave-animation" : ""
         }`}
         style={{ width: percentage, backgroundColor: color }}
       ></div>

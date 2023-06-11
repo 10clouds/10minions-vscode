@@ -1,91 +1,13 @@
 import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
+import { MinionTasksManager } from "./MinionTasksManager";
 import { gptExecute } from "./gptExecute";
 import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
 import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
-import { MinionTasksManager } from "./MinionTasksManager";
-
-export type SerializedMinionTask = {
-  id: string;
-  minionIndex: number;
-  documentURI: string;
-  userQuery: string;
-  selection: {
-    startLine: number;
-    startCharacter: number;
-    endLine: number;
-    endCharacter: number;
-  };
-  selectedText: string;
-  originalContent: string;
-  finalContent: string;
-  startTime: number;
-  shortName: string;
-  modificationDescription: string;
-  modificationProcedure: string;
-  modificationApplied: boolean;
-  executionStage: string;
-  classification: TASK_CLASSIFICATION_NAME | null;
-  logContent: string;
-};
 
 export class MinionTask {
-
-
-  serialize(): SerializedMinionTask {
-    return {
-      id: this.id,
-      minionIndex: this.minionIndex,
-      documentURI: this.documentURI,
-      userQuery: this.userQuery,
-      selection: {
-        startLine: this.selection.start.line,
-        startCharacter: this.selection.start.character,
-        endLine: this.selection.end.line,
-        endCharacter: this.selection.end.character,
-      },
-      selectedText: this.selectedText,
-      originalContent: this.originalContent,
-      finalContent: this.finalContent,
-      startTime: this.startTime,
-      shortName: this.shortName,
-      modificationDescription: this.modificationDescription,
-      modificationProcedure: this.modificationProcedure,
-      modificationApplied: this.modificationApplied,
-      executionStage: this.executionStage,
-      classification: this.classification === undefined ? null : this.classification,
-      logContent: this.logContent,
-    };
-  }
-
-
-  static deserialize(data: SerializedMinionTask): MinionTask {
-    return new MinionTask({
-      id: data.id,
-      minionIndex: data.minionIndex || 0,
-      documentURI: data.documentURI,
-      userQuery: data.userQuery,
-      selection: new vscode.Selection(
-        new vscode.Position(data.selection.startLine, data.selection.startCharacter),
-        new vscode.Position(data.selection.endLine, data.selection.endCharacter)
-      ),
-      selectedText: data.selectedText,
-      originalContent: data.originalContent,
-      finalContent: data.finalContent,
-      startTime: data.startTime,
-      shortName: data.shortName,
-      modificationDescription: data.modificationDescription,
-      modificationProcedure: data.modificationProcedure,
-      modificationApplied: data.modificationApplied,
-      executionStage: data.executionStage,
-      classification: data.classification === null ? undefined : data.classification,
-      onChanged: async (important: boolean) => {},
-      logContent: data.logContent,
-    });
-  }
-
   readonly userQuery: string;
   readonly id: string;
   readonly minionIndex: number;
@@ -98,25 +20,34 @@ export class MinionTask {
   rejectProgress?: (error: string) => void;
   resolveProgress?: () => void;
 
+
+  private _originalContent: string;
+
+  get originalContent(): string {
+    return this._originalContent;
+  }
+
+  set originalContent(value: string) {
+    this._originalContent = value;
+    MinionTasksManager.instance.originalContentProvider.reportChange(vscode.Uri.parse(this.originalContentURI));
+  }
+
   //
   // tracking variables between stages
   //
   shortName: string;
-  originalContent: string;
+  
   finalContent: string;
+  contentWhenDismissed: string;
   currentStageIndex: number = 0;
   startTime: number;
   modificationDescription: string;
   modificationProcedure: string;
-  modificationApplied: boolean;
   stopped: boolean = true;
   progress: number = 1;
   executionStage: string;
   classification?: TASK_CLASSIFICATION_NAME;
-  waiting: boolean = false;
   logContent: string = "";
-
-
 
   constructor({
     id,
@@ -127,8 +58,9 @@ export class MinionTask {
     selectedText,
     originalContent,
     finalContent = "",
+    contentWhenDismissed = "",
     startTime,
-    onChanged = async (important: boolean) => {},
+    onChanged = async (important: boolean) => { throw new Error("Should be implemented"); },
     shortName = "",
     modificationDescription = "",
     modificationProcedure = "",
@@ -145,6 +77,7 @@ export class MinionTask {
     selectedText: string;
     originalContent: string;
     finalContent?: string;
+    contentWhenDismissed?: string;
     startTime: number;
     onChanged?: (important: boolean) => Promise<void>;
     shortName?: string;
@@ -161,14 +94,14 @@ export class MinionTask {
     this.userQuery = userQuery;
     this.selection = selection;
     this.selectedText = selectedText;
-    this.originalContent = originalContent;
+    this._originalContent = originalContent;
     this.finalContent = finalContent;
+    this.contentWhenDismissed = contentWhenDismissed;
     this.startTime = startTime;
     this.onChanged = onChanged;
     this.shortName = shortName;
     this.modificationDescription = modificationDescription;
     this.modificationProcedure = modificationProcedure;
-    this.modificationApplied = modificationApplied;
     this.executionStage = executionStage;
     this.classification = classification;
     this.logContent = logContent;

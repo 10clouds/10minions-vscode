@@ -8,6 +8,7 @@ import { GoButton } from "./GoButton";
 import { MinionTaskListComponent } from "./MinionTaskListComponent";
 import { Header } from "./Header";
 import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
+import { useTemporaryFlag } from "./useTemporaryFlag";
 
 declare const acquireVsCodeApi: any;
 
@@ -21,6 +22,7 @@ const COMMAND_PLACEHOLDER = `
 Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For pinpoint precision, highlight the code involved.
             
 Ask something ...
+... Clean this up
 ... Refactor this
 ... Explain
 ... Make it pretty
@@ -34,6 +36,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
   const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+  let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
 
   function handleMessage(message: MessageToWebView) {
     console.log("CMD (webview)", message.type);
@@ -114,7 +117,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   const prefixWidth = React.useMemo(() => {
     const span = document.createElement("span");
-    span.className = "prefix";
     span.innerText = prefix;
     document.body.appendChild(span);
     const width = span.offsetWidth;
@@ -132,7 +134,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
         {apiKeySet === true && 
             <div style={{ position: "relative" }}>
               <div
-                className="input-container"
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -140,15 +141,15 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                 }}
               >
                 <div
-                  className="prefix-container"
                   style={{
                     display: "flex",
                     flexDirection: "row",
                     flexWrap: "wrap",
                     color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+                    alignItems: "baseline",
                   }}
                 >
-                  <span className="prefix pointer-events-none">{prefix}</span>
+                  <span className="pointer-events-none">{prefix}</span>
                   <textarea
                     ref={textAreaRef}
                     style={{
@@ -158,19 +159,32 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                       color: "rgba(0,0,0,100)", // Transparent text color
                       borderColor: "var(--vscode-focusBorder)",
                       caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
-                      "--prefix-width": prefixWidth + "px",
-                } as React.CSSProperties}
-                    onClick={handleTextAreaClick}
-                    className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none textarea-with-prefix"
+                      textIndent: prefixWidth + "px",
+                      paddingTop: "1.4rem", // Add paddingTop to make space for the prefix
+                    }}
+
+                    className="w-full h-96 p-4 mb-3 text-sm resize-none focus:outline-none"
                     placeholder={COMMAND_PLACEHOLDER}
                     value={userInputPrompt}
                     onChange={handleTextAreaChange}
                     onScroll={handleTextAreaClick}
                     onInput={handleTextAreaChange}
                     onKeyDown={(e) => {
+                      // Check for Tab key and if the selectedSuggestion is valid
                       if (e.key === "Tab" && selectedSuggestion.length > 0) {
                         e.preventDefault(); // Prevent default tab behavior
                         handleSuggestionClick(selectedSuggestion);
+                      }
+                      // Check for Enter key and if the Shift key is NOT pressed
+                      else if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault(); // Prevent default line break behavior
+                        // Submit userInputPrompt by calling postMessageToVsCode function
+                        postMessageToVsCode({
+                          type: "newExecution",
+                          value: userInputPrompt,
+                        });
+
+                        markJustClickedGo();
                       }
                     }}
                   />
@@ -186,7 +200,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                       overflow: "hidden",
                       whiteSpace: "pre-wrap", // Preserve line breaks and spaces
                   zIndex: 1000,
-                      transform: `translate(${scrollPosition.scrollLeft}px, ${scrollPosition.scrollTop}px)`, // Use transform and translate() function
+
                     }}
                 className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
                   >
@@ -206,6 +220,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     value: userInputPrompt,
                   });
                 }}
+                justClickedGo={justClickedGo}
+                markJustClickedGo={markJustClickedGo}
               />
               
             <MinionTaskListComponent executionList={executionList} />

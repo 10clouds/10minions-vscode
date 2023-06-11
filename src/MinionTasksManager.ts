@@ -1,10 +1,12 @@
 import { basename } from "path";
 import * as vscode from "vscode";
-import { MinionTask, SerializedMinionTask } from "./MinionTask";
+import { AnalyticsManager } from "./AnalyticsManager";
+import { MinionTask } from "./MinionTask";
+import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from "./SerializedMinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
 import { CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
-import { AnalyticsManager } from "./AnalyticsManager";
 import { applyMinionTask } from "./utils/applyMinionTask";
+import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 
 function extractExecutionIdFromUri(uri: vscode.Uri): string {
   return uri.path.match(/^minionTaskId\/([a-z\d\-]+)\/.*/)![1];
@@ -33,13 +35,40 @@ class LogProvider implements vscode.TextDocumentContentProvider {
   provideTextDocumentContent(uri: vscode.Uri): string {
     const textKey = extractExecutionIdFromUri(uri);
     const execution = this.executionsManager.getExecutionById(textKey);
-    const logContent = execution?.logContent || "";
-    return logContent;
+    const logContent = execution?.logContent;
+    return logContent || "";
+  }
+}
+
+class OriginalContentProvider implements vscode.TextDocumentContentProvider {
+  private executionsManager: MinionTasksManager;
+
+  constructor(executionsManager: MinionTasksManager) {
+    this.executionsManager = executionsManager;
+  }
+
+  // Create an EventEmitter to handle document updates
+  private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
+
+  // Use the getter to expose the onDidChange event using EventEmitter's event property
+  get onDidChange(): vscode.Event<vscode.Uri> | undefined {
+    return this._onDidChangeEmitter.event;
+  }
+
+  reportChange(uri: vscode.Uri) {
+    // Emit the event to notify subscribers of the change in the URI
+    this._onDidChangeEmitter.fire(uri);
+  }
+
+  provideTextDocumentContent(uri: vscode.Uri): string {
+    const textKey = extractExecutionIdFromUri(uri);
+    const execution = this.executionsManager.getExecutionById(textKey);
+    const originalContent = execution?.originalContent;
+    return originalContent || "";
   }
 }
 
 export class MinionTasksManager {
-  
   public static instance: MinionTasksManager;
 
   private minionTasks: MinionTask[] = [];
@@ -47,29 +76,23 @@ export class MinionTasksManager {
   private _view?: vscode.WebviewView;
   private _isThrottled = false;
   private _pendingUpdate = false;
-  
-  fullContentProvider: vscode.TextDocumentContentProvider;
+
+  originalContentProvider: OriginalContentProvider;
   logProvider: LogProvider;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
 
     const serializedExecutions = this._context.globalState.get<SerializedMinionTask[]>("10minions.executions") || [];
-    this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) => MinionTask.deserialize(data));
+    this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) => deserializeMinionTask(data));
 
     let self = this;
-    this.fullContentProvider = new (class FullContentProvider implements vscode.TextDocumentContentProvider {
-      provideTextDocumentContent(uri: vscode.Uri): string {
-        const textKey = extractExecutionIdFromUri(uri);
-        const originalContent = self.minionTasks.find((e) => e.id === textKey)?.originalContent;
-        return originalContent || "";
-      }
-    });
-  
+    this.originalContentProvider = new OriginalContentProvider(this);
+
     this.logProvider = new LogProvider(this);
 
     vscode.workspace.registerTextDocumentContentProvider("10minions-log", this.logProvider);
-    vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this.fullContentProvider);
+    vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this.originalContentProvider);
 
     if (MinionTasksManager.instance) {
       throw new Error("ExecutionsManager already instantiated");
@@ -79,7 +102,7 @@ export class MinionTasksManager {
   }
 
   async saveExecutions() {
-    const serializedExecutions = this.minionTasks.map((execution) => execution.serialize());
+    const serializedExecutions = this.minionTasks.map((execution) => serializeMinionTask(execution));
     await this._context.globalState.update("10minions.executions", serializedExecutions);
   }
 
@@ -112,7 +135,7 @@ export class MinionTasksManager {
     if (minionTask) {
       await applyMinionTask(minionTask);
       await this.showDiff(minionTaskId);
-    }  
+    }
   }
 
   async openLog(minionTaskId: string) {
@@ -173,17 +196,9 @@ export class MinionTasksManager {
       },
     });
 
-    const runningExecution = this.getRunningExecution(activeEditor.document.uri.toString());
     this.minionTasks = [execution, ...this.minionTasks];
 
-    // Set the waiting flag if there's a running execution on the same file
-    if (runningExecution) {
-      execution.shortName = "Queued ...";
-      execution.progress = 0;
-      execution.waiting = true;
-    } else {
-      await execution.run();
-    }
+    await execution.run();
 
     this.notifyExecutionsUpdatedImmediate(execution, true);
   }
@@ -219,7 +234,7 @@ export class MinionTasksManager {
     }, 500);
   }
 
-  async forceExecution(minionTaskId: string) {
+  async reRunExecution(minionTaskId: any, newUserQuery?: string) {
     let oldExecutionMaybe = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (!oldExecutionMaybe) {
@@ -229,42 +244,17 @@ export class MinionTasksManager {
 
     let oldExecution = oldExecutionMaybe;
 
-    if (!oldExecution.waiting) {
-      vscode.window.showErrorMessage("Execution is not waiting", minionTaskId);
-      return;
-    }
+    await this.closeExecution(oldExecution.id);
 
-    await oldExecution.run();
+    let document = await oldExecution.document();
 
-    this.notifyExecutionsUpdatedImmediate(oldExecution, true);
-  }
-
-  reRunExecution(minionTaskId: any, newUserQuery?: string) {
-    let oldExecutionMaybe = this.minionTasks.find((e) => e.id === minionTaskId);
-
-    if (!oldExecutionMaybe) {
-      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
-      throw new Error(`No execution found for id ${minionTaskId}`);
-}
-
-    let oldExecution = oldExecutionMaybe;
-
-    if (!oldExecution.stopped) {
-      vscode.window.showErrorMessage("Execution is still running", minionTaskId);
-      return;
-    }
-
-    //remove old execution
-    this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
-    this.notifyExecutionsUpdatedImmediate(oldExecution, true);
-
-    //after 1 second add a new one
+    let newSelection = oldExecution.selectedText ? await findNewPositionForOldSelection(oldExecution.selection, oldExecution.selectedText, document) : oldExecution.selection;
     setTimeout(async () => {
       let newExecution = await MinionTask.create({
         userQuery: newUserQuery || oldExecution.userQuery,
         document: await oldExecution.document(),
-        selection: oldExecution.selection,
-        selectedText: oldExecution.selectedText,
+        selection: newSelection,
+        selectedText: document.getText(newSelection),
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
           if (important) {
@@ -275,17 +265,9 @@ export class MinionTasksManager {
         },
       });
 
-      const runningExecution = this.getRunningExecution(newExecution.documentURI);
       this.minionTasks = [newExecution, ...this.minionTasks.filter((e) => e.id !== minionTaskId)];
 
-      // Set the waiting flag if there's a running execution on the same file
-      if (runningExecution) {
-        newExecution.shortName = "Queued ...";
-        newExecution.progress = 0;
-        newExecution.waiting = true;
-      } else {
-        await newExecution.run();
-      }
+      await newExecution.run();
 
       this.notifyExecutionsUpdatedImmediate(newExecution, true);
     }, 500);
@@ -304,10 +286,8 @@ export class MinionTasksManager {
       stopped: e.stopped,
       classification: e.classification,
       modificationDescription: e.modificationDescription,
-      modificationApplied: e.modificationApplied,
       selectedText: e.selectedText,
       shortName: e.shortName,
-      waiting: e.waiting,
     }));
 
     postMessageToWebView(this._view, {
@@ -316,7 +296,6 @@ export class MinionTasksManager {
     });
 
     this.saveExecutions();
-    this.runNextWaitingExecution();
 
     if (minionTask && importantChange) {
       AnalyticsManager.instance.reportOrUpdateMinionTask(minionTask);
@@ -333,38 +312,16 @@ export class MinionTasksManager {
     }
   }
 
-  closeExecution(minionTaskId: any) {
-    let execution = this.minionTasks.find((e) => e.id === minionTaskId);
+async closeExecution(minionTaskId: any) {
+  let execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
-    if (execution) {
-      execution.stopExecution(CANCELED_STAGE_NAME, false);
-      this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
-      this.notifyExecutionsUpdatedImmediate(execution, true);
-    } else {
-      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
-    }
+  if (execution) {
+    await execution.stopExecution(CANCELED_STAGE_NAME, false);
+    execution.contentWhenDismissed = execution.logContent;
+    this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
+    this.notifyExecutionsUpdatedImmediate(execution, true);
+  } else {
+    vscode.window.showErrorMessage("No execution found for id", minionTaskId);
   }
-
-  private getRunningExecution(documentURI: string): MinionTask | null {
-    for (const execution of this.minionTasks) {
-      if (execution.documentURI === documentURI && !execution.stopped && !execution.waiting) {
-        return execution;
-      }
-    }
-    return null;
-  }
-
-  private async runNextWaitingExecution() {
-    for (const execution of [...this.minionTasks].reverse()) {
-      if (execution.waiting && !execution.stopped) {
-        const runningExecution = this.getRunningExecution(execution.documentURI);
-
-        if (!runningExecution) {
-          execution.waiting = false;
-          execution.run();
-          break;
-        }
-      }
-    }
-  }
+}
 }

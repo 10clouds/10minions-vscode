@@ -112,7 +112,3 @@ body {
 @keyframes blink {
   50%, 100% {opacity: 0;}
 }
-
-.textarea-with-prefix {
-  text-indent: var(--prefix-width);
-}

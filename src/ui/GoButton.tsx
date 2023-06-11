@@ -1,11 +1,7 @@
 import * as React from "react";
-import { useTemporaryFlag } from "./useTemporaryFlag";
 import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
 
-
-export function GoButton({ onClick }: { onClick?: () => void; }) {
-  let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
-
+export function GoButton({ onClick, justClickedGo, markJustClickedGo }: { onClick?: () => void; justClickedGo: boolean; markJustClickedGo: () => void }) {
   return (
     <button
       style={{
