@@ -175,6 +175,24 @@ export const MinionTaskComponent = forwardRef(
       </button>
     );
 
+    const openLogFileButton = (
+      <button
+        title="Open Log"
+        className="cursor-pointer mb-2 border rounded px-2"
+        onClick={() => {
+          postMessageToVsCode({
+            type: "openLog",
+            minionTaskId: minionTask.id,
+          });
+        }}
+        style={{
+          borderColor: "var(--vscode-button-separator)",
+        }}
+      >
+        Open Log file
+      </button>
+    );
+
     return (
       <div
         ref={ref}
@@ -208,25 +226,7 @@ export const MinionTaskComponent = forwardRef(
             </div>
             {minionTask.waiting && !minionTask.stopped && forceButton}
 
-            {!minionTask.stopped ? (
-              <button
-                title="Stop Execution"
-                onClick={() => {
-                  postMessageToVsCode({
-                    type: "stopExecution",
-                    minionTaskId: minionTask.id,
-                  });
-                }}
-                style={{
-                  borderColor: "var(--vscode-button-separator)",
-                }}
-                className="cursor-pointer border rounded px-2 ml-2"
-              >
-                Stop
-              </button>
-            ) : (
-              <> </>
-            )}
+            {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}
             {closeButton}
           </div>
@@ -235,18 +235,7 @@ export const MinionTaskComponent = forwardRef(
             <>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
                 <div className="mb-2">Log:</div>
-                <span
-                  title="Open Document"
-                  className="cursor-pointer mb-2"
-                  onClick={() => {
-                    postMessageToVsCode({
-                      type: "openLog",
-                      minionTaskId: minionTask.id,
-                    });
-                  }}
-                >
-                  Log file
-                </span>
+                <span className="mb-2">{openLogFileButton}</span>
 
                 <div className="mb-2">File:</div>
 
@@ -265,6 +254,23 @@ export const MinionTaskComponent = forwardRef(
                   </span>
 
                   {minionTask.executionStage === FINISHED_STAGE_NAME && diffButton}
+                </span>
+
+                <div className="mb-2">Status:</div>
+
+                <span className="mb-2">
+                  <span
+                    title="Open Log"
+                    className="cursor-pointer mb-2"
+                    onClick={() => {
+                      postMessageToVsCode({
+                        type: "openLog",
+                        minionTaskId: minionTask.id,
+                      });
+                    }}
+                  >
+                    {minionTask.executionStage}
+                  </span>
                 </span>
 
                 <div className="mb-2">Task:</div>
@@ -301,7 +307,7 @@ export const MinionTaskComponent = forwardRef(
                       <span title="Edit task" onClick={() => setIsInputOpen(true)}>
                         {userQueryPreview}{" "}
                       </span>
-                      {retryButton}
+                      {minionTask.stopped && retryButton}
                     </div>
                   )}
                 </div>
