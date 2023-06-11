@@ -10,6 +10,25 @@ let openAILock = new AsyncLock();
 /* The extractParsedLines function takes a chunk string as input and returns
  * an array of parsed JSON objects. */
 function extractParsedLines(chunk: string) {
+  // Check if the entire chunk is a JSON object containing an "error" field
+  let jsonObject;
+  
+  try {
+    jsonObject = JSON.parse(chunk);
+  } catch (e) {
+    // Not a JSON object, continue processing as before
+  }
+
+  if (jsonObject) {
+    // If the chunk is in the new format, return the error object directly
+    if (jsonObject.error) {
+      throw new Error(jsonObject.error.message);
+    } else {
+      throw new Error(`Unexpected JSON object: ${chunk}`);
+    }
+  }
+
+  // Original processing
   const lines = chunk.split("\n");
   try {
     return lines
@@ -22,8 +41,6 @@ function extractParsedLines(chunk: string) {
     throw e;
   }
 }
-
-
 
 /* The queryOpenAI function takes a fullPrompt and other optional parameters to
  * send a request to OpenAI's API. It returns a response object. */

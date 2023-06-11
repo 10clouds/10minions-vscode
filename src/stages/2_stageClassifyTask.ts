@@ -1,8 +1,9 @@
 import { MinionTask } from "../MinionTask";
 import * as vscode from "vscode";
-import { gptExecute } from "../gptExecute";
+import { MODEL_MAX_TOKENS, gptExecute } from "../gptExecute";
 import { EXTENSIVE_DEBUG } from "../const";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
+import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 
 export const TASK_CLASSIFICATION: {
   name: TASK_CLASSIFICATION_NAME;
@@ -71,6 +72,12 @@ Classify the task.
     onChunk("<<<< PROMPT >>>>\n\n");
     onChunk(promptWithContext + "\n\n");
     onChunk("<<<< EXECUTION >>>>\n\n");
+  }
+
+  let tokensCode = encode(promptWithContext).length;
+
+  if (tokensCode > MODEL_MAX_TOKENS['gpt-4']) {
+    throw new Error(`Combination of file size, selection and your command, is too big for us to handle.`);
   }
 
   return gptExecute({
