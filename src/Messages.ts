@@ -18,4 +18,5 @@ export type MessageToVSCode =
   | { type: "forceExecution"; minionTaskId: string }
   | { type: "getSuggestions"; input?: string }
   | { type: "closeExecution"; minionTaskId: string }
-  | { type: "readyForMessages" };
+  | { type: "readyForMessages" }
+  | { type: "applyAndReviewTask"; minionTaskId: string };

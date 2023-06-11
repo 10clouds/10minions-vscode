@@ -18,6 +18,7 @@ export type MinionTaskUIInfo = {
   waiting: boolean;
   classification?: TASK_CLASSIFICATION_NAME;
   modificationDescription: string;
+  modificationApplied: boolean;
   selectedText: string;
   shortName: string;
 };

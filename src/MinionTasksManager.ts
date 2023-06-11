@@ -4,6 +4,7 @@ import { MinionTask, SerializedMinionTask } from "./MinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
 import { CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 import { AnalyticsManager } from "./AnalyticsManager";
+import { applyMinionTask } from "./utils/applyMinionTask";
 
 function extractExecutionIdFromUri(uri: vscode.Uri): string {
   return uri.path.match(/^minionTaskId\/([a-z\d\-]+)\/.*/)![1];
@@ -38,6 +39,7 @@ class LogProvider implements vscode.TextDocumentContentProvider {
 }
 
 export class MinionTasksManager {
+  
   public static instance: MinionTasksManager;
 
   private minionTasks: MinionTask[] = [];
@@ -102,6 +104,14 @@ export class MinionTasksManager {
       let documentURI = vscode.Uri.parse(minionTask.documentURI);
       await vscode.workspace.openTextDocument(documentURI);
       await vscode.window.showTextDocument(documentURI);
+    }
+  }
+
+  async applyAndReviewTask(minionTaskId: string) {
+    let minionTask = this.getExecutionById(minionTaskId);
+    if (minionTask) {
+      await applyMinionTask(minionTask);
+      await this.showDiff(minionTaskId);
     }  
   }
 
@@ -294,6 +304,7 @@ export class MinionTasksManager {
       stopped: e.stopped,
       classification: e.classification,
       modificationDescription: e.modificationDescription,
+      modificationApplied: e.modificationApplied,
       selectedText: e.selectedText,
       shortName: e.shortName,
       waiting: e.waiting,

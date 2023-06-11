@@ -71,9 +71,9 @@ export function getOpacity(execution: MinionTaskUIInfo) {
  */
 export function getBaseColor(execution: MinionTaskUIInfo) {
   return execution.stopped
-    ? execution.executionStage === FINISHED_STAGE_NAME
+    ? execution.executionStage === FINISHED_STAGE_NAME && !execution.modificationApplied
       ? SUCESS_COLOR
-      : execution.executionStage === CANCELED_STAGE_NAME
+      : execution.executionStage === CANCELED_STAGE_NAME || execution.modificationApplied
       ? '--vscode-sideBar-background'
       : ERROR_COLOR
     : BRAND_COLOR;

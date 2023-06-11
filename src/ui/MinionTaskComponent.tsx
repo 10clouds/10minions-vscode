@@ -32,7 +32,7 @@ function useUserQueryPreview(userQuery: string) {
   return preview;
 }
 
-function OutlineButton({ title, onClick, description, className = "" }: { description: string; title: string; onClick: () => void; className?: string }) {
+function OutlineButton({ title, onClick, description, className = "" }: { description: string; title: string; onClick: React.MouseEventHandler<HTMLButtonElement>; className?: string }) {
   return (
     <button
       title={title}
@@ -141,6 +141,21 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
+    const applyAndReviewButton = (
+      <OutlineButton
+        className="mb-2 ml-2"
+        title="Apply & Review"
+        description="Apply & Review"
+        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+          postMessageToVsCode({
+            type: "applyAndReviewTask",
+            minionTaskId: minionTask.id,
+          });
+          e.stopPropagation();
+        }}
+      />
+    );
+
     const chevronButton = isExpanded ? <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" /> : <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />;
 
     const closeButton = (
@@ -155,8 +170,6 @@ export const MinionTaskComponent = forwardRef(
         className="h-6 w-6 min-w-min cursor-pointer ml-2"
       />
     );
-
-    const diffButton = <OutlineButton className="mb-2 ml-2" title="Show Diff" description="Diff" onClick={handleClickShowDiff} />;
 
     const retryButton = (
       <OutlineButton
@@ -216,6 +229,7 @@ export const MinionTaskComponent = forwardRef(
               <span className="truncate">{minionTask.shortName}</span>
             </div>
             {minionTask.waiting && !minionTask.stopped && forceButton}
+            {minionTask.modificationDescription && minionTask.executionStage === FINISHED_STAGE_NAME && !minionTask.modificationApplied && applyAndReviewButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}
@@ -243,8 +257,6 @@ export const MinionTaskComponent = forwardRef(
                   >
                     {minionTask.documentName}
                   </span>
-
-                  {minionTask.executionStage === FINISHED_STAGE_NAME && diffButton}
                 </span>
 
                 <div className="mb-2">Status:</div>

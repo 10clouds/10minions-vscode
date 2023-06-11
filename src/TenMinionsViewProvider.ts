@@ -130,6 +130,10 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         this.executionsManager.showDiff(data.minionTaskId);
         break;
       }
+      case "applyAndReviewTask": {
+        this.executionsManager.applyAndReviewTask(data.minionTaskId);
+        break;
+      }
       case "reRunExecution": {
         this.executionsManager.reRunExecution(data.minionTaskId, data.newUserQuery);
         break;
