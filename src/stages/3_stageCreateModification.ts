@@ -104,7 +104,7 @@ ${fullFileContents}
     : ""
 }
 
-===== CODE SNIPPET ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : ""}====
+===== CODE SNIPPET ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : `(Language: ${document.languageId})`} ====
 ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====

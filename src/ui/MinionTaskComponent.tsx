@@ -15,23 +15,43 @@ function adjustTextAreaHeight(target: HTMLTextAreaElement) {
 // Constants
 const MAX_PREVIEW_LENGTH = 100;
 
-function getUserQueryPreview(userQuery: string) {
-  const lines = userQuery.split("\n");
-  let preview = lines[0].substring(0, MAX_PREVIEW_LENGTH);
+function useUserQueryPreview(userQuery: string) {
+  const [preview, setPreview] = React.useState("");
 
-  // Add ellipsis if the query exceeds the preview length or has multiple lines
-  if (lines.length > 1 || lines[0].length > MAX_PREVIEW_LENGTH) {
-    preview += "…";
-  }
+  React.useEffect(() => {
+    const lines = userQuery.split("\n");
+    let newPreview = lines[0].substring(0, MAX_PREVIEW_LENGTH);
+
+    if (lines.length > 1 || lines[0].length > MAX_PREVIEW_LENGTH) {
+      newPreview += "…";
+    }
+
+    setPreview(newPreview);
+  }, [userQuery]);
 
   return preview;
+}
+
+function OutlineButton({ title, onClick, description, className = "" }: { description: string; title: string; onClick: () => void; className?: string }) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      style={{
+        borderColor: "var(--vscode-button-separator)",
+      }}
+      className={"cursor-pointer border rounded px-2 " + className}
+    >
+      {description}
+    </button>
+  );
 }
 
 export const MinionTaskComponent = forwardRef(
   ({ minionTask, ...props }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { className, ...propsWithoutClassName } = props;
 
-    const userQueryPreview = getUserQueryPreview(minionTask.userQuery);
+    const userQueryPreview = useUserQueryPreview(minionTask.userQuery);
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     // State variables for managing the input field state
@@ -94,7 +114,9 @@ export const MinionTaskComponent = forwardRef(
     let RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
 
     const forceButton = (
-      <button
+      <OutlineButton
+        className="mb-2 ml-2"
+        description="Force"
         title="Force execution anyway"
         onClick={() => {
           postMessageToVsCode({
@@ -102,31 +124,21 @@ export const MinionTaskComponent = forwardRef(
             minionTaskId: minionTask.id,
           });
         }}
-        style={{
-          borderColor: "var(--vscode-button-separator)",
-        }}
-        className="cursor-pointer border rounded px-2 ml-2"
-      >
-        Force
-      </button>
+      />
     );
 
     const stopButton = (
-      <button
+      <OutlineButton
+        className="mb-2 ml-2"
         title="Stop Execution"
+        description="Stop"
         onClick={() => {
           postMessageToVsCode({
             type: "stopExecution",
             minionTaskId: minionTask.id,
           });
         }}
-        style={{
-          borderColor: "var(--vscode-button-separator)",
-        }}
-        className="cursor-pointer border rounded px-2 ml-2"
-      >
-        Stop
-      </button>
+      />
     );
 
     const chevronButton = isExpanded ? <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" /> : <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />;
@@ -144,53 +156,32 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
-    const diffButton = (
-      <button
-        title="Show Diff"
-        style={{
-          borderColor: "var(--vscode-button-separator)",
-        }}
-        className="cursor-pointer border rounded px-2 ml-2"
-        onClick={handleClickShowDiff}
-      >
-        Diff
-      </button>
-    );
+    const diffButton = <OutlineButton className="mb-2 ml-2" title="Show Diff" description="Diff" onClick={handleClickShowDiff} />;
 
     const retryButton = (
-      <button
+      <OutlineButton
         title="Retry Execution"
+        description="Retry"
         onClick={() => {
           postMessageToVsCode({
             type: "reRunExecution",
             minionTaskId: minionTask.id,
           });
         }}
-        style={{
-          borderColor: "var(--vscode-button-separator)",
-        }}
-        className="cursor-pointer border rounded px-2 ml-2"
-      >
-        Retry
-      </button>
+      />
     );
 
     const openLogFileButton = (
-      <button
+      <OutlineButton
         title="Open Log"
-        className="cursor-pointer mb-2 border rounded px-2"
+        description="Open Log file"
         onClick={() => {
           postMessageToVsCode({
             type: "openLog",
             minionTaskId: minionTask.id,
           });
         }}
-        style={{
-          borderColor: "var(--vscode-button-separator)",
-        }}
-      >
-        Open Log file
-      </button>
+      />
     );
 
     return (

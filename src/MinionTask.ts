@@ -27,7 +27,7 @@ export type SerializedMinionTask = {
   modificationProcedure: string;
   modificationApplied: boolean;
   executionStage: string;
-  classification?: TASK_CLASSIFICATION_NAME;
+  classification: TASK_CLASSIFICATION_NAME | null;
   logContent: string;
 };
 
@@ -55,7 +55,7 @@ export class MinionTask {
       modificationProcedure: this.modificationProcedure,
       modificationApplied: this.modificationApplied,
       executionStage: this.executionStage,
-      classification: this.classification,
+      classification: this.classification === undefined ? null : this.classification,
       logContent: this.logContent,
     };
   }
@@ -80,7 +80,7 @@ export class MinionTask {
       modificationProcedure: data.modificationProcedure,
       modificationApplied: data.modificationApplied,
       executionStage: data.executionStage,
-      classification: data.classification,
+      classification: data.classification === null ? undefined : data.classification,
       onChanged: async (important: boolean) => {},
       logContent: data.logContent,
     });

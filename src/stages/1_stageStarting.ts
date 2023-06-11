@@ -7,6 +7,7 @@ export async function stageStarting(this: MinionTask) {
   this.originalContent = document.getText();
 
   this.clearLog();
+  this.appendToLog("Id: " + this.id + "\n");
   this.appendToLog("File: " + this.baseName + "\n");
   this.appendToLog("Task: " + this.userQuery + "\n");
   this.appendToLog("\n");

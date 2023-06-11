@@ -85,6 +85,7 @@ export class AnalyticsManager {
     // Serialize the minion task
     const serializedMinionTask = minionTask.serialize();
 
+
     // Prepare the data to be stored in Firestore
     const firestoreData = {
       ...this.commonAnalyticsData(),

@@ -56,7 +56,7 @@ Your job is to classify the task, so tomorrow, when you get back to this task, y
 Possible classifications:
 ${TASK_CLASSIFICATION.map((c) => `* ${c.name} - ${c.description}`).join("\n")}
 
-===== CODE ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : ""}====
+===== CODE ${selectedText ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)` : `(Language: ${document.languageId})`} ====
 ${selectedText ? selectedText : fullFileContents}
 
 ${fileContext}
