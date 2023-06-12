@@ -133,8 +133,8 @@ export const MinionTaskComponent = forwardRef(
     const assessButton = (
       <OutlineButton
         className="mb-2 ml-2"
-        title="Assess"
-        description="Assess"
+        title="Apply and Review"
+        description="Apply"
         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
           postMessageToVsCode({
             type: "applyAndReviewTask",
