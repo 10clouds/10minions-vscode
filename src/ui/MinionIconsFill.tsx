@@ -144,10 +144,10 @@ export const ALL_MINION_ICONS_FILL = [
   MinionIconFill6,
 
   MinionIconFill7,
-  MinionIconFill8,
+  //MinionIconFill8,// remove this as well
   MinionIconFill9,
 
   MinionIconFill10,
-  MinionIconFill11,
+  //MinionIconFill11,// sad one :()
   MinionIconFill12,
 ];

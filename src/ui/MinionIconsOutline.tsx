@@ -328,10 +328,10 @@ export const ALL_MINION_ICONS_OUTLINE = [
   MinionIconOutline6,
 
   MinionIconOutline7,
-  MinionIconOutline8,
+  //MinionIconOutline8,
   MinionIconOutline9,
 
   MinionIconOutline10,
-  MinionIconOutline11,
+  //MinionIconOutline11, sad one :(
   MinionIconOutline12,
 ];

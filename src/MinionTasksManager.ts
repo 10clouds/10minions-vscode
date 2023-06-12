@@ -214,9 +214,9 @@ export class MinionTasksManager {
   }
 
   acquireMinionIndex(): number {
-    const NUM_TOTAL_ROBOTS = 12;
+    const NUM_TOTAL_ROBOTS = 10;
     //get all free indices
-    const ALL_FILL_ROBOT_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const ALL_FILL_ROBOT_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     const freeIndices = ALL_FILL_ROBOT_ICONS.map((e, i) => i).filter((i) => !this.minionTasks.find((e) => e.minionIndex === i));
 
     //return random
