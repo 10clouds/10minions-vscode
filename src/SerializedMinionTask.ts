@@ -41,7 +41,7 @@ export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTas
     },
     selectedText: minionTask.selectedText,
     originalContent: minionTask.originalContent,
-    finalContent: minionTask.finalContent,
+    finalContent: minionTask.contentAfterApply,
     startTime: minionTask.startTime,
     shortName: minionTask.shortName,
     modificationDescription: minionTask.modificationDescription,

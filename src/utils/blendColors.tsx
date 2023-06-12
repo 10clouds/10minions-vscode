@@ -88,3 +88,4 @@ export function getBaseColor(execution: MinionTaskUIInfo) {
     return BRAND_COLOR;
   }
 }
+

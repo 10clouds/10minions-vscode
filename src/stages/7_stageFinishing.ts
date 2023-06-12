@@ -5,8 +5,13 @@ import { MinionTask } from "../MinionTask";
 export async function stageFinishing(this: MinionTask) {
   vscode.window.showInformationMessage(`${this.shortName} is ready to be applied!`);
 
-  let document = await this.document();
-  this.finalContent = document.getText();
+  this.appendToLog(
+    [
+      `////////////////////////////////////////////////////////////////////////////////`,
+      `// ${this.executionStage}`,
+      `////////////////////////////////////////////////////////////////////////////////`,
+    ].join("\n") + "\n\n"
+  );
 
   this.stopExecution();
 

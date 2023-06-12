@@ -159,6 +159,7 @@ ${minionTask.modificationDescription}
   });
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
+  minionTask.contentAfterApply = document.getText();
   minionTask.appendToLog(`Applied modification as plain top comments\n\n`);;
   minionTask.onChanged(true);
   vscode.window.showInformationMessage(`Modification applied successfully.`);
@@ -185,7 +186,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     minionTask.originalContent = document.getText();
 
-    let modifiedContent = applyModificationProcedure(`${getCommentForLanguage(document.languageId, `Task: ${minionTask.userQuery}`)}\n\nminionTask.originalContent`, minionTask.modificationProcedure);
+    let modifiedContent = applyModificationProcedure(`${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}`, minionTask.modificationProcedure);
     console.log(`modifiedContent: "${modifiedContent}"`);
 
     await applyWorkspaceEdit(async (edit) => {
@@ -200,12 +201,13 @@ export async function applyMinionTask(minionTask: MinionTask) {
     });
 
     minionTask.executionStage = APPLIED_STAGE_NAME;
+    minionTask.contentAfterApply = document.getText();
     minionTask.appendToLog(`Applied changes for user review.\n\n`);;
     minionTask.onChanged(true);
 
     vscode.window.showInformationMessage(`Modification applied successfully.`);
   } catch (error) {
-    vscode.window.showErrorMessage(`Failed to apply modification: ${String(error)}. Applying fallback.`);
+    console.log(`Failed to apply modification: ${String(error)}`);
     applyFallback(minionTask);
   }
 }

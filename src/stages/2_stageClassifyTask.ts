@@ -98,7 +98,9 @@ export async function stageClassifyTask(this: MinionTask) {
     this.originalContent,
     async (chunk: string) => {
       this.reportSmallProgress();
-      this.appendToLog(chunk);
+      if (EXTENSIVE_DEBUG) {
+        this.appendToLog(chunk);
+      }
     },
     () => {
       return this.stopped;
@@ -115,5 +117,7 @@ export async function stageClassifyTask(this: MinionTask) {
 
   this.classification = classifications[0].name;
 
-  this.appendToLog(`Classification: ${this.classification}\n\n`);
+  if (EXTENSIVE_DEBUG) {
+    this.appendToLog(`Classification: ${this.classification}\n\n`);
+  }
 }

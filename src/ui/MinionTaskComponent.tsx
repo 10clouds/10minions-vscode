@@ -220,6 +220,10 @@ export const MinionTaskComponent = forwardRef(
     );
 
     function isError(execution: MinionTaskUIInfo) {
+      if (!execution.stopped) {
+        return false;
+      }
+
       if (execution.executionStage === FINISHED_STAGE_NAME) {
         return false;
       }
@@ -269,6 +273,7 @@ export const MinionTaskComponent = forwardRef(
             {minionTask.modificationDescription &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
               (minionTask.classification === "AnswerQuestion" ? markAsReadButton : assessButton)}
+            {(minionTask.executionStage === CANCELED_STAGE_NAME || isError(minionTask)) && retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}

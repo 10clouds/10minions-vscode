@@ -95,10 +95,12 @@ export async function processOpenAIResponseStream({
   response,
   onChunk,
   isCancelled,
+  controller,
 }: {
   response: Response;
   onChunk: (chunk: string) => Promise<void>;
   isCancelled: () => boolean;
+  controller: AbortController;
 }) {
   const stream = response.body!;
   const decoder = new TextDecoder("utf-8");
@@ -107,7 +109,7 @@ export async function processOpenAIResponseStream({
   return await new Promise<string>((resolve, reject) => {
     stream.on("data", async (value) => {
       try {
-        if (isCancelled()) {
+        if (isCancelled() || controller.signal.aborted) {
           stream.removeAllListeners();
           reject(CANCELED_STAGE_NAME);
           return;
@@ -132,7 +134,7 @@ export async function processOpenAIResponseStream({
     });
 
     stream.on("end", () => {
-      if (isCancelled()) {
+      if (isCancelled() || controller.signal.aborted) {
         stream.removeAllListeners();
         reject(CANCELED_STAGE_NAME);
         return;

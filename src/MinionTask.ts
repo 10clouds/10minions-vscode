@@ -37,7 +37,7 @@ export class MinionTask {
   //
   shortName: string;
   
-  finalContent: string;
+  contentAfterApply: string;
   contentWhenDismissed: string;
   currentStageIndex: number = 0;
   startTime: number;
@@ -95,7 +95,7 @@ export class MinionTask {
     this.selection = selection;
     this.selectedText = selectedText;
     this._originalContent = originalContent;
-    this.finalContent = finalContent;
+    this.contentAfterApply = finalContent;
     this.contentWhenDismissed = contentWhenDismissed;
     this.startTime = startTime;
     this.onChanged = onChanged;
@@ -218,15 +218,6 @@ export class MinionTask {
       try {
         while (this.currentStageIndex < STAGES.length && !this.stopped) {
           this.executionStage = STAGES[this.currentStageIndex].name;
-
-          this.appendToLog(
-            [
-              `////////////////////////////////////////////////////////////////////////////////`,
-              `// Stage ${this.currentStageIndex + 1}: ${this.executionStage}`,
-              `////////////////////////////////////////////////////////////////////////////////`,
-            ].join("\n") + "\n\n"
-          );
-
 
           await STAGES[this.currentStageIndex].execution.apply(this);
 

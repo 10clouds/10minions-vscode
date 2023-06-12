@@ -4,7 +4,6 @@ import { AnalyticsManager } from "./AnalyticsManager";
 import { CommandHistoryManager } from "./CommandHistoryManager";
 import { MessageToVSCode, MessageToWebView } from "./Messages";
 import { MinionTasksManager } from "./MinionTasksManager";
-import { MinionTask } from "./MinionTask";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
@@ -25,11 +24,17 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     this.analyticsManager = new AnalyticsManager(context);
   }
 
-  public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
-    this._view = webviewView;
+public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
+  this._view = webviewView;
 
-    this.commandHistoryManager.updateView(webviewView);
-    this.executionsManager.updateView(webviewView);
+  this.commandHistoryManager.updateView(webviewView);
+  this.executionsManager.updateView(webviewView);
+
+  // Add an event listener for visibility change
+  webviewView.onDidChangeVisibility(() => this.updateSidebarVisibility(webviewView.visible));
+
+  // Adding an event listener for when the active text editor selection changes
+  vscode.window.onDidChangeTextEditorSelection(() => this.handleSelectionChange());
 
     // set options for the webview, allow scripts
     webviewView.webview.options = {
@@ -101,6 +106,33 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
+  timeoutRef?: NodeJS.Timeout;
+
+private handleSelectionChange() {
+  const activeEditor = vscode.window.activeTextEditor;
+  const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
+
+  // Clear previous timeout before setting a new one
+  if (this.timeoutRef) {
+    clearTimeout(this.timeoutRef);
+  }
+
+  // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
+  this.timeoutRef = setTimeout(() => {
+    postMessageToWebView(this._view, {
+      type: "selectedTextUpdated",
+      selectedText: selectedText,
+    });
+  }, 1000);
+}
+
+private updateSidebarVisibility(visible: boolean) {
+  postMessageToWebView(this._view, {
+    type: "updateSidebarVisibility",
+    value: visible,
+  });
+}
+
   async handleWebviewMessage(data: MessageToVSCode) {
     console.log("CMD", data);
     const activeEditor = vscode.window.activeTextEditor;
@@ -169,12 +201,17 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       }
       case "getSuggestions": {
         const input = data.input || "";
-        const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
+        this.commandHistoryManager.getCommandSuggestionGPT(
+          input,
+          (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "",
+          activeEditor?.document.languageId || ""
+        );
+        /*const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
         console.log(`Suggestion: ${suggestion}`);
         postMessageToWebView(this._view, {
           type: "suggestion",
           value: suggestion,
-        });
+        });*/
         break;
       }
       case "closeExecution": {
@@ -214,3 +251,13 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 }
 
 
+/*
+Recently applied task: Send a message to webview if the current selection / open document changed, so we can track the selectedText
+*/
+
+
+/*
+Recently applied task: Implement updating webview with info whenever the extension sidebar is open and visible
+
+Do this through updateSidebarVisibility messaage
+*/

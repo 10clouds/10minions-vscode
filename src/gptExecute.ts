@@ -53,7 +53,7 @@ export async function gptExecute({
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await queryOpenAI({ fullPrompt, maxTokens, model, temperature, controller });
-      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled });
+      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled, controller });
 
       reportOpenAICallToAnalytics({ result });
 

@@ -92,6 +92,11 @@ async function planAndWrite(
     return "";
   }
 
+
+
+
+
+
   let promptWithContext = `
 ${CLASSIFICATION_PROMPTS[classification](selectedText)}
 
@@ -125,6 +130,14 @@ export async function stageCreateModification(this: MinionTask) {
   if (this.classification === undefined) {
     throw new Error("Classification is undefined");
   }
+
+  this.appendToLog(
+    [
+      `////////////////////////////////////////////////////////////////////////////////`,
+      `// ${this.executionStage}`,
+      `////////////////////////////////////////////////////////////////////////////////`,
+    ].join("\n") + "\n\n"
+  );
 
   this.modificationDescription = "";
   this.modificationDescription = await planAndWrite(

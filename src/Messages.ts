@@ -3,9 +3,11 @@ import { MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 export type MessageToWebView =
   | { type: "clearAndfocusOnInput" }
   | { type: "executionsUpdated"; executions: MinionTaskUIInfo[] }
+  | { type: "updateSidebarVisibility"; value: boolean }
   | { type: "apiKeySet"; value: boolean }
   | { type: "tokenCount"; value: number }
-  | { type: "suggestion"; value: string };
+  | { type: "suggestion"; value: string }
+  | { type: "selectedTextUpdated"; selectedText: string };
 
 export type MessageToVSCode =
   | { type: "getTokenCount" }
@@ -21,4 +23,5 @@ export type MessageToVSCode =
   | { type: "applyAndReviewTask"; minionTaskId: string }
   | { type: "openSelection"; minionTaskId: string }
   | { type: "markAsApplied"; minionTaskId: string };
+  
 
