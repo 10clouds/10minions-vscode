@@ -302,25 +302,26 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
                 <MinionTaskListComponent executionList={executionList} />
               </div>
-
-              <div
-                // Update className to achieve better centering, margin, padding, and width
-                className="text-center p-4 fixed bottom-0 w-full"
-                key="credits"
-                style={{
-                  backgroundColor: "var(--vscode-sideBar-background)",
-                  zIndex: 1000,
-                }}
-              >
-                <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
-                  by <br />
-                  <Logo className="inline-block w-20" />
-                </a>
-              </div>
             </div>
           </>
         )}
+
+        
       </div>
+      <div
+          // Update className to achieve better centering, margin, padding, and width
+          className="text-center py-4 fixed bottom-0 w-full"
+          key="credits"
+          style={{
+            backgroundColor: "var(--vscode-sideBar-background)",
+            zIndex: 1000,
+          }}
+        >
+          <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
+            by <br />
+            <Logo className="inline-block w-20" />
+          </a>
+        </div>
     </div>
   );
 };
