@@ -206,12 +206,6 @@ private updateSidebarVisibility(visible: boolean) {
           (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "",
           activeEditor?.document.languageId || ""
         );
-        /*const suggestion = this.commandHistoryManager.getCommandSuggestion(input);
-        console.log(`Suggestion: ${suggestion}`);
-        postMessageToWebView(this._view, {
-          type: "suggestion",
-          value: suggestion,
-        });*/
         break;
       }
       case "closeExecution": {
