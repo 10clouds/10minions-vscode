@@ -19,4 +19,6 @@ export type MessageToVSCode =
   | { type: "closeExecution"; minionTaskId: string }
   | { type: "readyForMessages" }
   | { type: "applyAndReviewTask"; minionTaskId: string }
-  | { type: "openSelection"; minionTaskId: string };
+  | { type: "openSelection"; minionTaskId: string }
+  | { type: "markAsApplied"; minionTaskId: string };
+

@@ -160,7 +160,9 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
       this.modificationDescription,
       async (chunk: string) => {
         this.reportSmallProgress();
-        this.appendToLog( chunk);
+        if (EXTENSIVE_DEBUG) {
+          this.appendToLog(chunk);
+        }
       },
       () => {
         return this.stopped;

@@ -1,4 +1,5 @@
 import { MinionTask } from "./MinionTask";
+import { MinionTasksManager } from "./MinionTasksManager";
 import { TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import * as vscode from "vscode";
 
@@ -53,7 +54,7 @@ export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTas
 }
 
 export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
-  return new MinionTask({
+  let minionTask = new MinionTask({
     id: data.id,
     minionIndex: data.minionIndex || 0,
     documentURI: data.documentURI,
@@ -71,8 +72,16 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     modificationProcedure: data.modificationProcedure,
     executionStage: data.executionStage,
     classification: data.classification === null ? undefined : data.classification,
-    onChanged: async (important: boolean) => {},
+    onChanged: async (important) => {
+      if (important) {
+        MinionTasksManager.instance.notifyExecutionsUpdatedImmediate(minionTask, true);
+      } else {
+        MinionTasksManager.instance.notifyExecutionsUpdated(minionTask);
+      }
+    },
     logContent: data.logContent,
     contentWhenDismissed: data.contentWhenDismissed,
   });
+
+  return minionTask;
 }

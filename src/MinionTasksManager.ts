@@ -4,7 +4,7 @@ import { AnalyticsManager } from "./AnalyticsManager";
 import { MinionTask } from "./MinionTask";
 import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from "./SerializedMinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 import { applyMinionTask } from "./utils/applyMinionTask";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 
@@ -69,6 +69,7 @@ class OriginalContentProvider implements vscode.TextDocumentContentProvider {
 }
 
 export class MinionTasksManager {
+
   public static instance: MinionTasksManager;
 
   private minionTasks: MinionTask[] = [];
@@ -138,6 +139,14 @@ export class MinionTasksManager {
     }
   }
 
+  async markAsApplied(minionTaskId: string) {
+    let minionTask = this.getExecutionById(minionTaskId);
+    if (minionTask) {
+      minionTask.executionStage = APPLIED_STAGE_NAME;
+      await minionTask.onChanged(true);
+    }
+  }
+
   async openLog(minionTaskId: string) {
     let minionTask = this.getExecutionById(minionTaskId);
 
@@ -188,8 +197,9 @@ export class MinionTasksManager {
       selectedText: activeEditor.document.getText(activeEditor.selection),
       minionIndex: this.acquireMinionIndex(),
       onChanged: async (important) => {
+        //TODO: This is copied around code at least 3 times. Refactor it.
         if (important) {
-          this.notifyExecutionsUpdatedImmediate(execution, important);
+          this.notifyExecutionsUpdatedImmediate(execution, true);
         } else {
           this.notifyExecutionsUpdated(execution);
         }
@@ -257,6 +267,7 @@ export class MinionTasksManager {
         selectedText: document.getText(newSelection),
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
+          //TODO: This is copied around code at least 3 times. Refactor it.
           if (important) {
             this.notifyExecutionsUpdatedImmediate(newExecution, true);
           } else {

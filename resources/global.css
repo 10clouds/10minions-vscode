@@ -1,3 +1,31 @@
+@keyframes error-robot {
+  0%, 100% {
+    transform: translateY(0) rotate(180deg);
+  }
+  1% {
+    transform: translateY(0px) rotate(170deg); /* Increased rotation from 178deg to 170deg */
+  }
+  2% {
+    transform: translateY(1px) rotate(190deg); /* Increased rotation from 182deg to 190deg */
+  }
+  3% {
+    transform: translateY(0px) rotate(170deg); /* Increased rotation from 178deg to 170deg */
+  }
+  4% {
+    transform: translateY(0px) rotate(190deg); /* Increased rotation from 182deg to 190deg */
+  }
+  5% {
+    transform: translateY(0px) rotate(170deg); /* Increased rotation from 178deg to 170deg */
+  }
+  10% {
+    transform: translateY(0) rotate(180deg);
+  }
+}
+
+.error-robot {
+  animation: error-robot 6.6s linear infinite;
+}
+
 @keyframes wave {
   0% {
     background-position: 100% 50%;

@@ -18,7 +18,19 @@ export function MinionTaskListComponent({ executionList }: { executionList: Mini
           opacity: "1",
         },
       }}
-      leaveAnimation="elevator"
+      leaveAnimation={{
+        from: {
+          transform: "translateY(0)",
+          animationTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
+          opacity: "1",
+        },
+        to: {
+          transform: "translateY(-10%)",
+          animationTimingFunction: "cubic-bezier(0.8, 0, 1, 1)",
+          opacity: "0.1",
+        },
+      }}
+      
     >
       {executionList.length === 0 && (
         <div key="no-minions" className="text-center">

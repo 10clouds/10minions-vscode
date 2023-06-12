@@ -4,6 +4,7 @@ import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { MinionTask } from "../MinionTask";
 import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
+import { getCommentForLanguage } from "./comments";
 
 function applyModificationProcedure(originalCode: string, modificationProcedure: string) {
   let currentCode = originalCode;
@@ -158,6 +159,7 @@ ${minionTask.modificationDescription}
   });
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
+  minionTask.appendToLog(`Applied modification as plain top comments\n\n`);;
   minionTask.onChanged(true);
   vscode.window.showInformationMessage(`Modification applied successfully.`);
 }
@@ -180,11 +182,12 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     let document = await minionTask.document();
 
-    let modifiedContent = applyModificationProcedure(minionTask.originalContent, minionTask.modificationProcedure);
-
-    console.log(`modifiedContent: "${modifiedContent}"`);
 
     minionTask.originalContent = document.getText();
+
+    let modifiedContent = applyModificationProcedure(`${getCommentForLanguage(document.languageId, `Task: ${minionTask.userQuery}`)}\n\nminionTask.originalContent`, minionTask.modificationProcedure);
+    console.log(`modifiedContent: "${modifiedContent}"`);
+
     await applyWorkspaceEdit(async (edit) => {
       edit.replace(
         document.uri,
@@ -197,6 +200,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
     });
 
     minionTask.executionStage = APPLIED_STAGE_NAME;
+    minionTask.appendToLog(`Applied changes for user review.\n\n`);;
     minionTask.onChanged(true);
 
     vscode.window.showInformationMessage(`Modification applied successfully.`);

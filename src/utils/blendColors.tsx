@@ -2,7 +2,7 @@ import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME, APPLIED_STA
 
 export const BRAND_COLOR = "#5e20e5";
 export const ERROR_COLOR = "#D8595A";
-export const SUCESS_COLOR = "#2AB678";
+export const SUCCESS_COLOR = "#2AB678";
 
 export function convertToHex(...colors: string[]): string {
   for (let color of colors) {
@@ -72,15 +72,15 @@ export function getOpacity(execution: MinionTaskUIInfo) {
 export function getBaseColor(execution: MinionTaskUIInfo) {
   if (execution.stopped) {
     if (execution.executionStage === FINISHED_STAGE_NAME) {
-      return SUCESS_COLOR;
+      return SUCCESS_COLOR;
     }
 
     if (execution.executionStage === CANCELED_STAGE_NAME) {
-      return '--vscode-sideBar-background';
+      return "--vscode-sideBar-background";
     }
 
     if (execution.executionStage === APPLIED_STAGE_NAME) {
-      return '--vscode-sideBar-foreground';
+      return blendWithForeground(SUCCESS_COLOR, 0.5);
     }
 
     return ERROR_COLOR;

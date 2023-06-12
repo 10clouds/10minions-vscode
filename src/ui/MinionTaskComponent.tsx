@@ -3,7 +3,7 @@ import * as React from "react";
 import { forwardRef } from "react";
 import { blendWithForeground, getBaseColor } from "../utils/blendColors";
 import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
-import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 
@@ -153,7 +153,7 @@ export const MinionTaskComponent = forwardRef(
         description="Acknowledge"
         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
           postMessageToVsCode({
-            type: "applyAndReviewTask",
+            type: "markAsApplied",
             minionTaskId: minionTask.id,
           });
           setIsExpanded(true);
@@ -167,11 +167,12 @@ export const MinionTaskComponent = forwardRef(
     const closeButton = (
       <XMarkIcon
         title="Close Execution"
-        onClick={() => {
+        onClick={(e) => {
           postMessageToVsCode({
             type: "closeExecution",
             minionTaskId: minionTask.id,
           });
+          e.stopPropagation();
         }}
         className="h-6 w-6 min-w-min cursor-pointer ml-2"
       />
@@ -218,6 +219,22 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
+    function isError(execution: MinionTaskUIInfo) {
+      if (execution.executionStage === FINISHED_STAGE_NAME) {
+        return false;
+      }
+  
+      if (execution.executionStage === CANCELED_STAGE_NAME) {
+        return false;
+      }
+  
+      if (execution.executionStage === APPLIED_STAGE_NAME) {
+        return false;
+      }
+  
+      return true;
+    }
+
     return (
       <div
         ref={ref}
@@ -239,7 +256,7 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""} ${isError(minionTask) ? "error-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
@@ -277,7 +294,7 @@ export const MinionTaskComponent = forwardRef(
                       });
                     }}
                   >
-                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && diffButton}
+                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && minionTask.classification  !== "AnswerQuestion" && diffButton}
                   </span>
                 </span>
 
