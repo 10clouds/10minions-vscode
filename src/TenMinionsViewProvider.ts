@@ -247,10 +247,3 @@ private updateSidebarVisibility(visible: boolean) {
     </html>`;
   }
 }
-
-/*
-Recently applied task: Fix this error:
-
-Identifier expected.
-Line: 177 Column: 31
-*/

@@ -7,9 +7,11 @@
   "pricing": "Free",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/10clouds/10minions"
+    "url": "https://github.com/10clouds/10Minions",
+    "issues": "https://github.com/10clouds/10Minions/issues",
+    "discord": "https://discord.gg/your_invite_link"
   },
-  "version": "0.9.1",
+  "version": "0.9.4",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
@@ -23,11 +25,35 @@
     "ai",
     "explain",
     "find bugs",
-    "explain ",
-    "refactor"
+    "refactor",
+    "typescript",
+    "autocomplete",
+    "c#",
+    "c++",
+    "codex",
+    "co-pilot",
+    "documentation",
+    "go",
+    "golang",
+    "intellisense",
+    "java",
+    "javascript",
+    "kotlin",
+    "openai",
+    "php",
+    "pilot",
+    "python",
+    "refactor",
+    "ruby",
+    "snippets"
   ],
   "categories": [
-    "Other"
+      "Programming Languages",
+      "Linters",
+      "Formatters",
+      "Snippets",
+      "Machine Learning",
+      "Education"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
