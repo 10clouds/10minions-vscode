@@ -1,11 +1,46 @@
 import * as vscode from "vscode";
 import { gptExecute } from "./gptExecute";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
+import { MessageToWebViewType } from "./Messages";
+
+const BASE_COMMANDS = [
+  { command: "Refactor this", timeStamp: Date.now() },
+  { command: "Clean this up", timeStamp: Date.now() },
+  { command: "How does this work?", timeStamp: Date.now() },
+  { command: "Document this", timeStamp: Date.now() },
+  { command: "Write tests for this", timeStamp: Date.now() },
+  { command: "Make this UI look pretty", timeStamp: Date.now() },
+  { command: "Rename this to something sensible", timeStamp: Date.now() },
+  { command: "Are there any bugs? Fix them", timeStamp: Date.now() },
+  { command: "Rework this so now it also does X", timeStamp: Date.now() },
+  { command: "Optimize this for performance", timeStamp: Date.now() },
+  { command: "Add error handling to this", timeStamp: Date.now() },
+  { command: "Implement this functionality", timeStamp: Date.now() },
+  { command: "Migrate this to a different library", timeStamp: Date.now() },
+  { command: "Refactor this to use design pattern X", timeStamp: Date.now() },
+  { command: "Integrate this with external service X", timeStamp: Date.now() },
+];
+
+function shuffledBaseCommands(): { command: string; timeStamp: number }[] {
+  const randomizedCommands = BASE_COMMANDS.slice(); // Make a copy of the original array to avoid modifying it
+  for (let i = randomizedCommands.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [randomizedCommands[i], randomizedCommands[j]] = [randomizedCommands[j], randomizedCommands[i]];
+  }
+  return randomizedCommands;
+}
 
 export class CommandHistoryManager {
   private commandHistory: { command: string; timeStamp: number }[] = [];
   private _view?: vscode.WebviewView;
   private _context: vscode.ExtensionContext;
+
+  private suggestionProcessing: boolean = false;
+
+  private gptSuggestionController: AbortController = new AbortController();
+  private currentSuggestion = "";
+  private lastInput?: string = undefined;
+  private lastCode?: string = undefined;
 
   constructor(private context: vscode.ExtensionContext) {
     this._context = context;
@@ -14,16 +49,7 @@ export class CommandHistoryManager {
 
     //if is not a list - reset
     if (!Array.isArray(commandHistory)) {
-      this.context.globalState.update("10minions.commandHistory", []);
-      commandHistory = [
-        { command: "Refactor this", timeStamp: Date.now() },
-        { command: "Clean this up", timeStamp: Date.now() },
-        { command: "Explain", timeStamp: Date.now() },
-        { command: "Make it pretty", timeStamp: Date.now() },
-        { command: "Rename this to something sensible", timeStamp: Date.now() },
-        { command: "Are there any bugs? Fix them", timeStamp: Date.now() },
-        { command: "Rework this so now it also does X", timeStamp: Date.now() },
-      ]
+      commandHistory = [];
     }
 
     this.commandHistory = commandHistory as { command: string; timeStamp: number }[];
@@ -54,70 +80,57 @@ export class CommandHistoryManager {
   }
 
   // Move getRandomPreviousCommands() to CommandHistoryManager
-  private getRandomPreviousCommands(n: number): string[] {
+  private getRelatedPreviousCommands(n: number, input: string): string[] {
     // Step 1: Check if command history is empty
     if (this.commandHistory.length === 0) {
       return [];
     }
-  
-    // Step 2: Make sure 'n' is not greater than the length of the command history
-    n = Math.min(n, this.commandHistory.length);
-  
-    // Step 3: Create an array of unique random indices
-    const uniqueIndices: Set<number> = new Set();
-    while (uniqueIndices.size < n) {
-      const randomIndex = Math.floor(Math.random() * this.commandHistory.length);
-      uniqueIndices.add(randomIndex);
-    }
-  
-    // Step 4: Use these indices to return an array of 'n' unique random command strings
-    const randomCommands: string[] = [];
-    for (const index of uniqueIndices) {
-      randomCommands.push(this.commandHistory[index].command);
-    }
-  
-    return randomCommands;
+
+    // Step 2: Calculate relevance scores for each command in the history
+    const scoredItems: { command: string; score: number }[] = this.commandHistory.map((commandObj) => {
+      const command = commandObj.command;
+
+      // Calculate matching character count
+      let matchingCharCount = 0;
+      for (const char of input) {
+        if (command.includes(char)) {
+          matchingCharCount++;
+        }
+      }
+
+      const score = matchingCharCount / input.length;
+
+      return { command, score };
+    });
+
+    // Step 3: Sort the scored items by score in descending order
+    scoredItems.sort((a, b) => b.score - a.score);
+
+    // Add Step 3.5: Filter commands to only keep those with one line and up to 400 characters long
+    const filteredItems = scoredItems.filter(item => item.command.length <= 400 && !item.command.includes('\n'));
+
+    // Step 4: Take the top 'n' commands, making sure 'n' is not greater than the length of the filtered command history
+    n = Math.min(n, filteredItems.length);
+    const relatedCommands = filteredItems.slice(0, n).map((item) => item.command);
+
+    return relatedCommands;
   }
 
-  gptSuggestionController: AbortController = new AbortController();
-  currentSuggestion = "";
-  lastInput?: string = undefined;
-  lastCode?: string = undefined;
-
   async getCommandSuggestionGPT(input: string, code: string, languageId: string) {
-    if (input === this.lastInput && code === this.lastCode)
+    if (input === this.lastInput && code === this.lastCode) return;
+  
+    if (input.length > 400 || input.includes("\n")) {
       return;
-
-
+    }
+  
     // Abort previous suggestion
     this.gptSuggestionController.abort();
     this.gptSuggestionController = new AbortController();
-
-    if (input.length > 400 || input.includes("\n")) {
-      return "";
-    }
-
-    this.lastCode = code;
-    this.lastInput = input;
-    
-    const previousCommands = this.getRandomPreviousCommands(10);
-
-    if (input.length === 0) {
-      previousCommands[0]
-    }
-
-    // Generate a prompt that includes the input and some random previous commands
-    
-    const previousCommandsSection = `${previousCommands
-      .map((c, i) =>
-        `
-=== COMMAND EXAMPLE ${i + 1} ===
-${c}
-`.trim()
-      )
-      .join("\n\n")}
-`;
-
+  
+    postMessageToWebView(this._view, {
+      type: MessageToWebViewType.SuggestionLoading,
+    });
+  
     let promptWithContext = `
 You are helping the user with crafting a great command.
 
@@ -127,61 +140,56 @@ Your job is to figure out what the user wants, based on his input and selected p
 
 Propose a concise command that will be a very brief description of what needs to be done, you can refer to selected code as the expert will have access to it on another screen.
 
-User wrote so far: "${input}". You have to use exactly that as part of your command, as your suggestion will be part of autocompletion.
+${input === "" ? `` : `User wrote so far: "${input}". You have to use exactly that as part of your command, as your suggestion will be part of autocompletion.`}
 
-=== USER INPUT ===
-${input}
+Some examples of commands:
+${shuffledBaseCommands().map((c) => `* ${c.command}`).join("\n")}
+${this.getRelatedPreviousCommands(10, input)
+  .map((c) => `* ${c}`)
+  .join("\n")}
 
-${previousCommandsSection}
+Selected code:
 
-===== SELECTED CODE (Language: ${languageId}) ====
+\`\`\`${languageId}
 ${code}
+\`\`\`
 
+Try to propose most meaningful thing do to with this code, that will be a good command for the expert to execute.
 
-Your command suggestion, based on "${input}", is:…
+Your command suggestion, ${input === "" ? `based strictly what you thing someone should do with this code` : `based on "${input}"`}, is:…
 
-`.trim();
-
+  `.trim();
+  
     // Implement the custom onChunk function
     const onChunk = async (chunk: string) => {
       this.currentSuggestion += chunk;
       postMessageToWebView(this._view, {
-        type: "suggestion",
-        value: stripQuotes(this.currentSuggestion),
+        type: MessageToWebViewType.Suggestion,
+        suggestion: stripQuotes(this.currentSuggestion),
       });
     };
-
-    console.log("SUGGESTION1");
-    console.log(promptWithContext);
-    console.log("SUGGESTION2");
-
+  
     this.currentSuggestion = "";
-
-    // Modify the gptExecute call to pass the custom onChunk function
-    await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo"});
-  }
-
-  getCommandSuggestion(input: string) {
-    if (!input) return "";
-
-    const suggestions = this.commandHistory.filter(
-      (commandObj) => commandObj.command.toLowerCase().includes(input.toLowerCase()) && commandObj.command.toLowerCase() !== input.toLowerCase()
-    );
-
-    if (suggestions.length === 0) return "";
-
-    const matchedCommand = suggestions[0].command;
-    const index = matchedCommand.toLowerCase().indexOf(input.toLowerCase());
-    const commandWithCorrectedCase = matchedCommand.slice(0, index) + input + matchedCommand.slice(index + input.length);
-    return commandWithCorrectedCase;
+  
+    try {
+      await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo" });
+      this.lastCode = code;
+      this.lastInput = input;
+    } catch (e) {
+      console.error(e);
+      postMessageToWebView(this._view, {
+        type: MessageToWebViewType.SuggestionError,
+        error: String(e),
+      });
+    } finally {
+      postMessageToWebView(this._view, {
+        type: MessageToWebViewType.SuggestionLoadedOrCanceled,
+      });
+    }
   }
 }
 
 // Remove all leading and ending quotes
 function stripQuotes(input: string): string {
-  return input.replace(/^"|"$/g, '');
+  return input.replace(/^"|"$/g, "");
 }
-
-/*
-Recently applied task: Fix this
-*/

@@ -140,3 +140,31 @@ body {
 @keyframes blink {
   50%, 100% {opacity: 0;}
 }
+
+
+@keyframes ellipsis {
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.ellipsis-dot {
+  animation: ellipsis 1.5s infinite;
+}
+
+.ellipsis-dot-1 {
+  animation-delay: 0s;
+}
+
+.ellipsis-dot-2 {
+  animation-delay: 0.3s;
+}
+
+.ellipsis-dot-3 {
+  animation-delay: 0.6s;
+}

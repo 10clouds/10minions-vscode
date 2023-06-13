@@ -1,7 +1,7 @@
 import * as React from "react";
 import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
 
-export function GoButton({ onClick, justClickedGo, markJustClickedGo }: { onClick?: () => void; justClickedGo: boolean; markJustClickedGo: () => void }) {
+export function GoButton({ onClick, justClickedGo }: { onClick?: () => void; justClickedGo: boolean }) {
   return (
     <button
       style={{
@@ -12,7 +12,6 @@ export function GoButton({ onClick, justClickedGo, markJustClickedGo }: { onClic
       type="submit"
       onClick={() => {
         onClick?.();
-        markJustClickedGo();
       }}
       disabled={justClickedGo}
     >

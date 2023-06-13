@@ -2,9 +2,9 @@ import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { AnalyticsManager } from "./AnalyticsManager";
 import { CommandHistoryManager } from "./CommandHistoryManager";
-import { MessageToVSCode, MessageToWebView } from "./Messages";
 import { MinionTasksManager } from "./MinionTasksManager";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
+import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "./Messages";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
   return view?.webview.postMessage(message);
@@ -17,7 +17,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   private commandHistoryManager: CommandHistoryManager;
   private executionsManager: MinionTasksManager;
   private analyticsManager: AnalyticsManager;
-
+  
   constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
     this.commandHistoryManager = new CommandHistoryManager(context);
     this.executionsManager = new MinionTasksManager(context);
@@ -53,7 +53,7 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
       console.log(`Changed`);
       if (e.affectsConfiguration("10minions.apiKey")) {
         postMessageToWebView(this._view, {
-          type: "apiKeySet",
+          type: MessageToWebViewType.ApiKeySet,
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });
 
@@ -91,7 +91,7 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
     }
 
     postMessageToWebView(this._view, {
-      type: "clearAndfocusOnInput",
+      type: MessageToWebViewType.ClearAndFocusOnInput,
     });
   }
 
@@ -120,15 +120,15 @@ private handleSelectionChange() {
   // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
   this.timeoutRef = setTimeout(() => {
     postMessageToWebView(this._view, {
-      type: "selectedTextUpdated",
-      selectedText: selectedText,
+      type: MessageToWebViewType.ChosenCodeUpdated,
+      code: selectedText ? selectedText : (activeEditor?.document.getText() || ""),
     });
   }, 1000);
 }
 
 private updateSidebarVisibility(visible: boolean) {
   postMessageToWebView(this._view, {
-    type: "updateSidebarVisibility",
+    type: MessageToWebViewType.UpdateSidebarVisibility,
     value: visible,
   });
 }
@@ -138,17 +138,17 @@ private updateSidebarVisibility(visible: boolean) {
     const activeEditor = vscode.window.activeTextEditor;
 
     switch (data.type) {
-      case "getTokenCount": {
+      case MessageToVSCodeType.GetTokenCount: {
         let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
 
         postMessageToWebView(this._view, {
-          type: "tokenCount",
+          type: MessageToWebViewType.TokenCount,
           value: tokenCount,
         });
 
         break;
       }
-      case "newExecution": {
+      case MessageToVSCodeType.NewMinionTask: {
         let prompt = data.value ? data.value : "Refactor this code";
 
         await this.commandHistoryManager.updateCommandHistory(prompt);
@@ -156,11 +156,11 @@ private updateSidebarVisibility(visible: boolean) {
         this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
         break;
       }
-      case "openDocument": {
+      case MessageToVSCodeType.OpenDocument: {
         this.executionsManager.openDocument(data.minionTaskId);
         break;
       }
-      case "openSelection": {
+      case MessageToVSCodeType.OpenSelection: {
         let minionTask = this.executionsManager.getExecutionById(data.minionTaskId);
 
         if (minionTask) {
@@ -175,47 +175,51 @@ private updateSidebarVisibility(visible: boolean) {
         }
         break;
       }
-      case "openLog": {
+      case MessageToVSCodeType.OpenLog: {
         this.executionsManager.openLog(data.minionTaskId);
         break;
       }
-      case "showDiff": {
+      case MessageToVSCodeType.ShowDiff: {
         this.executionsManager.showDiff(data.minionTaskId);
         break;
       }
-      case "markAsApplied": {
+      case MessageToVSCodeType.MarkAsApplied: {
         this.executionsManager.markAsApplied(data.minionTaskId);
         break;
       }
-      case "applyAndReviewTask": {
+      case MessageToVSCodeType.ApplyAndReviewTask: {
         this.executionsManager.applyAndReviewTask(data.minionTaskId);
         break;
       }
-      case "reRunExecution": {
+      case MessageToVSCodeType.ReRunExecution: {
         this.executionsManager.reRunExecution(data.minionTaskId, data.newUserQuery);
         break;
       }
-      case "stopExecution": {
+      case MessageToVSCodeType.StopExecution: {
         this.executionsManager.stopExecution(data.minionTaskId);
         break;
       }
-      case "getSuggestions": {
+      case MessageToVSCodeType.GetSuggestions: {
         const input = data.input || "";
+        const activeEditor = vscode.window.activeTextEditor;
+        const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || ""
+        
         this.commandHistoryManager.getCommandSuggestionGPT(
           input,
-          (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "",
+          code,
           activeEditor?.document.languageId || ""
         );
+
         break;
       }
-      case "closeExecution": {
+      case MessageToVSCodeType.CloseExecution: {
         let minionTaskId = data.minionTaskId;
         this.executionsManager.closeExecution(minionTaskId);
         break;
       }
-      case "readyForMessages": {
+      case MessageToVSCodeType.ReadyForMessages: {
         postMessageToWebView(this._view, {
-          type: "apiKeySet",
+          type: MessageToWebViewType.ApiKeySet,
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
         });
 
@@ -244,14 +248,9 @@ private updateSidebarVisibility(visible: boolean) {
   }
 }
 
-
 /*
-Recently applied task: Send a message to webview if the current selection / open document changed, so we can track the selectedText
-*/
+Recently applied task: Fix this error:
 
-
-/*
-Recently applied task: Implement updating webview with info whenever the extension sidebar is open and visible
-
-Do this through updateSidebarVisibility messaage
+Identifier expected.
+Line: 177 Column: 31
 */

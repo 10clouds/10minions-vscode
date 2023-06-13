@@ -5,41 +5,66 @@ import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 
 export type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
 
+import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
+import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
+
+type ModelData = {
+  [key in AVAILABLE_MODELS]: {
+    maxTokens: number;
+    encode: typeof encodeGPT4;
+  }
+};
+
+export const MODEL_DATA: ModelData = {
+  'gpt-4': {maxTokens: 8192, encode: encodeGPT4},
+  'gpt-3.5-turbo': {maxTokens: 4096, encode: encodeGPT35},
+};
+
+export function canIRunThis({ prompt, maxTokens = 2000, model = "gpt-4" }: {
+  prompt: string;
+  maxTokens?: number;
+  model?: AVAILABLE_MODELS;
+}) {
+  let usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
+  return usedTokens <= MODEL_DATA[model].maxTokens;
+}
+
 let openAILock = new AsyncLock();
 
 /* The extractParsedLines function takes a chunk string as input and returns
  * an array of parsed JSON objects. */
-function extractParsedLines(chunk: string) {
-  // Check if the entire chunk is a JSON object containing an "error" field
-  let jsonObject;
-  
-  try {
-    jsonObject = JSON.parse(chunk);
-  } catch (e) {
-    // Not a JSON object, continue processing as before
-  }
+function extractParsedLines(chunkBuffer: string): [any[], string] {
+  let parsedLines: any[] = [];
 
-  if (jsonObject) {
-    // If the chunk is in the new format, return the error object directly
-    if (jsonObject.error) {
-      throw new Error(jsonObject.error.message);
+  while (chunkBuffer.includes("\n")) {
+    let [line, ...rest] = chunkBuffer.split("\n");
+    chunkBuffer = rest.join("\n");
+
+    if (line === "" || line === "data: [DONE]")
+      continue;
+
+    if (line.startsWith("data: ")) {
+      let parsedLine = line.replace(/^data: /, "").trim();
+      if (parsedLine !== "") {
+        try {
+          parsedLines.push(JSON.parse(parsedLine));
+        } catch (e) {
+          console.error(`Error parsing chunk: ${line}`);
+          throw e;
+        }
+      }
     } else {
-      throw new Error(`Unexpected JSON object: ${chunk}`);
+      let errorObject = JSON.parse(line);
+
+      if (errorObject.error) {
+        throw new Error(errorObject.error.message);
+      } else {
+        throw new Error(`Unexpected JSON object: ${line}`);
+      }
     }
   }
 
-  // Original processing
-  const lines = chunk.split("\n");
-  try {
-    return lines
-      .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
-      .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
-      .map((line) => JSON.parse(line));
-  } catch (e) {
-    console.error(`Error parsing chunk: ${chunk}`);
-    console.error(e);
-    throw e;
-  }
+  return [parsedLines, chunkBuffer];
 }
 
 /* The queryOpenAI function takes a fullPrompt and other optional parameters to
@@ -105,6 +130,7 @@ export async function processOpenAIResponseStream({
   const stream = response.body!;
   const decoder = new TextDecoder("utf-8");
   let fullContent = "";
+  let chunkBuffer = "";
 
   return await new Promise<string>((resolve, reject) => {
     stream.on("data", async (value) => {
@@ -115,8 +141,12 @@ export async function processOpenAIResponseStream({
           return;
         }
         const chunk = decoder.decode(value);
+        chunkBuffer += chunk;
   
-        const parsedLines = extractParsedLines(chunk);
+        const [parsedLines, newChunkBuffer] = extractParsedLines(chunkBuffer);
+
+        chunkBuffer = newChunkBuffer;
+
         const tokens = parsedLines
           .map((l) => l.choices[0].delta.content)
           .filter((c) => c)

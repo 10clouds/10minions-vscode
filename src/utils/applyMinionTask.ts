@@ -6,7 +6,7 @@ import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
 import { getCommentForLanguage } from "./comments";
 
-function applyModificationProcedure(originalCode: string, modificationProcedure: string) {
+function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
   let currentCode = originalCode;
   let lines = modificationProcedure.split("\n");
   let storedArg: string[] = [];
@@ -14,10 +14,13 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
   let currentArg: string[] = [];
 
   function finishLastCommand() {
-    if (currentCommand.startsWith("REPLACE ALL")) {
+    if (currentCommand.startsWith("REPLACE_ALL")) {
       let consolidatedContent = currentArg.join("\n");
       let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       currentCode = innerContent;
+    } else if (currentCommand.startsWith("MODIFY_OTHER")) {
+      let commentContent = currentArg.join("\n");
+      currentCode = getCommentForLanguage(languageId, commentContent) + "\n" + currentCode;
     } else if (currentCommand.startsWith("REPLACE")) {
       storedArg = currentArg;
     } else if (currentCommand.startsWith("INSERT")) {
@@ -102,6 +105,10 @@ ${originalCode}
       );*/
     } else if (currentCommand.startsWith("END_REPLACE")) {
       // Do nothing
+    } else if (currentCommand.startsWith("END_REPLACE_ALL")) {
+      // Do nothing
+    } else if (currentCommand.startsWith("END_MODIFY_OTHER")) {
+      // Do nothing
     }
 
     currentArg = [];
@@ -112,17 +119,21 @@ ${originalCode}
 
     if (currentCommand.startsWith("INSERT")) {
       isANewCommand = line.startsWith("BEFORE");
-    } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE ALL")) {
+    } else if (currentCommand.startsWith("REPLACE")) {
       isANewCommand = line.startsWith("WITH");
+    } else if (currentCommand.startsWith("MODIFY_OTHER")) {
+      isANewCommand = line.startsWith("END_MODIFY_OTHER");
+    } else if (currentCommand.startsWith("REPLACE_ALL")) {
+      isANewCommand = line.startsWith("END_REPLACE_ALL");
     } else if (currentCommand.startsWith("WITH")) {
       isANewCommand =
         line.startsWith("END_REPLACE") ||
-        line.startsWith("REPLACE ALL") ||
+        line.startsWith("REPLACE_ALL") ||
         line.startsWith("REPLACE") ||
         line.startsWith("RENAME") ||
         line.startsWith("INSERT");
     } else {
-      isANewCommand = line.startsWith("REPLACE ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
+      isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
     }
 
     if (isANewCommand) {
@@ -160,7 +171,7 @@ ${minionTask.modificationDescription}
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
   minionTask.contentAfterApply = document.getText();
-  minionTask.appendToLog(`Applied modification as plain top comments\n\n`);;
+  minionTask.appendToLog(`Applied modification as plain top comments\n\n`);
   minionTask.onChanged(true);
   vscode.window.showInformationMessage(`Modification applied successfully.`);
 }
@@ -183,10 +194,13 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     let document = await minionTask.document();
 
-
     minionTask.originalContent = document.getText();
 
-    let modifiedContent = applyModificationProcedure(`${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}`, minionTask.modificationProcedure);
+    let modifiedContent = applyModificationProcedure(
+      `${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}`,
+      minionTask.modificationProcedure,
+      document.languageId
+    );
     console.log(`modifiedContent: "${modifiedContent}"`);
 
     await applyWorkspaceEdit(async (edit) => {
@@ -202,7 +216,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     minionTask.executionStage = APPLIED_STAGE_NAME;
     minionTask.contentAfterApply = document.getText();
-    minionTask.appendToLog(`Applied changes for user review.\n\n`);;
+    minionTask.appendToLog(`Applied changes for user review.\n\n`);
     minionTask.onChanged(true);
 
     vscode.window.showInformationMessage(`Modification applied successfully.`);

@@ -5,42 +5,15 @@ import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../gptExecute";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 
-export const CLASSIFICATION_OUTPUT_FORMATS = {
-  "AnswerQuestion": `
+export const AVAILABE_COMMANDS = [
+`
+# REPLACE / WITH / END_REPLACE
 
-Star with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
-
-INSERT
-
-Followed by lines of block comment
-
-BEFORE
-
-Followed by lines of code that the comment will be attached to.
-
-You can then start with the next INSERT line to repeat this sequence, or finish the output. Keep in mind that all lines between INSERT and BEFORE will be used, even the empty ones.
-
-Further more, do not invent your own commands, use only the ones described above.
-`.trim(),
-
-  "FileWideChange": `
-
-Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
-
-REPLACE ALL
-
-Your job is to output a full consolidated final, production ready, code, described in REQUESTED MODIFICATION when applied to ORIGINAL CODE.
-
-There can be only one such command in the answer, and it preceeds the final consolidated result.
-`.trim(),
-
-  "LocalChange": `
-
-Star your answer with the overview of what you are going to do, and then, when ready to output the final consolidated result, start it with the following command:
+Use this se to replace a piece of code with another piece of code. Start it with the following line:
 
 REPLACE
 
-Followed by the lines of code you are replacing, and then, when ready to output the final consolidated result, start it with the following command:
+Followed by the lines of code you are replacing, and then, when ready to output the text to replace, start it with the following command:
 
 WITH
 
@@ -48,7 +21,24 @@ Followed by the code you are replacing with. End the sequence with the following
 
 END_REPLACE
 
-You may follow this pattern multiple times. If followed by next REPLACE, END_REPLACE is not required.
+Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
+* All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
+* After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
+`.trim()
+
+,
+
+`
+
+# REPLACE_ALL / END_REPLACE_ALL
+
+Use this command if most of the file is modified. When you are ready to output the final consolidated result, start it with the following line:
+
+REPLACE_ALL
+
+Followed by the lines of a full consolidated final, production ready, code, described in REQUESTED MODIFICATION when applied to ORIGINAL CODE. Followed by the following line:
+
+END_REPLACE_ALL
 
 Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
@@ -56,8 +46,37 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * Do not invent your own commands, use only the ones described above.
 * After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
 
-`.trim(),
-};
+`.trim()
+
+,
+
+`
+
+# MODIFY_OTHER / END_MODIFY_OTHER
+
+If REQUESTED_MODIFICATION specifies that other files must be created or modified, use this command to specify any modifications that need to happen in other files. User will apply them manually, so they don't have to compile, and can have instructions on how to apply them. Start it with the following line:
+
+MODIFY_OTHER
+
+Followed by the lines of instructions on what to modify and how. Followed by the following line:
+
+END_MODIFY_OTHER
+
+`.trim()
+
+];
+
+export const OUTPUT_FORMAT = `
+
+Star your answer with the overview of what you are going to do, and then, follow it by one more COMMANDS.
+
+## General considerations:
+* Do not invent your own commands, use only the ones described below.
+
+## Available commands are:
+${AVAILABE_COMMANDS.join("\n\n")}
+
+`.trim();
 
 async function createConsolidated(
   classification: TASK_CLASSIFICATION_NAME,
@@ -83,7 +102,7 @@ async function createConsolidated(
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
 ==== FORMAT OF THE ANSWER ====
-${CLASSIFICATION_OUTPUT_FORMATS[classification]}
+${OUTPUT_FORMAT} 
 
 ==== THINGS TO TAKE INTO CONSIDERATION ====
 
@@ -162,6 +181,8 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
         this.reportSmallProgress();
         if (EXTENSIVE_DEBUG) {
           this.appendToLog(chunk);
+        } else {
+          this.appendToLog(".");
         }
       },
       () => {
@@ -169,7 +190,7 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
       }
     );
   } catch (error) {
-    this.appendToLog( `Error while creating modification procedure:\n\n ${error}\n\n`);
+    this.appendToLog(`Error while creating modification procedure:\n\n ${error}\n\n`);
   }
 
   this.appendToLog( "\n\n");

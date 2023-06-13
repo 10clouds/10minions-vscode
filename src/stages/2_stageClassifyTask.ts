@@ -1,9 +1,10 @@
 import { MinionTask } from "../MinionTask";
 import * as vscode from "vscode";
-import { MODEL_MAX_TOKENS, gptExecute } from "../gptExecute";
+import { gptExecute } from "../gptExecute";
 import { EXTENSIVE_DEBUG } from "../const";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
 import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
+import { MODEL_DATA } from "../openai";
 
 export const TASK_CLASSIFICATION: {
   name: TASK_CLASSIFICATION_NAME;
@@ -12,17 +13,12 @@ export const TASK_CLASSIFICATION: {
   {
     name: "AnswerQuestion",
     description:
-      "You are asked a question, and you need to answer it or asked to comment on something. The result is not code, but textual description. For example: explain a concept, desribe a bug, etc.",
+      "Choose this classification if you don't want to modify code when doing this task or it's not appropriate to modifiy code based on this task. The result is not code, but textual description. A good example of this is when you are asked a question, and you need to answer it. For example: For example: are strings immutable in java? explain how this works, come up with 5 ideas for a name etc.",
   },
   {
-    name: "FileWideChange",
+    name: "CodeChange",
     description:
-      "You are asked to make a change that will affect multiple places in the file, or the entire file. For example: refactor code, write documentation, remove comments, etc.",
-  },
-  {
-    name: "LocalChange",
-    description:
-      "Most of the file will be unaffected, we will be modifing a small region or up to 3 small regions. For example: fix a bug, add a feature, add a test, etc.",
+      "Choose if it's makes sense to modify code for this task. For example: fix a bug, add a feature, add a test, are there any bugs?, critisize this code, refactor this code, document this code etc.",
   },
 ];
 
@@ -76,7 +72,7 @@ Classify the task.
 
   let tokensCode = encode(promptWithContext).length;
 
-  if (tokensCode > MODEL_MAX_TOKENS['gpt-4']) {
+  if (tokensCode > MODEL_DATA['gpt-4'].maxTokens) {
     throw new Error(`Combination of file size, selection and your command, is too big for us to handle.`);
   }
 
@@ -100,6 +96,8 @@ export async function stageClassifyTask(this: MinionTask) {
       this.reportSmallProgress();
       if (EXTENSIVE_DEBUG) {
         this.appendToLog(chunk);
+      } else {
+        this.appendToLog(".");
       }
     },
     () => {

@@ -6,6 +6,7 @@ import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
 import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
+import { MessageToVSCodeType } from "../Messages";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
   target.style.height = "auto";
@@ -101,13 +102,13 @@ export const MinionTaskComponent = forwardRef(
       if (updatedPrompt !== minionTask.userQuery) {
         // Stop the current execution
         postMessageToVsCode({
-          type: "stopExecution",
+          type: MessageToVSCodeType.StopExecution,
           minionTaskId: minionTask.id,
         });
 
         // Retry the execution with the updated prompt
         postMessageToVsCode({
-          type: "reRunExecution",
+          type: MessageToVSCodeType.ReRunExecution,
           minionTaskId: minionTask.id,
           newUserQuery: updatedPrompt, // Pass the updated prompt value
         });
@@ -123,7 +124,7 @@ export const MinionTaskComponent = forwardRef(
         description="Stop"
         onClick={() => {
           postMessageToVsCode({
-            type: "stopExecution",
+            type: MessageToVSCodeType.StopExecution,
             minionTaskId: minionTask.id,
           });
         }}
@@ -137,7 +138,7 @@ export const MinionTaskComponent = forwardRef(
         description="Apply"
         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
           postMessageToVsCode({
-            type: "applyAndReviewTask",
+            type: MessageToVSCodeType.ApplyAndReviewTask,
             minionTaskId: minionTask.id,
           });
           setIsExpanded(true);
@@ -153,7 +154,7 @@ export const MinionTaskComponent = forwardRef(
         description="Acknowledge"
         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
           postMessageToVsCode({
-            type: "markAsApplied",
+            type: MessageToVSCodeType.MarkAsApplied,
             minionTaskId: minionTask.id,
           });
           setIsExpanded(true);
@@ -169,7 +170,7 @@ export const MinionTaskComponent = forwardRef(
         title="Close Execution"
         onClick={(e) => {
           postMessageToVsCode({
-            type: "closeExecution",
+            type: MessageToVSCodeType.CloseExecution,
             minionTaskId: minionTask.id,
           });
           e.stopPropagation();
@@ -184,7 +185,7 @@ export const MinionTaskComponent = forwardRef(
         description="Retry"
         onClick={() => {
           postMessageToVsCode({
-            type: "reRunExecution",
+            type: MessageToVSCodeType.ReRunExecution,
             minionTaskId: minionTask.id,
           });
         }}
@@ -197,7 +198,7 @@ export const MinionTaskComponent = forwardRef(
         description="Diff"
         onClick={(e) => {
           postMessageToVsCode({
-            type: "showDiff",
+            type: MessageToVSCodeType.ShowDiff,
             minionTaskId: minionTask.id,
           });
 
@@ -212,7 +213,7 @@ export const MinionTaskComponent = forwardRef(
         description="Open Log file"
         onClick={() => {
           postMessageToVsCode({
-            type: "openLog",
+            type: MessageToVSCodeType.OpenLog,
             minionTaskId: minionTask.id,
           });
         }}
@@ -294,7 +295,7 @@ export const MinionTaskComponent = forwardRef(
                     className="cursor-pointer"
                     onClick={() => {
                       postMessageToVsCode({
-                        type: "openDocument",
+                        type: MessageToVSCodeType.OpenDocument,
                         minionTaskId: minionTask.id,
                       });
                     }}
@@ -311,7 +312,7 @@ export const MinionTaskComponent = forwardRef(
                     className="cursor-pointer mb-2"
                     onClick={() => {
                       postMessageToVsCode({
-                        type: "openLog",
+                        type: MessageToVSCodeType.OpenLog,
                         minionTaskId: minionTask.id,
                       });
                     }}
@@ -365,7 +366,7 @@ export const MinionTaskComponent = forwardRef(
                     className="text-xs overflow-auto cursor-pointer"
                     onClick={() => {
                       postMessageToVsCode({
-                        type: "openSelection",
+                        type: MessageToVSCodeType.OpenSelection,
                         minionTaskId: minionTask.id,
                       });
                     }}
@@ -373,7 +374,7 @@ export const MinionTaskComponent = forwardRef(
                       whiteSpace: "pre",
                     }}
                   >
-                    <pre>{minionTask.selectedText}</pre>
+                    <pre>{minionTask.selectedText.includes("\n") ? minionTask.selectedText : minionTask.selectedText.trim()}</pre>
                   </div>
                 )}
               </div>

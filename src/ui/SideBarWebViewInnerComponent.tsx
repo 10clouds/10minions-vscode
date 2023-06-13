@@ -1,20 +1,13 @@
-/*
-Now, the WebView sends the "getSuggestions" message only if the sidebar is
-visible, and updates the visibility status according to messages received from
-the main extension. Make sure to implement the logic in the main extension to
-send the "updateSidebarVisibility" messages.
-*/
-
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { MessageToVSCode, MessageToWebView } from "../Messages";
-import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
+import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
+import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
+import { GoButton } from "./GoButton";
+import { Header } from "./Header";
 import { Logo } from "./Logo";
 import { ALL_MINION_ICONS_OUTLINE } from "./MinionIconsOutline";
-import { GoButton } from "./GoButton";
 import { MinionTaskListComponent } from "./MinionTaskListComponent";
-import { Header } from "./Header";
-import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
+import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { useTemporaryFlag } from "./useTemporaryFlag";
 
 declare const acquireVsCodeApi: any;
@@ -24,96 +17,75 @@ const vscode = acquireVsCodeApi();
 export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
-const getWordWidths = (text: string, spanElem: HTMLSpanElement) => {
-  const wordWidths: number[] = [];
-  const wordWidthMap: { [word: string]: number } = {};
 
-  const tempSpan = spanElem;
-  tempSpan.style.position = "absolute";
-  tempSpan.style.visibility = "hidden";
+// Custom hook to track the previous value of a state variable
+function usePrevious<T>(value: T): T | undefined {
+  const ref = React.useRef<T>();
 
-  // Updated regex for splitting text into words + whitespaces, including whitespaces in the array
-  const words = text.split(/(\s+)/);
+  React.useEffect(() => {
+    ref.current = value;
+  });
 
-  for (const word of words) {
-    tempSpan.textContent = word;
-    const width = tempSpan.clientWidth;
-    wordWidths.push(width);
-    wordWidthMap[word] = width;
-  }
-  return { wordWidths, wordWidthMap };
-};
-
-const getLastRenderedLine = (text: string, textareaWidth: number, spanElem: HTMLSpanElement) => {
-  const { wordWidths, wordWidthMap } = getWordWidths(text, spanElem);
-
-  // Updated regex to split text into words + whitespaces
-  const words = text.split(/(\s+)/);
-
-  const lines: number[] = [];
-
-  let currentLineWidth = 0;
-
-  for (let i = 0; i < wordWidths.length; i++) {
-    const width = wordWidths[i];
-    const word = words[i];
-
-    if (currentLineWidth + width > textareaWidth) {
-      currentLineWidth = 0;
-      lines.push(0);
-    }
-
-    currentLineWidth += width;
-    lines[lines.length - 1] += wordWidthMap[word];
-  }
-
-  return {
-    lastLineWidth: lines[lines.length - 1],
-    lineCount: lines.length,
-  };
-};
+  return ref.current;
+}
 
 export const SideBarWebViewInnerComponent: React.FC = () => {
   const [userInputPrompt, setUserInputPrompt] = React.useState("");
   const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
-  const [scrollPosition, setScrollPosition] = React.useState({ scrollLeft: 0, scrollTop: 0 });
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
-  let [justClickedGo, markJustClickedGo] = useTemporaryFlag();
+  const [justClickedGo, markJustClickedGo] = useTemporaryFlag();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+  const [isSuggestionLoading, setIsSuggestionLoading] = React.useState(false);
+
+  const [selectedCode, setSelectedCode] = React.useState("");
+  const [suggestionInputBase, setSuggestionInputBase] = React.useState<string | undefined>(undefined);
+  const [suggestionCodeBase, setSuggestionCodeBase] = React.useState<string | undefined>(undefined);
+  const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
+  const [immediatellySuggest, setImmediatellySuggest] = React.useState(false);
+  const [acceptedSuggestion, setAcceptedSuggestion] = React.useState<string | undefined>(undefined);
+  const prevIsTextAreaFocused = usePrevious(isTextAreaFocused);
+
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * ALL_MINION_ICONS_OUTLINE.length);
+    return [ALL_MINION_ICONS_OUTLINE[randomIndex], ALL_MINION_ICONS_OUTLINE[(randomIndex + 1) % ALL_MINION_ICONS_OUTLINE.length]];
+  }, []);
+
+  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   function handleMessage(message: MessageToWebView) {
     console.log("CMD (webview)", message.type);
 
     switch (message.type) {
-      case "clearAndfocusOnInput":
+      case MessageToWebViewType.ClearAndFocusOnInput:
         handleClearAndFocus();
         break;
-      case "executionsUpdated":
+      case MessageToWebViewType.ExecutionsUpdated:
         handleExecutionsUpdated(message.executions);
         break;
-      case "apiKeySet":
+      case MessageToWebViewType.ApiKeySet:
         setApiKeySet(message.value);
         break;
-      case "updateSidebarVisibility":
+      case MessageToWebViewType.UpdateSidebarVisibility:
         setIsSidebarVisible(message.value);
-        if (isSidebarVisible) {
-          postMessageToVsCode({
-            type: "getSuggestions",
-            input: userInputPrompt,
-          });
-        }
         break;
-      case "suggestion":
-        setSelectedSuggestion(message.value || "");
+      case MessageToWebViewType.SuggestionLoading:
+        setIsSuggestionLoading(true);
         break;
-      case "selectedTextUpdated":
-        if (isSidebarVisible) {
-          postMessageToVsCode({
-            type: "getSuggestions",
-            input: userInputPrompt,
-          });
-        }
+      case MessageToWebViewType.Suggestion:
+        setSelectedSuggestion(message.suggestion);
+        break;
+      case MessageToWebViewType.SuggestionError:
+        setSelectedSuggestion("");
+        setIsSuggestionLoading(false);
+        break;
+      case MessageToWebViewType.SuggestionLoadedOrCanceled:
+        setIsSuggestionLoading(false);
+        break;
+      case MessageToWebViewType.ChosenCodeUpdated:
+        setSelectedCode(message.code);
         break;
     }
   }
@@ -131,74 +103,72 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   function handleSuggestionClick(command: string) {
     setUserInputPrompt(command);
     setSelectedSuggestion("");
+    setAcceptedSuggestion(command);
+  }
+
+  function handleSubmitCommand() {
+    postMessageToVsCode({
+      type: MessageToVSCodeType.NewMinionTask,
+      value: userInputPrompt || selectedSuggestion,
+    });
+    markJustClickedGo();
+    setUserInputPrompt("");
   }
 
   React.useEffect(() => {
     const eventHandler = (event: any) => {
       const message: MessageToWebView = event.data;
-      console.log("message received", message.type);
-
       handleMessage(message);
     };
 
     window.addEventListener("message", eventHandler);
 
-    postMessageToVsCode({ type: "readyForMessages" });
+    postMessageToVsCode({ type: MessageToVSCodeType.ReadyForMessages });
 
     return () => {
       window.removeEventListener("message", eventHandler);
     };
   }, []);
 
-  const handleTextAreaClick = React.useCallback((e: React.MouseEvent<HTMLTextAreaElement, MouseEvent>) => {
-    if (textAreaRef.current) {
-      const { scrollLeft, scrollTop } = textAreaRef.current;
-      setScrollPosition({ scrollLeft, scrollTop });
+  React.useEffect(() => {
+    if (prevIsTextAreaFocused === false && isTextAreaFocused === true) {
+      setImmediatellySuggest(true);
     }
-  }, []);
+  }, [prevIsTextAreaFocused, isTextAreaFocused]);
 
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  function handleTextAreaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setUserInputPrompt(e.target.value);
-    if (!selectedSuggestion.includes(e.target.value)) setSelectedSuggestion("");
-    if (e.target.value === "") setSelectedSuggestion("");
-
-    // Clear previous timeout before setting a new one
+  React.useEffect(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
-    timeoutRef.current = setTimeout(() => {
-      postMessageToVsCode({
-        type: "getSuggestions",
-        input: e.target.value,
-      });
-    }, 1000);
-  }
+    console.log(
+      `DUPA suggestionInputBase: ${suggestionInputBase}, userInputPrompt: ${userInputPrompt}, suggestionCodeBase: ${suggestionCodeBase}, selectedCode: ${selectedCode}, isSidebarVisible: ${isSidebarVisible}, prevIsTextAreaFocused: ${prevIsTextAreaFocused}, isTextAreaFocused: ${isTextAreaFocused}`
+    );
 
-  //get two random different robot icons
-  const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
-    const randomIndex = Math.floor(Math.random() * ALL_MINION_ICONS_OUTLINE.length);
-    return [ALL_MINION_ICONS_OUTLINE[randomIndex], ALL_MINION_ICONS_OUTLINE[(randomIndex + 1) % ALL_MINION_ICONS_OUTLINE.length]];
-  }, []);
+    if (
+      isSidebarVisible &&
+      (isTextAreaFocused || (selectedSuggestion === "" && !isSuggestionLoading)) &&
+      !(suggestionInputBase === userInputPrompt && suggestionCodeBase === selectedCode) &&
+      acceptedSuggestion !== userInputPrompt
+    ) {
+      setSelectedSuggestion("");
 
-  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
-  const [postfix, setPostfix] = React.useState("");
+      if (immediatellySuggest) {
+        setSuggestionInputBase(userInputPrompt);
+        setSuggestionCodeBase(selectedCode);
+        postMessageToVsCode({
+          type: MessageToVSCodeType.GetSuggestions,
+          input: userInputPrompt,
+        });
+      } else {
+        timeoutRef.current = setTimeout(() => {
+          setImmediatellySuggest(true);
+        }, 1500);
+      }
+    }
 
-  React.useEffect(() => {
-    postMessageToVsCode({
-      type: "getSuggestions",
-      input: userInputPrompt,
-    });
-  }, []);
-
-  const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
-
-  React.useEffect(() => {
-    setPostfix(`${userInputPrompt.length > 0 || isTextAreaFocused ? "\n\n" : ""}${selectedSuggestion}`);
-  }, [selectedSuggestion, userInputPrompt, isTextAreaFocused]);
+    setImmediatellySuggest(false);
+  }, [userInputPrompt, selectedCode, isSidebarVisible, isTextAreaFocused, immediatellySuggest, acceptedSuggestion]);
 
   return (
     <div className="w-full">
@@ -234,19 +204,22 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     ref={textAreaRef}
                     style={{
                       position: "relative",
-                      height: "20rem",
+                      height: "10rem",
                       backgroundColor: "var(--vscode-editor-background)",
-                      color: "rgba(0,0,0,100)", // Transparent text color
                       borderColor: "var(--vscode-focusBorder)",
-                      caretColor: "var(--vscode-editor-foreground)", // Change cursor color to editor foreground color
                     }}
                     className="w-full h-96 mb-3 p-4 text-sm resize-none focus:outline-none"
                     value={userInputPrompt}
-                    onChange={handleTextAreaChange}
-                    onScroll={handleTextAreaClick}
-                    onInput={handleTextAreaChange}
-                    onFocus={() => setIsTextAreaFocused(true)}
-                    onBlur={() => setIsTextAreaFocused(false)}
+                    onChange={(e) => {
+                      setUserInputPrompt(e.target.value);
+                      setAcceptedSuggestion(undefined);
+                    }}
+                    onFocus={() => {
+                      setIsTextAreaFocused(true);
+                    }}
+                    onBlur={() => {
+                      setIsTextAreaFocused(false);
+                    }}
                     onKeyDown={(e) => {
                       // Check for Tab key and if the selectedSuggestion is valid
                       if (e.key === "Tab" && selectedSuggestion.length > 0) {
@@ -259,12 +232,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
                         if (justClickedGo) return; // Prevent double submission
                         // Submit userInputPrompt by calling postMessageToVsCode function
-                        postMessageToVsCode({
-                          type: "newExecution",
-                          value: userInputPrompt,
-                        });
-
-                        markJustClickedGo();
+                        handleSubmitCommand();
                       }
                     }}
                   />
@@ -274,54 +242,62 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                       position: "absolute",
                       top: 0,
                       left: 0,
-                      height: "20rem",
+                      height: "10rem",
                       pointerEvents: "none",
-                      color: "rgba(var(--vscode-editor-foreground), 0.5)", // Grayed-out text color
+                      color: "rgba(var(--vscode-editor-foreground), 0.5)",
                       overflow: "hidden",
-                      whiteSpace: "pre-wrap", // Preserve line breaks and spaces
+                      whiteSpace: "pre-wrap",
                       zIndex: 1000,
                     }}
                     className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
                   >
-                    <span style={{ opacity: 1.0 }}>{userInputPrompt}</span>
-                    <span style={{ opacity: 0.5 }}>{postfix}</span>
+                    <span style={{ opacity: 0.0 }}>{userInputPrompt}</span>
+                    {userInputPrompt !== "" && (
+                      <>
+                        <br />
+                        <br />
+                      </>
+                    )}
+                    {userInputPrompt !== "" && selectedSuggestion && isTextAreaFocused && (
+                      <span style={{ opacity: 0.5 }}>
+                        Suggestion:
+                        <br />
+                      </span>
+                    )}
+                    {selectedSuggestion && <span style={{ opacity: 0.7 }}>{selectedSuggestion}</span>}
+                    {isSuggestionLoading && (
+                      <span style={{ opacity: 0.5 }}>
+                        <span className="ellipsis-dot ellipsis-dot-1">.</span>
+                        <span className="ellipsis-dot ellipsis-dot-2">.</span>
+                        <span className="ellipsis-dot ellipsis-dot-3">.</span>
+                      </span>
+                    )}
                     <br />
                     {selectedSuggestion && isTextAreaFocused && <span style={{ opacity: 0.5 }}>Press Tab to accept suggestion</span>}
                   </div>
                 </div>
-                <GoButton
-                  onClick={() => {
-                    postMessageToVsCode({
-                      type: "newExecution",
-                      value: userInputPrompt,
-                    });
-                  }}
-                  justClickedGo={justClickedGo}
-                  markJustClickedGo={markJustClickedGo}
-                />
+                <GoButton onClick={handleSubmitCommand} justClickedGo={justClickedGo} />
 
                 <MinionTaskListComponent executionList={executionList} />
               </div>
             </div>
           </>
         )}
-
-        
       </div>
       <div
-          // Update className to achieve better centering, margin, padding, and width
-          className="text-center py-4 fixed bottom-0 w-full"
-          key="credits"
-          style={{
-            backgroundColor: "var(--vscode-sideBar-background)",
-            zIndex: 1000,
-          }}
-        >
-          <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
-            by <br />
-            <Logo className="inline-block w-20" />
-          </a>
-        </div>
+        // Update className to achieve better centering, margin, padding, and width
+        className="text-center py-4 fixed bottom-0 w-full"
+        key="credits"
+        style={{
+          backgroundColor: "var(--vscode-sideBar-background)",
+          zIndex: 1000,
+        }}
+      >
+        <a className="inline-block w-20 logo" href="https://10clouds.com" target="_blank" rel="noopener noreferrer">
+          by <br />
+          <Logo className="inline-block w-20" alt="10Clouds Logo" />
+        </a>
+      </div>
     </div>
   );
 };
@@ -329,13 +305,3 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 const container = document.getElementById("root");
 const root = createRoot(container!);
 root.render(<SideBarWebViewInnerComponent />);
-
-/*
-Recently applied task: Make this code count widths of whitespace as they are in the original text.
-
-Make sure that you maintain the standard line breaking rules.
-*/
-
-/*
-Recently applied task: handle whitespace words correctly here
-*/

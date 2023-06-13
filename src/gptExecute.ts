@@ -1,17 +1,5 @@
-import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 import { AnalyticsManager } from "./AnalyticsManager";
-import { AVAILABLE_MODELS, queryOpenAI, processOpenAIResponseStream } from "./openai";
-
-/* The gptExecute function is the main exported function, which combines all the
- * other functions to send a GPT-4 query and receive and process the response. */
-type ModelTokenConstraints = {
-  [key in AVAILABLE_MODELS]: number;
-};
-
-export const MODEL_MAX_TOKENS: ModelTokenConstraints = {
-  'gpt-4': 8192,
-  'gpt-3.5-turbo': 4096,
-};
+import { AVAILABLE_MODELS, queryOpenAI, processOpenAIResponseStream, MODEL_DATA, canIRunThis } from "./openai";
 
 export async function gptExecute({
   fullPrompt, onChunk = async (chunk: string) => { }, isCancelled = () => false, maxTokens = 2000, model = "gpt-4", temperature = 1, controller = new AbortController(),
@@ -25,10 +13,10 @@ export async function gptExecute({
   controller?: AbortController;
 }) {
 
-  let usedTokens = encode(fullPrompt).length + maxTokens;
+  let usedTokens = MODEL_DATA[model].encode(fullPrompt).length + maxTokens;
   
-  if (usedTokens > MODEL_MAX_TOKENS[model]) {
-    throw new Error(`Too many tokens used: ${usedTokens} > ${MODEL_MAX_TOKENS[model]}`);
+  if (canIRunThis({prompt: fullPrompt, model, maxTokens}) === false) {
+    throw new Error(`Too many tokens used: ${usedTokens} > ${MODEL_DATA[model].maxTokens}`);
   }
 
   function reportOpenAICallToAnalytics(resultData: any) {

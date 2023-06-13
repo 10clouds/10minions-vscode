@@ -1,7 +1,6 @@
 export type TASK_CLASSIFICATION_NAME =
   | "AnswerQuestion"
-  | "FileWideChange"
-  | "LocalChange";
+  | "CodeChange";
 
 export const APPLIED_STAGE_NAME = "Applied";
 export const FINISHED_STAGE_NAME = "Finished";

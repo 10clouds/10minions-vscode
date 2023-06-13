@@ -7,6 +7,7 @@ import { postMessageToWebView } from "./TenMinionsViewProvider";
 import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 import { applyMinionTask } from "./utils/applyMinionTask";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
+import { MessageToWebViewType } from "./Messages";
 
 function extractExecutionIdFromUri(uri: vscode.Uri): string {
   return uri.path.match(/^minionTaskId\/([a-z\d\-]+)\/.*/)![1];
@@ -112,6 +113,10 @@ export class MinionTasksManager {
 
     if (minionTask) {
       const documentUri = vscode.Uri.parse(minionTask.documentURI);
+
+      const document = await vscode.workspace.openTextDocument(documentUri);
+      await vscode.window.showTextDocument(document);
+
       await vscode.commands.executeCommand(
         "vscode.diff",
         vscode.Uri.parse(minionTask.originalContentURI),
@@ -260,7 +265,7 @@ export class MinionTasksManager {
 
     let newSelection = oldExecution.selectedText ? await findNewPositionForOldSelection(oldExecution.selection, oldExecution.selectedText, document) : oldExecution.selection;
     setTimeout(async () => {
-      let newExecution = await MinionTask.create({
+      let newMinionTask = await MinionTask.create({
         userQuery: newUserQuery || oldExecution.userQuery,
         document: await oldExecution.document(),
         selection: newSelection,
@@ -269,18 +274,18 @@ export class MinionTasksManager {
         onChanged: async (important) => {
           //TODO: This is copied around code at least 3 times. Refactor it.
           if (important) {
-            this.notifyExecutionsUpdatedImmediate(newExecution, true);
+            this.notifyExecutionsUpdatedImmediate(newMinionTask, true);
           } else {
-            this.notifyExecutionsUpdated(newExecution);
+            this.notifyExecutionsUpdated(newMinionTask);
           }
         },
       });
 
-      this.minionTasks = [newExecution, ...this.minionTasks.filter((e) => e.id !== minionTaskId)];
+      this.minionTasks = [newMinionTask, ...this.minionTasks.filter((e) => e.id !== minionTaskId)];
 
-      await newExecution.run();
+      await newMinionTask.run();
 
-      this.notifyExecutionsUpdatedImmediate(newExecution, true);
+      this.notifyExecutionsUpdatedImmediate(newMinionTask, true);
     }, 500);
   }
 
@@ -302,7 +307,7 @@ export class MinionTasksManager {
     }));
 
     postMessageToWebView(this._view, {
-      type: "executionsUpdated",
+      type: MessageToWebViewType.ExecutionsUpdated,
       executions: executionInfo,
     });
 
