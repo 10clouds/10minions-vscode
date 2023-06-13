@@ -121,7 +121,7 @@ ${originalCode}
 
     if (currentCommand.startsWith("INSERT")) {
       isANewCommand = line.startsWith("BEFORE");
-    } else if (currentCommand.startsWith("REPLACE")) {
+    } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE_ALL")) {
       isANewCommand = line.startsWith("WITH");
     } else if (currentCommand.startsWith("MODIFY_OTHER")) {
       isANewCommand = line.startsWith("END_MODIFY_OTHER");
@@ -137,6 +137,8 @@ ${originalCode}
     } else {
       isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT") || line.startsWith("MODIFY_OTHER");
     }
+
+    console.log(`isANewCommand: ${isANewCommand} currentCommand: ${currentCommand} line: ${line}`);
 
     if (isANewCommand) {
       finishLastCommand();
