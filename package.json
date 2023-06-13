@@ -1,7 +1,7 @@
 {
   "name": "10minions",
-  "displayName": "10Minions by 10Clouds (GPT enabled coding assistant)",
-  "description": "10Minions by 10Clouds (GPT enabled coding assistant)",
+  "displayName": "10Minions (GPT-4 enabled)",
+  "description": "Your Army of AI-Powered Coding Comrades.",
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
   "pricing": "Free",
@@ -9,7 +9,7 @@
   "repository": {
     "url": "https://github.com/10clouds/10minions"
   },
-  "version": "0.9.0",
+  "version": "0.9.1",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
