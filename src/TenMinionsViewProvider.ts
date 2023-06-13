@@ -188,7 +188,7 @@ private updateSidebarVisibility(visible: boolean) {
         break;
       }
       case MessageToVSCodeType.ApplyAndReviewTask: {
-        this.executionsManager.applyAndReviewTask(data.minionTaskId);
+        this.executionsManager.applyAndReviewTask(data.minionTaskId, data.reapply);
         break;
       }
       case MessageToVSCodeType.ReRunExecution: {

@@ -1,33 +1,32 @@
 
 import { MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
-
 export enum MessageToWebViewType {
-  ClearAndFocusOnInput = "clearAndfocusOnInput",
-  ExecutionsUpdated = "executionsUpdated",
-  UpdateSidebarVisibility = "updateSidebarVisibility",
-  ApiKeySet = "apiKeySet",
-  TokenCount = "tokenCount",
-  ChosenCodeUpdated = "chosenCodeUpdated",
-  Suggestion = "suggestion",
-  SuggestionError = "suggestionError",
-  SuggestionLoading = "suggestionLoading",
-  SuggestionLoadedOrCanceled = "suggestionLoadedOrCanceled",
+  ClearAndFocusOnInput,
+  ExecutionsUpdated,
+  UpdateSidebarVisibility,
+  ApiKeySet,
+  TokenCount,
+  ChosenCodeUpdated,
+  Suggestion,
+  SuggestionError,
+  SuggestionLoading,
+  SuggestionLoadedOrCanceled,
 }
 
 export enum MessageToVSCodeType {
-  GetTokenCount = "getTokenCount",
-  NewMinionTask = "newMinionTask",
-  OpenDocument = "openDocument",
-  OpenLog = "openLog",
-  ShowDiff = "showDiff",
-  ReRunExecution = "reRunExecution",
-  StopExecution = "stopExecution",
-  GetSuggestions = "getSuggestions",
-  CloseExecution = "closeExecution",
-  ReadyForMessages = "readyForMessages",
-  ApplyAndReviewTask = "applyAndReviewTask",
-  OpenSelection = "openSelection",
-  MarkAsApplied = "markAsApplied",
+  GetTokenCount,
+  NewMinionTask,
+  OpenDocument,
+  OpenLog,
+  ShowDiff,
+  ReRunExecution,
+  StopExecution,
+  GetSuggestions,
+  CloseExecution,
+  ReadyForMessages,
+  ApplyAndReviewTask,
+  OpenSelection,
+  MarkAsApplied,
 }
 
 export type MessageToWebView =
@@ -53,8 +52,7 @@ export type MessageToVSCode =
   | { type: MessageToVSCodeType.GetSuggestions; input?: string }
   | { type: MessageToVSCodeType.CloseExecution; minionTaskId: string }
   | { type: MessageToVSCodeType.ReadyForMessages }
-  | { type: MessageToVSCodeType.ApplyAndReviewTask; minionTaskId: string }
+  | { type: MessageToVSCodeType.ApplyAndReviewTask; minionTaskId: string, reapply: boolean }
   | { type: MessageToVSCodeType.OpenSelection; minionTaskId: string }
   | { type: MessageToVSCodeType.MarkAsApplied; minionTaskId: string };
   
-

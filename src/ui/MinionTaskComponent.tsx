@@ -1,3 +1,4 @@
+
 import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import * as React from "react";
 import { forwardRef } from "react";
@@ -140,6 +141,7 @@ export const MinionTaskComponent = forwardRef(
           postMessageToVsCode({
             type: MessageToVSCodeType.ApplyAndReviewTask,
             minionTaskId: minionTask.id,
+            reapply: false,
           });
           setIsExpanded(true);
           e.stopPropagation();
@@ -194,8 +196,8 @@ export const MinionTaskComponent = forwardRef(
 
     const diffButton = (
       <OutlineButton
-        title="Show diff"
-        description="Diff"
+        title="Review changes since before application"
+        description="Review"
         onClick={(e) => {
           postMessageToVsCode({
             type: MessageToVSCodeType.ShowDiff,
@@ -207,6 +209,20 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
+    const reapplyModificationButton = (
+      <OutlineButton
+        title="Reapply Modification"
+        description="Reapply"
+        onClick={() => {
+          postMessageToVsCode({
+            type: MessageToVSCodeType.ApplyAndReviewTask,
+            minionTaskId: minionTask.id,
+            reapply: true,
+          });
+        }}
+      />
+    );
+    
     const openLogFileButton = (
       <OutlineButton
         title="Open Log"
@@ -307,18 +323,9 @@ export const MinionTaskComponent = forwardRef(
                 <div className="mb-2">Status:</div>
 
                 <span className="mb-2">
-                  <span
-                    title="Open Log"
-                    className="cursor-pointer mb-2"
-                    onClick={() => {
-                      postMessageToVsCode({
-                        type: MessageToVSCodeType.OpenLog,
-                        minionTaskId: minionTask.id,
-                      });
-                    }}
-                  >
-                    {minionTask.executionStage}
-                  </span>
+                  {minionTask.executionStage}
+                  {' '}
+                  {minionTask.executionStage === APPLIED_STAGE_NAME && reapplyModificationButton}
                 </span>
 
                 <div className="mb-2">Task:</div>

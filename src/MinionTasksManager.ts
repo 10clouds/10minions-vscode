@@ -4,7 +4,7 @@ import { AnalyticsManager } from "./AnalyticsManager";
 import { MinionTask } from "./MinionTask";
 import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from "./SerializedMinionTask";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
 import { applyMinionTask } from "./utils/applyMinionTask";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 import { MessageToWebViewType } from "./Messages";
@@ -136,9 +136,12 @@ export class MinionTasksManager {
     }
   }
 
-  async applyAndReviewTask(minionTaskId: string) {
+  async applyAndReviewTask(minionTaskId: string, reapply: boolean) {
     let minionTask = this.getExecutionById(minionTaskId);
     if (minionTask) {
+      if (reapply) {
+        minionTask.executionStage = FINISHED_STAGE_NAME;
+      }
       await applyMinionTask(minionTask);
       await this.showDiff(minionTaskId);
     }

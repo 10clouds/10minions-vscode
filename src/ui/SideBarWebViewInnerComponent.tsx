@@ -113,6 +113,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     });
     markJustClickedGo();
     setUserInputPrompt("");
+    setSelectedSuggestion("");
+    setSuggestionCodeBase(undefined);
+    setSuggestionInputBase(undefined);
   }
 
   React.useEffect(() => {
