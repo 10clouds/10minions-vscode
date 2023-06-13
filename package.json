@@ -35,7 +35,7 @@
     "commands": [
       {
         "command": "10minions.setApiKey",
-        "title": "10Minions: Set API key"
+        "title": "10Minions: Set OpenAI API key"
       },
       {
         "command": "10minions.ask",
