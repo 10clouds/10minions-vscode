@@ -14,11 +14,13 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
   let currentArg: string[] = [];
 
   function finishLastCommand() {
+    console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
     if (currentCommand.startsWith("REPLACE_ALL")) {
       let consolidatedContent = currentArg.join("\n");
       let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       currentCode = innerContent;
     } else if (currentCommand.startsWith("MODIFY_OTHER")) {
+      console.log(`MODIFY_OTHER: ${currentArg.join("\n")}`);
       let commentContent = currentArg.join("\n");
       currentCode = getCommentForLanguage(languageId, commentContent) + "\n" + currentCode;
     } else if (currentCommand.startsWith("REPLACE")) {
@@ -133,7 +135,7 @@ ${originalCode}
         line.startsWith("RENAME") ||
         line.startsWith("INSERT");
     } else {
-      isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT");
+      isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT") || line.startsWith("MODIFY_OTHER");
     }
 
     if (isANewCommand) {
