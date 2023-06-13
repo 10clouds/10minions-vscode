@@ -226,6 +226,43 @@ suite("Replace With Sliding Indent Test Suite", () => {
     const result = fuzzyReplaceText({currentCode, replaceText, withText});
     assert.strictEqual(result, undefined);
   });
+
+  test("package main", () => {
+    const currentCode = 
+`
+package main
+
+import "fmt"
+
+func main() {
+
+}
+`.trim();
+
+    const replaceText = `func main() {
+    }`.trim();
+
+    const withText = `func main() {
+  // Print "Hello, World!" to the console
+  fmt.Println("Hello, World!")
+}`.trim();
+
+const expectedOutput = 
+`
+package main
+
+import "fmt"
+
+func main() {
+  // Print "Hello, World!" to the console
+  fmt.Println("Hello, World!")
+}
+`.trim();
+
+    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    assert.strictEqual(result, expectedOutput);
+  });
+
   test("Real life #1", () => {
     const currentCode = `
 import * as vscode from "vscode";

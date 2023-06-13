@@ -4,11 +4,12 @@
   "description": "10Minions by 10Clouds (GPT enabled coding assistant)",
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
+  "pricing": "Free",
   "license": "MIT",
   "repository": {
     "url": "https://github.com/10clouds/10minions"
   },
-  "version": "1.0.0-rc1",
+  "version": "0.9.0",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"

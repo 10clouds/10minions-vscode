@@ -137,7 +137,7 @@ export const MinionTaskComponent = forwardRef(
         className="mb-2 ml-2"
         title="Apply and Review"
         description="Apply"
-        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+        onClick={(e) => {
           postMessageToVsCode({
             type: MessageToVSCodeType.ApplyAndReviewTask,
             minionTaskId: minionTask.id,
