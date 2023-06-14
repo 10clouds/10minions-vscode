@@ -25,6 +25,7 @@ Experience increased productivity, better code quality, and seamless integration
 1. Install 10Minions from the Visual Studio Code marketplace
 2. Update Visual Studio Code to its latest version
 3. Set up keybindings for 10Minions commands (refer to the Keybindings section below for more details)
+4. Remember that GPT-4 API Access is required for usage
 
 ## ⌨️ Keybindings
 
@@ -67,6 +68,7 @@ Showcase the 10Minions plugin in action with screenshots or GIFs demonstrating i
 
 - [Official GitHub Repository](https://github.com/10clouds/10Minions)
 - [10Minions in Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=10clouds.10Minions)
+- [Official Discord Channel](https://discord.gg/CGSX4Btamx)
 
 ## 📝 Release Notes
 
