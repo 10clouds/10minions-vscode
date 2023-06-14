@@ -1,4 +1,6 @@
-# 10Minions: Your Army of GPT-4 Powered Coding Comrades (Boost Your Productivity)
+<h2 align="center"><img src="https://raw.githubusercontent.com/10clouds/10Minions/main/resources/resources/ext-icon.png" height="64"><br>10Minions</h2>
+<p align="center"><strong>Your Army of GPT-4 Powered Coding Comrades </strong></p>
+<p align="center"><strong>(Boost Your Productivity)</strong></p>
 
 Unleash the power of autonomous coding with 10Minions, a cutting-edge coding assistant built on the GPT-4 platform. Seamlessly integrated with Visual Studio Code, 10Minions helps you manage complex coding tasks across your codebase, delivering clean, efficient, and standardized code.
 
@@ -23,6 +25,7 @@ Experience increased productivity, better code quality, and seamless integration
 1. Install 10Minions from the Visual Studio Code marketplace
 2. Update Visual Studio Code to its latest version
 3. Set up keybindings for 10Minions commands (refer to the Keybindings section below for more details)
+4. Remember that GPT-4 API Access is required for usage
 
 ## ⌨️ Keybindings
 
@@ -65,6 +68,7 @@ Showcase the 10Minions plugin in action with screenshots or GIFs demonstrating i
 
 - [Official GitHub Repository](https://github.com/10clouds/10Minions)
 - [10Minions in Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=10clouds.10Minions)
+- [Official Discord Channel](https://discord.gg/CGSX4Btamx)
 
 ## 📝 Release Notes
 
