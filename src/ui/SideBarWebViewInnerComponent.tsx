@@ -144,7 +144,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }, [selectedCode, userInputPrompt]);
 
   React.useEffect(() => {
-    console.log(`isTextAreaFocused: ${isTextAreaFocused} prevIsTextAreaFocused: ${prevIsTextAreaFocused}`)
+    console.log(`isTextAreaFocused: ${isTextAreaFocused} prevIsTextAreaFocused: ${prevIsTextAreaFocused}`);
     if (!prevIsTextAreaFocused && isTextAreaFocused) {
       setImmediatelySuggest(true);
     }

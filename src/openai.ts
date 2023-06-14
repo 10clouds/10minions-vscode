@@ -76,7 +76,7 @@ export async function queryOpenAI({
   fullPrompt,
   controller,
   maxTokens = 2000,
-  model = "gpt-4",
+  model = (vscode.workspace.getConfiguration("10minions").get("model") as AVAILABLE_MODELS),
   temperature,
 }: {
   fullPrompt: string;

@@ -7,7 +7,7 @@ export function ApiKeyInfoMessage() {
         <span className="font-bold">10Minions</span> needs an API key to work. You can get one from{" "}
         <a href="https://platform.openai.com/overview" target="_blank" rel="noopener noreferrer" className="text-blue-500">
           OpenAI
-        </a>
+        </a>{' '}
         (You will need GPT-4 access on this key).
       </p>
 

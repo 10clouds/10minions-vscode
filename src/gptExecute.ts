@@ -1,8 +1,9 @@
+import * as vscode from "vscode";
 import { AnalyticsManager } from "./AnalyticsManager";
 import { AVAILABLE_MODELS, queryOpenAI, processOpenAIResponseStream, MODEL_DATA, canIRunThis } from "./openai";
 
 export async function gptExecute({
-  fullPrompt, onChunk = async (chunk: string) => { }, isCancelled = () => false, maxTokens = 2000, model = "gpt-4", temperature = 1, controller = new AbortController(),
+  fullPrompt, onChunk = async (chunk: string) => { }, isCancelled = () => false, maxTokens = 2000, model = (vscode.workspace.getConfiguration("10minions").get("model") as AVAILABLE_MODELS), temperature = 1, controller = new AbortController(),
 }: {
   fullPrompt: string;
   onChunk?: (chunk: string) => Promise<void>;
@@ -12,7 +13,6 @@ export async function gptExecute({
   temperature?: number;
   controller?: AbortController;
 }) {
-
   let usedTokens = MODEL_DATA[model].encode(fullPrompt).length + maxTokens;
   
   if (canIRunThis({prompt: fullPrompt, model, maxTokens}) === false) {
@@ -36,8 +36,6 @@ export async function gptExecute({
     );
   }
 
-
-  // Step 1: Add a loop that iterates up to 3 times.
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await queryOpenAI({ fullPrompt, maxTokens, model, temperature, controller });
@@ -45,16 +43,12 @@ export async function gptExecute({
 
       reportOpenAICallToAnalytics({ result });
 
-      // Step 3: On successful run, break the loop early and return the result.
       return result;
     } catch (error) {
-      // Step 2: Add error handling for exceptions.
-      // Step 4: Log the error and retry the process for up to 2 more times.
       console.error(`Error on attempt ${attempt}: ${error}`);
 
       reportOpenAICallToAnalytics({ error: String(error) });
 
-      // Step 5: On the 3rd error, give up and re-throw the error.
       if (attempt === 3) {
         throw error;
       }

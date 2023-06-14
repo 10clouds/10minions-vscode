@@ -67,20 +67,11 @@ Our users love 10Minions! See what they have to say:
 ![3](https://github.com/10clouds/10Minions/assets/135703473/05a5c090-dea7-4d64-a160-155359208b15)
 ![4](https://github.com/10clouds/10Minions/assets/135703473/e59a3bcc-c15a-45ef-b4d8-2e0f6c70af97)
 
-
 ## 💼 Resources and Links
 
 - [Official GitHub Repository](https://github.com/10clouds/10Minions)
 - [10Minions in Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=10clouds.10Minions)
 - [Official Discord Channel](https://discord.gg/CGSX4Btamx)
-
-## 📝 Release Notes
-
-Keep an eye on this section for release updates and changelogs.
-
-### 1.0.0
-
-Initial release.
 
 ## 🚀 Roadmap
 

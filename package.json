@@ -11,7 +11,7 @@
     "issues": "https://github.com/10clouds/10Minions/issues",
     "discord": "https://discord.gg/your_invite_link"
   },
-  "version": "0.9.5",
+  "version": "0.9.7-dev",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
@@ -105,8 +105,8 @@
             "gpt-3.5-turbo-16k",
             "gpt-4-32k"
           ],
-          "default": "gpt-4",
-          "markdownDescription": "Select the available model for 10Minions tasks: `gpt-4`, `gpt-3.5-turbo`, `gpt-3.5-turbo-16k`, or `gpt-4-32k`",
+          "default": "gpt-3.5-turbo-16k",
+          "markdownDescription": "Select the available model for 10Minions tasks:\n\n- `gpt-4`: Default model, designed for general-purpose tasks\n- `gpt-3.5-turbo`: High-performance model, suitable for faster processing\n- `gpt-3.5-turbo-16k`: Similar to gpt-3.5-turbo but with a larger context window\n- `gpt-4-32k`: Extended version of gpt-4 for handling larger datasets\n",
           "order": 3
         }
       }
