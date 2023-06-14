@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import AsyncLock = require("async-lock");
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 
-export type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo";
+export type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-4-32k";
 
 import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
 import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
@@ -17,10 +17,12 @@ type ModelData = {
 
 export const MODEL_DATA: ModelData = {
   'gpt-4': {maxTokens: 8192, encode: encodeGPT4},
+  'gpt-4-32k': {maxTokens: 32768, encode: encodeGPT4},
   'gpt-3.5-turbo': {maxTokens: 4096, encode: encodeGPT35},
+  'gpt-3.5-turbo-16k': {maxTokens: 16384, encode: encodeGPT35},
 };
 
-export function canIRunThis({ prompt, maxTokens = 2000, model = "gpt-4" }: {
+export function canIRunThis({ prompt, maxTokens = 2000, model = (vscode.workspace.getConfiguration("10minions").get("model") as AVAILABLE_MODELS)}: {
   prompt: string;
   maxTokens?: number;
   model?: AVAILABLE_MODELS;
@@ -54,6 +56,7 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
         }
       }
     } else {
+      console.log(line);
       let errorObject = JSON.parse(line);
 
       if (errorObject.error) {
@@ -181,3 +184,15 @@ export async function processOpenAIResponseStream({
 
 
 
+
+
+/*
+Recently applied task: Take the default from:
+
+"10minions.model": {
+          "type": "string",
+          "default": "gpt-4",
+          "markdownDescription": "Select the available model for 10Minions tasks: `gpt-4`, `gpt-3.5-turbo`, `gpt-3.5-turbo-16k`, or `gpt-4-32k`",
+          "order": 3
+        }
+*/

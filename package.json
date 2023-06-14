@@ -48,12 +48,12 @@
     "snippets"
   ],
   "categories": [
-      "Programming Languages",
-      "Linters",
-      "Formatters",
-      "Snippets",
-      "Machine Learning",
-      "Education"
+    "Programming Languages",
+    "Linters",
+    "Formatters",
+    "Snippets",
+    "Machine Learning",
+    "Education"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -96,6 +96,18 @@
           "default": true,
           "markdownDescription": "Allow tasks to be sent for diagnostic purposes to improve accuracy of results. This data will only be used to improve the service and will not be shared with third parties. If turned off, no data will be sent to 10Clouds, only to OpenAI.",
           "order": 2
+        },
+        "10minions.model": {
+          "type": "string",
+          "enum": [
+            "gpt-4",
+            "gpt-3.5-turbo",
+            "gpt-3.5-turbo-16k",
+            "gpt-4-32k"
+          ],
+          "default": "gpt-4",
+          "markdownDescription": "Select the available model for 10Minions tasks: `gpt-4`, `gpt-3.5-turbo`, `gpt-3.5-turbo-16k`, or `gpt-4-32k`",
+          "order": 3
         }
       }
     },
@@ -156,6 +168,7 @@
     "@types/node": "18.x",
     "@types/react": "^18.2.7",
     "@types/react-dom": "^18.2.4",
+    "@types/react-transition-group": "^4.4.6",
     "@types/vscode": "^1.78.0",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
@@ -180,6 +193,7 @@
     "openai": "^3.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-flip-move": "^3.0.5"
+    "react-flip-move": "^3.0.5",
+    "react-transition-group": "^4.4.5"
   }
 }

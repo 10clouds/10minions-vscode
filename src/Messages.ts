@@ -21,7 +21,8 @@ export enum MessageToVSCodeType {
   ShowDiff,
   ReRunExecution,
   StopExecution,
-  GetSuggestions,
+  SuggestionGet,
+  SuggestionCancel,
   CloseExecution,
   ReadyForMessages,
   ApplyAndReviewTask,
@@ -35,8 +36,8 @@ export type MessageToWebView =
   | { type: MessageToWebViewType.UpdateSidebarVisibility; value: boolean }
   | { type: MessageToWebViewType.ApiKeySet; value: boolean }
   | { type: MessageToWebViewType.TokenCount; value: number }
-  | { type: MessageToWebViewType.Suggestion; suggestion: string }
   | { type: MessageToWebViewType.ChosenCodeUpdated; code: string }
+  | { type: MessageToWebViewType.Suggestion; suggestion: string, forCode: string, forInput : string }
   | { type: MessageToWebViewType.SuggestionError; error: string }
   | { type: MessageToWebViewType.SuggestionLoading; }
   | { type: MessageToWebViewType.SuggestionLoadedOrCanceled; };
@@ -49,7 +50,8 @@ export type MessageToVSCode =
   | { type: MessageToVSCodeType.ShowDiff; minionTaskId: string }
   | { type: MessageToVSCodeType.ReRunExecution; minionTaskId: string; newUserQuery?: string }
   | { type: MessageToVSCodeType.StopExecution; minionTaskId: string }
-  | { type: MessageToVSCodeType.GetSuggestions; input?: string }
+  | { type: MessageToVSCodeType.SuggestionGet; input?: string }
+  | { type: MessageToVSCodeType.SuggestionCancel }
   | { type: MessageToVSCodeType.CloseExecution; minionTaskId: string }
   | { type: MessageToVSCodeType.ReadyForMessages }
   | { type: MessageToVSCodeType.ApplyAndReviewTask; minionTaskId: string, reapply: boolean }

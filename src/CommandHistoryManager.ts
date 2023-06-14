@@ -1,3 +1,4 @@
+
 import * as vscode from "vscode";
 import { gptExecute } from "./gptExecute";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
@@ -31,6 +32,7 @@ function shuffledBaseCommands(): { command: string; timeStamp: number }[] {
 }
 
 export class CommandHistoryManager {
+
   private commandHistory: { command: string; timeStamp: number }[] = [];
   private _view?: vscode.WebviewView;
   private _context: vscode.ExtensionContext;
@@ -57,6 +59,19 @@ export class CommandHistoryManager {
 
   updateView(view: vscode.WebviewView) {
     this._view = view;
+  }
+
+  cancelSuggestion() {
+    // Step 1: Abort the current GPT suggestion
+    this.gptSuggestionController.abort();
+
+    // Step 2: Set the suggestionProcessing state to false
+    this.suggestionProcessing = false;
+
+    // Step 3: Send a message to the WebView
+    postMessageToWebView(this._view, {
+      type: MessageToWebViewType.SuggestionLoadedOrCanceled,
+    });
   }
 
   async updateCommandHistory(prompt: string) {
@@ -117,8 +132,6 @@ export class CommandHistoryManager {
   }
 
   async getCommandSuggestionGPT(input: string, code: string, languageId: string) {
-    if (input === this.lastInput && code === this.lastCode) return;
-  
     if (input.length > 400 || input.includes("\n")) {
       return;
     }
@@ -163,16 +176,21 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
     // Implement the custom onChunk function
     const onChunk = async (chunk: string) => {
       this.currentSuggestion += chunk;
-      postMessageToWebView(this._view, {
-        type: MessageToWebViewType.Suggestion,
-        suggestion: stripQuotes(this.currentSuggestion),
-      });
     };
   
     this.currentSuggestion = "";
   
     try {
       await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo" });
+      
+      // Send the final suggestion after gptExecute has finished execution
+      postMessageToWebView(this._view, {
+        type: MessageToWebViewType.Suggestion,
+        suggestion: stripQuotes(this.currentSuggestion),
+        forCode: code,
+        forInput: input,
+      });
+
       this.lastCode = code;
       this.lastInput = input;
     } catch (e) {
@@ -193,3 +211,8 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
 function stripQuotes(input: string): string {
   return input.replace(/^"|"$/g, "");
 }
+
+
+/*
+Recently applied task: Implement the cancelSuggestion function to properly handle canceling suggestions in the application.
+*/

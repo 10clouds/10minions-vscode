@@ -109,8 +109,6 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
   timeoutRef?: NodeJS.Timeout;
 
 private handleSelectionChange() {
-  const activeEditor = vscode.window.activeTextEditor;
-  const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
 
   // Clear previous timeout before setting a new one
   if (this.timeoutRef) {
@@ -119,11 +117,14 @@ private handleSelectionChange() {
 
   // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
   this.timeoutRef = setTimeout(() => {
+    const activeEditor = vscode.window.activeTextEditor;
+    const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
+  
     postMessageToWebView(this._view, {
       type: MessageToWebViewType.ChosenCodeUpdated,
       code: selectedText ? selectedText : (activeEditor?.document.getText() || ""),
     });
-  }, 1000);
+  }, 100);
 }
 
 private updateSidebarVisibility(visible: boolean) {
@@ -199,10 +200,16 @@ private updateSidebarVisibility(visible: boolean) {
         this.executionsManager.stopExecution(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.GetSuggestions: {
+      case MessageToVSCodeType.SuggestionCancel: {
+
+        this.commandHistoryManager.cancelSuggestion();
+
+        break;
+      }
+      case MessageToVSCodeType.SuggestionGet: {
         const input = data.input || "";
         const activeEditor = vscode.window.activeTextEditor;
-        const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || ""
+        const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "";
         
         this.commandHistoryManager.getCommandSuggestionGPT(
           input,

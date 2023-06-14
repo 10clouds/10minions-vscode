@@ -4,7 +4,7 @@ import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { MinionTask } from "../MinionTask";
 import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
-import { getCommentForLanguage } from "./comments";
+import { canAddComment, getCommentForLanguage } from "./comments";
 
 function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
   let currentCode = originalCode;
@@ -200,11 +200,14 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     minionTask.originalContent = document.getText();
 
+    let preprocessedContent = canAddComment(document.languageId) ? `${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}` : minionTask.originalContent;
+
     let modifiedContent = applyModificationProcedure(
-      `${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}`,
+      preprocessedContent,
       minionTask.modificationProcedure,
       document.languageId
     );
+
     console.log(`modifiedContent: "${modifiedContent}"`);
 
     await applyWorkspaceEdit(async (edit) => {

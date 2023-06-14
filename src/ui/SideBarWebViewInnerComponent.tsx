@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CSSTransition } from "react-transition-group";
 import { createRoot } from "react-dom/client";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
 import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
@@ -42,7 +43,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [suggestionInputBase, setSuggestionInputBase] = React.useState<string | undefined>(undefined);
   const [suggestionCodeBase, setSuggestionCodeBase] = React.useState<string | undefined>(undefined);
   const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
-  const [immediatellySuggest, setImmediatellySuggest] = React.useState(false);
+  const [immediatelySuggest, setImmediatelySuggest] = React.useState(false);
   const [acceptedSuggestion, setAcceptedSuggestion] = React.useState<string | undefined>(undefined);
   const prevIsTextAreaFocused = usePrevious(isTextAreaFocused);
 
@@ -55,40 +56,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
-  function handleMessage(message: MessageToWebView) {
-    console.log("CMD (webview)", message.type);
 
-    switch (message.type) {
-      case MessageToWebViewType.ClearAndFocusOnInput:
-        handleClearAndFocus();
-        break;
-      case MessageToWebViewType.ExecutionsUpdated:
-        handleExecutionsUpdated(message.executions);
-        break;
-      case MessageToWebViewType.ApiKeySet:
-        setApiKeySet(message.value);
-        break;
-      case MessageToWebViewType.UpdateSidebarVisibility:
-        setIsSidebarVisible(message.value);
-        break;
-      case MessageToWebViewType.SuggestionLoading:
-        setIsSuggestionLoading(true);
-        break;
-      case MessageToWebViewType.Suggestion:
-        setSelectedSuggestion(message.suggestion);
-        break;
-      case MessageToWebViewType.SuggestionError:
-        setSelectedSuggestion("");
-        setIsSuggestionLoading(false);
-        break;
-      case MessageToWebViewType.SuggestionLoadedOrCanceled:
-        setIsSuggestionLoading(false);
-        break;
-      case MessageToWebViewType.ChosenCodeUpdated:
-        setSelectedCode(message.code);
-        break;
-    }
-  }
 
   function handleClearAndFocus() {
     setUserInputPrompt("");
@@ -119,9 +87,51 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }
 
   React.useEffect(() => {
+    
+    
     const eventHandler = (event: any) => {
       const message: MessageToWebView = event.data;
       handleMessage(message);
+
+      function handleMessage(message: MessageToWebView) {
+        console.log("CMD (webview)", message.type);
+    
+        switch (message.type) {
+          case MessageToWebViewType.ClearAndFocusOnInput:
+            handleClearAndFocus();
+            break;
+          case MessageToWebViewType.ExecutionsUpdated:
+            handleExecutionsUpdated(message.executions);
+            break;
+          case MessageToWebViewType.ApiKeySet:
+            setApiKeySet(message.value);
+            break;
+          case MessageToWebViewType.UpdateSidebarVisibility:
+            setIsSidebarVisible(message.value);
+            break;
+          case MessageToWebViewType.SuggestionLoading:
+            setIsSuggestionLoading(true);
+            break;
+          case MessageToWebViewType.Suggestion:
+            console.log("Suggestion");
+            console.log(selectedCode,);
+            console.log("Suggestion!");
+            if (message.forCode === selectedCode && message.forInput === userInputPrompt) {
+              setSelectedSuggestion(message.suggestion);
+            }
+            break;
+          case MessageToWebViewType.SuggestionError:
+            setSelectedSuggestion("");
+            setIsSuggestionLoading(false);
+            break;
+          case MessageToWebViewType.SuggestionLoadedOrCanceled:
+            setIsSuggestionLoading(false);
+            break;
+          case MessageToWebViewType.ChosenCodeUpdated:
+            setSelectedCode(message.code);
+            break;
+        }
+      }
     };
 
     window.addEventListener("message", eventHandler);
@@ -131,11 +141,12 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     return () => {
       window.removeEventListener("message", eventHandler);
     };
-  }, []);
+  }, [selectedCode, userInputPrompt]);
 
   React.useEffect(() => {
-    if (prevIsTextAreaFocused === false && isTextAreaFocused === true) {
-      setImmediatellySuggest(true);
+    console.log(`isTextAreaFocused: ${isTextAreaFocused} prevIsTextAreaFocused: ${prevIsTextAreaFocused}`)
+    if (!prevIsTextAreaFocused && isTextAreaFocused) {
+      setImmediatelySuggest(true);
     }
   }, [prevIsTextAreaFocused, isTextAreaFocused]);
 
@@ -144,34 +155,42 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       clearTimeout(timeoutRef.current);
     }
 
+    if (isSuggestionLoading && (userInputPrompt !== suggestionInputBase || selectedCode !== suggestionCodeBase)) {
+      postMessageToVsCode({
+        type: MessageToVSCodeType.SuggestionCancel
+      });
+      setIsSuggestionLoading(false);
+    }
+
     console.log(
-      `DUPA suggestionInputBase: ${suggestionInputBase}, userInputPrompt: ${userInputPrompt}, suggestionCodeBase: ${suggestionCodeBase}, selectedCode: ${selectedCode}, isSidebarVisible: ${isSidebarVisible}, prevIsTextAreaFocused: ${prevIsTextAreaFocused}, isTextAreaFocused: ${isTextAreaFocused}`
+      `DUPA suggestionInputBase: ${suggestionInputBase}, userInputPrompt: ${userInputPrompt}, suggestionCodeBase: ${suggestionCodeBase}, selectedCode: ${selectedCode}, isSidebarVisible: ${isSidebarVisible}, prevIsTextAreaFocused: ${prevIsTextAreaFocused}, isTextAreaFocused: ${isTextAreaFocused} immediatellySuggest: ${immediatelySuggest} acceptedSuggestion: ${acceptedSuggestion}`
     );
 
     if (
       isSidebarVisible &&
-      (isTextAreaFocused || (selectedSuggestion === "" && !isSuggestionLoading)) &&
+      (isTextAreaFocused || !isSuggestionLoading) &&
       !(suggestionInputBase === userInputPrompt && suggestionCodeBase === selectedCode) &&
       acceptedSuggestion !== userInputPrompt
     ) {
       setSelectedSuggestion("");
 
-      if (immediatellySuggest) {
+      if (immediatelySuggest) {
         setSuggestionInputBase(userInputPrompt);
         setSuggestionCodeBase(selectedCode);
         postMessageToVsCode({
-          type: MessageToVSCodeType.GetSuggestions,
+          type: MessageToVSCodeType.SuggestionGet,
           input: userInputPrompt,
         });
+        setImmediatelySuggest(false);
       } else {
         timeoutRef.current = setTimeout(() => {
-          setImmediatellySuggest(true);
-        }, 1500);
+          setImmediatelySuggest(true);
+        }, isTextAreaFocused ? 2500 : 10000);
       }
-    }
 
-    setImmediatellySuggest(false);
-  }, [userInputPrompt, selectedCode, isSidebarVisible, isTextAreaFocused, immediatellySuggest, acceptedSuggestion]);
+      
+    }
+  }, [userInputPrompt, selectedCode, suggestionInputBase, suggestionCodeBase, isSidebarVisible, isTextAreaFocused, immediatelySuggest, acceptedSuggestion]);
 
   return (
     <div className="w-full">
@@ -267,9 +286,18 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                         <br />
                       </span>
                     )}
-                    {selectedSuggestion && <span style={{ opacity: 0.7 }}>{selectedSuggestion}</span>}
+                    {
+                      <CSSTransition
+                        in={selectedSuggestion !== ""}
+                        timeout={1200}
+                        classNames="fade"
+                        unmountOnExit
+                      >
+                        <span>{selectedSuggestion}</span>
+                      </CSSTransition>
+                    }
                     {isSuggestionLoading && (
-                      <span style={{ opacity: 0.5 }}>
+                      <span style={{ opacity: 0.25 }}>
                         <span className="ellipsis-dot ellipsis-dot-1">.</span>
                         <span className="ellipsis-dot ellipsis-dot-2">.</span>
                         <span className="ellipsis-dot ellipsis-dot-3">.</span>
@@ -308,3 +336,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 const container = document.getElementById("root");
 const root = createRoot(container!);
 root.render(<SideBarWebViewInnerComponent />);
+
+
+/*
+Recently applied task: Refactor this function to correct the spelling of the "Immediately" and improve code readability by renaming it to setImmediatelySuggest.
+*/
