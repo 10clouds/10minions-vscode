@@ -60,9 +60,13 @@ Our users love 10Minions! See what they have to say:
 - "An amazing tool for developers – a must-have!"
 - "The seamless integration with Visual Studio Code is impressive."
 
-## 📸 Screenshots / GIFs
+## 📸 Screenshots / video
 
-Showcase the 10Minions plugin in action with screenshots or GIFs demonstrating its key features/functionality.
+![1](https://github.com/10clouds/10Minions/assets/135703473/e01da07b-aea3-4f54-a102-b20d9f78bb5c)
+![2](https://github.com/10clouds/10Minions/assets/135703473/62140059-8106-40dd-86c5-efceebc4b448)
+![3](https://github.com/10clouds/10Minions/assets/135703473/05a5c090-dea7-4d64-a160-155359208b15)
+![4](https://github.com/10clouds/10Minions/assets/135703473/e59a3bcc-c15a-45ef-b4d8-2e0f6c70af97)
+
 
 ## 💼 Resources and Links
 
