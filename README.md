@@ -75,4 +75,4 @@ Our users love 10Minions! See what they have to say:
 
 ## 🚀 Roadmap
 
-* Ability to perform workspace wide operations
+* 10Minions currently only support edits in scope of a single file, we are working on an ability to perform workspace wide operations.
