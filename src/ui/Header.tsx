@@ -13,7 +13,7 @@ export function Header({ RobotIcon1, RobotIcon2 }: { RobotIcon1: React.ElementTy
       </h1>
       <h3 className="text-xl font-semibold text-center mb-6">
         Your Army of <span style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}>AI-Powered</span>
-        <br /> <span style={{ opacity: 0.7 }}>Coding</span> Experts
+        <br /> <span style={{ opacity: 0.7 }}>Coding</span> Buddies
       </h3>
     </React.Fragment>
   );
