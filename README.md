@@ -1,5 +1,5 @@
 <h2 align="center"><img src="https://raw.githubusercontent.com/10clouds/10Minions/main/resources/resources/ext-icon.png" height="64"><br>10Minions</h2>
-<p align="center"><strong>Your Army of GPT-4 Powered Coding Comrades </strong></p>
+<p align="center"><strong>Your Army of GPT-4 Powered Coding Experts </strong></p>
 <p align="center"><strong>(Boost Your Productivity)</strong></p>
 
 Unleash the power of autonomous coding with 10Minions, a cutting-edge coding assistant built on the GPT-4 platform. Seamlessly integrated with Visual Studio Code, 10Minions helps you manage complex coding tasks across your codebase, delivering clean, efficient, and standardized code.
