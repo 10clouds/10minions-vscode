@@ -181,7 +181,7 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
     this.currentSuggestion = "";
   
     try {
-      await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo" });
+      await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo-16k" });
       
       // Send the final suggestion after gptExecute has finished execution
       postMessageToWebView(this._view, {

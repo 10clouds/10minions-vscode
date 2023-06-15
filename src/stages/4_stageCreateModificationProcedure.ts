@@ -4,6 +4,7 @@ import { MinionTask } from "../MinionTask";
 import { EXTENSIVE_DEBUG } from "../const";
 import { gptExecute } from "../gptExecute";
 import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
+import { AVAILABLE_MODELS, MODEL_DATA } from "../openai";
 
 export const AVAILABE_COMMANDS = [
 `
@@ -28,7 +29,7 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 
 ,
 
-`
+/*`
 
 # REPLACE_ALL / END_REPLACE_ALL
 
@@ -49,7 +50,7 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 `.trim()
 
 ,
-
+*/
 `
 
 # MODIFY_OTHER / END_MODIFY_OTHER
@@ -131,21 +132,23 @@ Let's take this step by step, first, describe in detail what you are going to do
 
   let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
 
-  let availableTokens = 8000 - encode(promptWithContext).length;
+  const model = 'gpt-4';
+
+  let availableTokens = MODEL_DATA[model].maxTokens - encode(promptWithContext).length;
 
   console.log(
-    `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}`
+    `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}`
   );
 
   if (availableTokens < absoluteMinimumTokens) {
     throw new Error(
-      `Not enough tokens to perform the modification. Available tokens: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}`
+      `Not enough tokens to perform the modification. Available tokens: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}`
     );
   }
 
   if (EXTENSIVE_DEBUG) {
     onChunk(
-      `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens}\n\n`
+      `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}\n\n`
     );
     onChunk("<<<< PROMPT >>>>\n\n");
     onChunk(promptWithContext + "\n\n");
