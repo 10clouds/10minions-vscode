@@ -1,4 +1,3 @@
-
 import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import * as React from "react";
 import { forwardRef } from "react";
@@ -31,10 +30,10 @@ export const MinionTaskComponent = forwardRef(
     const [updatedPrompt, setUpdatedPrompt] = React.useState(minionTask.userQuery);
 
     React.useEffect(() => {
-      if (minionTask.inlineMessage) {
+      if (!!minionTask.inlineMessage) {
         setIsExpanded(true);
       }
-    }, [minionTask.inlineMessage]);
+    }, [!!minionTask.inlineMessage]);
 
     React.useEffect(() => {
       setUpdatedPrompt(minionTask.userQuery);
@@ -182,7 +181,7 @@ export const MinionTaskComponent = forwardRef(
         }}
       />
     );
-    
+
     const openLogFileButton = (
       <OutlineButton
         title="Open Log"
@@ -195,7 +194,6 @@ export const MinionTaskComponent = forwardRef(
         }}
       />
     );
-
 
     return (
       <div
@@ -218,7 +216,9 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""} ${minionTask.isError ? "error-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${
+                minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""
+              } ${minionTask.isError ? "error-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
@@ -238,8 +238,13 @@ export const MinionTaskComponent = forwardRef(
             {closeButton}
           </div>
 
-          {!isExpanded ? <div className="pb-3" /> : (
+          {!isExpanded ? (
+            <div className="pb-3" />
+          ) : (
             <>
+              <div className="pl-3 pr-3 pb-3">
+                {minionTask.inlineMessage ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.inlineMessage}</pre> : <></>}
+              </div>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 pb-3 pl-3 pr-3 overflow-auto">
                 <div className="mb-2">Log:</div>
                 <span className="mb-2">{openLogFileButton}</span>
@@ -264,9 +269,7 @@ export const MinionTaskComponent = forwardRef(
                 <div className="mb-2">Status:</div>
 
                 <span className="mb-2">
-                  {minionTask.executionStage}
-                  {' '}
-                  {minionTask.executionStage === APPLIED_STAGE_NAME && reapplyModificationButton}
+                  {minionTask.executionStage} {minionTask.executionStage === APPLIED_STAGE_NAME && reapplyModificationButton}
                 </span>
 
                 <div className="mb-2">Task:</div>
@@ -325,9 +328,6 @@ export const MinionTaskComponent = forwardRef(
                     <pre>{minionTask.selectedText.includes("\n") ? minionTask.selectedText : minionTask.selectedText.trim()}</pre>
                   </div>
                 )}
-              </div>
-              <div className="pl-3 pr-3 pb-3">
-                {minionTask.inlineMessage ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.inlineMessage}</pre> : <></>}
               </div>
             </>
           )}

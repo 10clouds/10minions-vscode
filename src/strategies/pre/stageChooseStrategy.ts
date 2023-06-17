@@ -4,7 +4,7 @@ import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { ensureICanRunThis, gptExecute } from "../../openai";
 import { PRE_STAGES, TASK_STRATEGIES } from "../strategies";
 
-export async function stageClassifyTask(this: MinionTask) {
+export async function stageChooseStrategy(this: MinionTask) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
     return "";
@@ -23,9 +23,9 @@ ${this.originalContent}
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to help him with some code, the task is provided below in TASK section.
 
-Your job is to classify the task, so tomorrow, when you get back to this task, you know what to do.
+Your job is to choose strategy for handling the task, so tomorrow, when you get back to this task, you know what to do.
 
-Possible classifications:
+Possible strategies:
 ${TASK_STRATEGIES.map((c) => `* ${c.name} - ${c.description}`).join("\n")}
 
 ===== CODE ${
@@ -41,7 +41,7 @@ ${fileContext}
 ${this.userQuery}
 
 
-Classify the task.
+Choose strategy for the task.
 `.trim();
 
   if (DEBUG_PROMPTS) {
@@ -75,7 +75,7 @@ Classify the task.
       parameters: {
         type: "object",
         properties: {
-          classification: { type: "string", enum: ["AnswerQuestion", "CodeChange"] },
+          strategy: { type: "string", enum: TASK_STRATEGIES.map((c) => c.name) },
         },
         required: ["classification"],
       },
@@ -84,23 +84,23 @@ Classify the task.
 
   this.totalCost += cost;
 
-  console.log("Classification: ", result);
+  console.log("Strategy: ", result);
 
   this.appendToLog("\n\n");
 
   //find classification in text
-  let classifications = TASK_STRATEGIES.filter((c) => result.indexOf(c.name) !== -1);
+  let strategies = TASK_STRATEGIES.filter((c) => result.indexOf(c.name) !== -1);
 
-  if (classifications.length !== 1) {
-    throw new Error(`Could not find classification in the text: ${result}`);
+  if (strategies.length !== 1) {
+    throw new Error(`Could not find strategy in the text: ${result}`);
   }
 
-  this.strategy = classifications[0].name;
+  this.strategy = strategies[0].name;
 
-  this.stages = [...PRE_STAGES, ...classifications[0].stages];
+  this.stages = [...PRE_STAGES, ...strategies[0].stages];
   this.currentStageIndex = PRE_STAGES.length - 1;
 
   if (DEBUG_PROMPTS) {
-    this.appendToLog(`Classification: ${this.strategy}\n\n`);
+    this.appendToLog(`Strategy: ${this.strategy}\n\n`);
   }
 }

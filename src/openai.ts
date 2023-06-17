@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import { AnalyticsManager } from "./AnalyticsManager";
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import AsyncLock = require("async-lock");
+import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "./const";
 
 export type GptMode = "FAST" | "QUALITY";
 export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613"; // | "gpt-4-32k-0613"
@@ -51,7 +52,9 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
       let [line, ...rest] = chunkBuffer.split("\n");
       chunkBuffer = rest.join("\n");
 
-      console.log(line);
+      if (DEBUG_RESPONSES) {
+        console.log(line);
+      }
 
       if (line === "data: [DONE]") continue;
 
@@ -116,8 +119,6 @@ async function processOpenAIResponseStream({
           .map((l) => l.choices[0].delta.content || l.choices[0].delta.function_call?.arguments || "")
           .filter((c) => c)
           .join("");
-
-        console.log(tokens);
 
         await openAILock.acquire("openAI", async () => {
           await onChunk(tokens);
@@ -249,7 +250,10 @@ export async function gptExecute({
     ...outputType === "string" ? {} : {function_call: { name: outputType.name }, functions: [outputType]},
   };
   
-  console.log(requestData);
+  if (DEBUG_RESPONSES) {
+    console.log(requestData);
+  }
+  
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -275,7 +279,10 @@ export async function gptExecute({
       const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
       const totalCost = inputCost + outputCost;
 
-      console.log("RESPONSE", response);
+      if (DEBUG_RESPONSES) {
+        console.log("RESPONSE", response);
+      }
+      
       return {
         result: result,
         cost: totalCost, 

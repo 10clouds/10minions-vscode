@@ -1,9 +1,10 @@
 import { stageStarting } from "./pre/stageStarting";
-import { stageClassifyTask } from "./pre/stageClassifyTask";
+import { stageChooseStrategy } from "./pre/stageChooseStrategy";
 import { stageExtractRelevantCode } from "./workspace/3_stageExtractRelevantCode";
 import { stageCreateModificationProcedure } from "./simpleedit/4_stageCreateModificationProcedure";
 import { stageFinishing } from "./common/stageFinishing";
 import { stageCreateModification } from "./simpleedit/3_stageCreateCodeEdit";
+import { stageCreateAnswer } from "./question/3_stageCreateAnswer";
 
 export type TASK_STRATEGY_ID =
   | "AnswerQuestion"
@@ -31,7 +32,7 @@ export const PRE_STAGES: Stage[] = [
   {
     name: "Understanding ...",
     weight: 50,
-    execution: stageClassifyTask,
+    execution: stageChooseStrategy,
   },
 ];
 
@@ -43,7 +44,7 @@ export const TASK_STRATEGIES: {
   {
     name: "AutonomousAgent",
     description:
-      "Choose this classification if you don't want to modify code when doing this task or it's not appropriate to modifiy code based on this task. The result is not code, but textual description. A good example of this is when you are asked a question, and you need to answer it. For example: For example: are strings immutable in java? explain how this works, come up with 5 ideas for a name etc.",
+      "Choose this strategy only if explicitly asked for in the TASK.",
     stages: [
       {
         name: "Extracting ...",
@@ -60,7 +61,7 @@ export const TASK_STRATEGIES: {
   {
     name: "VectorizeAndExecute",
     description:
-      "Choose this classification if you don't want to modify code when doing this task or it's not appropriate to modifiy code based on this task. The result is not code, but textual description. A good example of this is when you are asked a question, and you need to answer it. For example: For example: are strings immutable in java? explain how this works, come up with 5 ideas for a name etc.",
+      "Choose this strategy only if explicitly asked for in the TASK.",
     stages: [
       {
         name: "Extracting ...",
@@ -77,7 +78,7 @@ export const TASK_STRATEGIES: {
   {
     name: "WorkspaceWide",
     description:
-      "Choose this classification if you don't want to modify code when doing this task or it's not appropriate to modifiy code based on this task. The result is not code, but textual description. A good example of this is when you are asked a question, and you need to answer it. For example: For example: are strings immutable in java? explain how this works, come up with 5 ideas for a name etc.",
+      "Choose this strategy only if explicitly asked for in the TASK.",
     stages: [
       {
         name: "Extracting ...",
@@ -99,7 +100,7 @@ export const TASK_STRATEGIES: {
       {
         name: "Conceptualising ...",
         weight: 100,
-        execution: stageCreateModification,
+        execution: stageCreateAnswer,
       },
       {
         name: "Finishing ...",

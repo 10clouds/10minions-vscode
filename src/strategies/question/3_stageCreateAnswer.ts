@@ -1,10 +1,8 @@
 import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
 import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
-import { TASK_STRATEGY_ID } from "../strategies";
 
-
-function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
+function createPrompt(selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to tell him about something, the task is provided below in TASK section.
@@ -37,7 +35,7 @@ Let's take it step by step.
 `.trim();
 }
 
-export async function stageCreateModification(this: MinionTask) {
+export async function stageCreateAnswer(this: MinionTask) {
   if (this.strategy === undefined) {
     throw new Error("Classification is undefined");
   }
@@ -59,7 +57,7 @@ export async function stageCreateModification(this: MinionTask) {
     return "";
   }
 
-  let promptWithContext = createPrompt(classification, selectedText, document, fullFileContents, this.selection.start, userQuery);
+  let promptWithContext = createPrompt(selectedText, document, fullFileContents, this.selection.start, userQuery);
 
   let tokensCode = countTokens(promptWithContext, "QUALITY");
   let luxiouriosTokens = tokensCode * 1.5;
@@ -75,7 +73,7 @@ export async function stageCreateModification(this: MinionTask) {
   let {result, cost} = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
-      this.modificationDescription += chunk;
+      this.inlineMessage += chunk;
       this.appendToLog(chunk);
       this.reportSmallProgress();
     },
@@ -86,7 +84,7 @@ export async function stageCreateModification(this: MinionTask) {
     outputType: "string",
   });
 
-  this.modificationDescription = result;
+  this.inlineMessage = result;
   this.totalCost += cost;
 
   this.reportSmallProgress();

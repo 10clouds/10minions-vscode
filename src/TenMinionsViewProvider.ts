@@ -54,7 +54,7 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration(async (e) => {
-      console.log(`Changed`);
+
       if (e.affectsConfiguration("10minions.apiKey")) {
 
         let missingModels = await getMissingOpenAIModels();

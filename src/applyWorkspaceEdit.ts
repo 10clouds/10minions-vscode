@@ -13,7 +13,7 @@ export async function applyWorkspaceEdit(
     try {
       await vscode.workspace.applyEdit(workspaceEdit);
     } catch (reason) {
-      console.log("REASON", reason);
+      console.error("REASON", reason);
     }
   });
 }

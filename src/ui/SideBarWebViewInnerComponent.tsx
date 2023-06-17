@@ -117,9 +117,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
             setIsSuggestionLoading(true);
             break;
           case MessageToWebViewType.Suggestion:
-            console.log("Suggestion");
-            console.log(selectedCode,);
-            console.log("Suggestion!");
             if (message.forCode === selectedCode && message.forInput === userInputPrompt) {
               setSelectedSuggestion(message.suggestion);
             }
