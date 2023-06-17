@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
 import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { ensureICanRunThis, gptExecute } from "../../openai";
-import { TASK_STRATEGIES } from "../strategies";
+import { PRE_STAGES, TASK_STRATEGIES } from "../strategies";
 
 export async function stageClassifyTask(this: MinionTask) {
   const activeEditor = vscode.window.activeTextEditor;
@@ -97,8 +97,8 @@ Classify the task.
 
   this.strategy = classifications[0].name;
 
-  this.stages = classifications[0].stages;
-  this.currentStageIndex = 0 - 1;
+  this.stages = [...PRE_STAGES, ...classifications[0].stages];
+  this.currentStageIndex = PRE_STAGES.length - 1;
 
   if (DEBUG_PROMPTS) {
     this.appendToLog(`Classification: ${this.strategy}\n\n`);

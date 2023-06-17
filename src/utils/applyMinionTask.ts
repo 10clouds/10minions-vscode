@@ -1,17 +1,19 @@
 import * as vscode from "vscode";
-import { fuzzyReplaceText } from "./fuzzyReplaceText";
-import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { MinionTask } from "../MinionTask";
-import { decomposeMarkdownString } from "./decomposeMarkdownString";
+import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
-import { canAddComment, getCommentForLanguage } from "./comments";
+import { getCommentForLanguage } from "./comments";
+import { decomposeMarkdownString } from "./decomposeMarkdownString";
+import { fuzzyReplaceTextInner } from "./fuzzyReplaceText";
 
-function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
+function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string, recentTaskComment: string) {
+
   let currentCode = originalCode;
   let lines = modificationProcedure.split("\n");
   let storedArg: string[] = [];
   let currentCommand: string = "";
   let currentArg: string[] = [];
+  let firstEditApplied = false;
 
   function finishLastCommand() {
     console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
@@ -19,10 +21,18 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let consolidatedContent = currentArg.join("\n");
       let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       currentCode = innerContent;
+      if (!firstEditApplied) {
+        currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        firstEditApplied = true;
+      }
     } else if (currentCommand.startsWith("MODIFY_OTHER")) {
       console.log(`MODIFY_OTHER: ${currentArg.join("\n")}`);
       let commentContent = currentArg.join("\n");
       currentCode = getCommentForLanguage(languageId, commentContent) + "\n" + currentCode;
+      if (!firstEditApplied) {
+        currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        firstEditApplied = true;
+      }
     } else if (currentCommand.startsWith("REPLACE")) {
       storedArg = currentArg;
     } else if (currentCommand.startsWith("INSERT")) {
@@ -31,9 +41,9 @@ function applyModificationProcedure(originalCode: string, modificationProcedure:
       let replaceText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let withText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = fuzzyReplaceText({ currentCode, replaceText, withText });
+      let replacementArray = fuzzyReplaceTextInner({ currentCode, replaceText, withText });
 
-      if (replacement === undefined) {
+      if (replacementArray === undefined || replacementArray.length !== 3) {
         throw new Error(
           `
 Failed replace
@@ -48,16 +58,22 @@ ${originalCode}
         );
       }
 
-      currentCode = replacement;
+      if (!firstEditApplied) {
+        currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
+        console.log('APPLY MINION TASK', [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]]);
+        firstEditApplied = true;
+      } else {
+        currentCode = replacementArray.join("");
+      }
 
       storedArg = [];
     } else if (currentCommand.startsWith("BEFORE")) {
       let insertText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       let beforeText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
 
-      let replacement = fuzzyReplaceText({ currentCode, replaceText: beforeText, withText: `${insertText}\n${beforeText}` });
-
-      if (replacement === undefined) {
+      let replacementArray = fuzzyReplaceTextInner({ currentCode, replaceText: beforeText, withText: `${insertText}\n${beforeText}` });
+      
+      if (replacementArray === undefined || replacementArray.length !== 3) {
         throw new Error(
           `
 Failed replace
@@ -72,7 +88,12 @@ ${originalCode}
         );
       }
 
-      currentCode = replacement;
+      if (!firstEditApplied) {
+        currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
+        firstEditApplied = true;
+      } else {
+        currentCode = replacementArray.join("");
+      }
 
       storedArg = [];
     } else if (currentCommand.startsWith("RENAME")) {
@@ -195,12 +216,13 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     minionTask.originalContent = document.getText();
 
-    let preprocessedContent = canAddComment(document.languageId) ? `${minionTask.originalContent}\n\n${getCommentForLanguage(document.languageId, `Recently applied task: ${minionTask.userQuery}`)}` : minionTask.originalContent;
+    let preprocessedContent = minionTask.originalContent;
 
     let modifiedContent = applyModificationProcedure(
       preprocessedContent,
       minionTask.modificationProcedure,
-      document.languageId
+      document.languageId,
+      `Recently applied task: ${minionTask.userQuery}`
     );
 
     console.log(`modifiedContent: "${modifiedContent}"`);
@@ -227,3 +249,8 @@ export async function applyMinionTask(minionTask: MinionTask) {
     applyFallback(minionTask);
   }
 }
+
+
+/*
+Recently applied task: Add this not at the start, but at the first edditing position.
+*/

@@ -46,26 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("10minions.setApiKey", async () => {
-      try {
-        const apiKey = await vscode.window.showInputBox({
-          prompt: "Enter your OpenAI API key",
-          value: "",
-        });
-  
-        if (apiKey) {
-          vscode.workspace
-            .getConfiguration("10minions")
-            .update("apiKey", apiKey, true);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    })
-  );
-
   const provider = new TenMinionsViewProvider(context.extensionUri, context);
 
   context.subscriptions.push(

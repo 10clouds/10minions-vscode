@@ -8,66 +8,7 @@ import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTas
 import { applyMinionTask } from "./utils/applyMinionTask";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 import { MessageToWebViewType } from "./Messages";
-
-function extractExecutionIdFromUri(uri: vscode.Uri): string {
-  return uri.path.match(/^minionTaskId\/([a-z\d\-]+)\/.*/)![1];
-}
-
-class LogProvider implements vscode.TextDocumentContentProvider {
-  private executionsManager: MinionTasksManager;
-
-  constructor(executionsManager: MinionTasksManager) {
-    this.executionsManager = executionsManager;
-  }
-
-  // Create an EventEmitter to handle document updates
-  private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
-
-  // Use the getter to expose the onDidChange event using EventEmitter's event property
-  get onDidChange(): vscode.Event<vscode.Uri> | undefined {
-    return this._onDidChangeEmitter.event;
-  }
-
-  reportChange(uri: vscode.Uri) {
-    // Emit the event to notify subscribers of the change in the URI
-    this._onDidChangeEmitter.fire(uri);
-  }
-
-  provideTextDocumentContent(uri: vscode.Uri): string {
-    const textKey = extractExecutionIdFromUri(uri);
-    const execution = this.executionsManager.getExecutionById(textKey);
-    const logContent = execution?.logContent;
-    return logContent || "";
-  }
-}
-
-class OriginalContentProvider implements vscode.TextDocumentContentProvider {
-  private executionsManager: MinionTasksManager;
-
-  constructor(executionsManager: MinionTasksManager) {
-    this.executionsManager = executionsManager;
-  }
-
-  // Create an EventEmitter to handle document updates
-  private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
-
-  // Use the getter to expose the onDidChange event using EventEmitter's event property
-  get onDidChange(): vscode.Event<vscode.Uri> | undefined {
-    return this._onDidChangeEmitter.event;
-  }
-
-  reportChange(uri: vscode.Uri) {
-    // Emit the event to notify subscribers of the change in the URI
-    this._onDidChangeEmitter.fire(uri);
-  }
-
-  provideTextDocumentContent(uri: vscode.Uri): string {
-    const textKey = extractExecutionIdFromUri(uri);
-    const execution = this.executionsManager.getExecutionById(textKey);
-    const originalContent = execution?.originalContent;
-    return originalContent || "";
-  }
-}
+import { OriginalContentProvider, LogProvider } from "./ContentProviders";
 
 export class MinionTasksManager {
 
@@ -147,6 +88,14 @@ export class MinionTasksManager {
     }
   }
 
+  async updateExecution(important: boolean, execution: MinionTask) {
+    if (important) {
+      this.notifyExecutionsUpdatedImmediate(execution, true);
+    } else {
+      this.notifyExecutionsUpdated(execution);
+    }
+  }
+
   async markAsApplied(minionTaskId: string) {
     let minionTask = this.getExecutionById(minionTaskId);
     if (minionTask) {
@@ -181,36 +130,56 @@ export class MinionTasksManager {
     return this.minionTasks.find((e) => e.id === minionTaskId);
   }
 
+  getExecutionByUserQueryAndDoc(task: string, document: vscode.TextDocument) {
+    return this.minionTasks.find((mt) => mt.userQuery.trim() === task.trim() && mt.documentURI === document.uri.toString());
+  }
+
   clearExecutions() {
     this.minionTasks = [];
   }
 
-  public async runMinionOnCurrentSelectionAndEditor(userQuery: string) {
-    const activeEditor = vscode.window.activeTextEditor;
+  public async runMinionOnCurrentSelectionAndEditor(userQuery: string, customDocument?: vscode.TextDocument, customSelection?: vscode.Selection) {
+    let document;
+    let selection;
 
-    if (!activeEditor) {
+    if (customDocument) {
+      document = customDocument;
+
+      if (!customSelection) {
+        throw new Error("customSelection must be provided if customDocument is provided");
+      }
+
+      selection = customSelection;
+    } else {
+      let activeEditor = vscode.window.activeTextEditor;
+
+      if (!activeEditor) {
+        vscode.window.showErrorMessage("Please open a file before running 10Minions");
+        return;
+      }
+
+      document = activeEditor.document;
+      selection = activeEditor.selection;
+    }
+
+    if (!document) {
       vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
 
-    if (activeEditor.document.uri.scheme.startsWith("10minions-")) {
+    if (document.uri.scheme.startsWith("10minions-")) {
       vscode.window.showErrorMessage("Please open a file before running 10Minions");
       return;
     }
 
     const execution = await MinionTask.create({
       userQuery,
-      document: activeEditor.document,
-      selection: activeEditor.selection,
-      selectedText: activeEditor.document.getText(activeEditor.selection),
+      document: document,
+      selection,
+      selectedText: document.getText(selection),
       minionIndex: this.acquireMinionIndex(),
       onChanged: async (important) => {
-        //TODO: This is copied around code at least 3 times. Refactor it.
-        if (important) {
-          this.notifyExecutionsUpdatedImmediate(execution, true);
-        } else {
-          this.notifyExecutionsUpdated(execution);
-        }
+        this.updateExecution(important, execution);
       },
     });
 
@@ -266,7 +235,9 @@ export class MinionTasksManager {
 
     let document = await oldExecution.document();
 
-    let newSelection = oldExecution.selectedText ? await findNewPositionForOldSelection(oldExecution.selection, oldExecution.selectedText, document) : oldExecution.selection;
+    let newSelection = oldExecution.selectedText
+      ? await findNewPositionForOldSelection(oldExecution.selection, oldExecution.selectedText, document)
+      : oldExecution.selection;
     setTimeout(async () => {
       let newMinionTask = await MinionTask.create({
         userQuery: newUserQuery || oldExecution.userQuery,
@@ -275,12 +246,7 @@ export class MinionTasksManager {
         selectedText: document.getText(newSelection),
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
-          //TODO: This is copied around code at least 3 times. Refactor it.
-          if (important) {
-            this.notifyExecutionsUpdatedImmediate(newMinionTask, true);
-          } else {
-            this.notifyExecutionsUpdated(newMinionTask);
-          }
+          this.updateExecution(important, newMinionTask);
         },
       });
 
@@ -309,7 +275,7 @@ export class MinionTasksManager {
       inlineMessage: e.inlineMessage,
       selectedText: e.selectedText,
       shortName: e.shortName,
-      isError: e.isError
+      isError: e.isError,
     }));
 
     postMessageToWebView(this._view, {
@@ -319,7 +285,7 @@ export class MinionTasksManager {
 
     this._view!.badge = {
       tooltip: `${this.minionTasks.length} minion tasks`,
-      value:  this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME || e.isError).length
+      value: this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME || e.isError).length,
     };
 
     this.saveExecutions();
@@ -339,16 +305,18 @@ export class MinionTasksManager {
     }
   }
 
-async closeExecution(minionTaskId: any) {
-  let execution = this.minionTasks.find((e) => e.id === minionTaskId);
+  async closeExecution(minionTaskId: any) {
+    let execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
-  if (execution) {
-    await execution.stopExecution(CANCELED_STAGE_NAME, false);
-    execution.contentWhenDismissed = execution.logContent;
-    this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
-    this.notifyExecutionsUpdatedImmediate(execution, true);
-  } else {
-    vscode.window.showErrorMessage("No execution found for id", minionTaskId);
+    if (execution) {
+      await execution.stopExecution(CANCELED_STAGE_NAME, false);
+      execution.contentWhenDismissed = execution.logContent;
+      this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
+      this.notifyExecutionsUpdatedImmediate(execution, true);
+    } else {
+      vscode.window.showErrorMessage("No execution found for id", minionTaskId);
+    }
   }
-}
+
+  
 }

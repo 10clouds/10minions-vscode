@@ -4,6 +4,8 @@ import { CommandHistoryManager } from "./CommandHistoryManager";
 import { MinionTasksManager } from "./MinionTasksManager";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "./Messages";
+import { MinionTaskAutoRunner } from "./MinionTaskAutoRunner";
+import { getMissingOpenAIModels as getMissingOpenAIModels } from "./openai";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
   return view?.webview.postMessage(message);
@@ -16,11 +18,13 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   private commandHistoryManager: CommandHistoryManager;
   private executionsManager: MinionTasksManager;
   private analyticsManager: AnalyticsManager;
-  
+  private taskAutoRunner: MinionTaskAutoRunner; // Added property for MinionTaskAutoRunner
+
   constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
     this.commandHistoryManager = new CommandHistoryManager(context);
     this.executionsManager = new MinionTasksManager(context);
     this.analyticsManager = new AnalyticsManager(context);
+    this.taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
   }
 
 public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
@@ -49,12 +53,22 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
     webviewView.webview.onDidReceiveMessage(async (data: MessageToVSCode) => await this.handleWebviewMessage(data));
 
     //post message with update to set api key, each time appropriate config is updated
-    vscode.workspace.onDidChangeConfiguration((e) => {
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
       console.log(`Changed`);
       if (e.affectsConfiguration("10minions.apiKey")) {
+
+        let missingModels = await getMissingOpenAIModels();
+
+        //TODO: Extract the two calls below Into a function and replace the it with the function call
+
         postMessageToWebView(this._view, {
           type: MessageToWebViewType.ApiKeySet,
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
+        });
+
+        postMessageToWebView(this._view, {
+          type: MessageToWebViewType.ApiKeyMissingModels,
+          models: missingModels,
         });
 
         if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
@@ -190,6 +204,10 @@ private updateSidebarVisibility(visible: boolean) {
         this.executionsManager.stopExecution(data.minionTaskId);
         break;
       }
+      case MessageToVSCodeType.EditApiKey: {
+        vscode.commands.executeCommand("workbench.action.openSettings", "10minions.apiKey");
+        break;
+      }
       case MessageToVSCodeType.SuggestionCancel: {
 
         this.commandHistoryManager.cancelSuggestion();
@@ -215,9 +233,15 @@ private updateSidebarVisibility(visible: boolean) {
         break;
       }
       case MessageToVSCodeType.ReadyForMessages: {
+        
         postMessageToWebView(this._view, {
           type: MessageToWebViewType.ApiKeySet,
           value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
+        });
+
+        postMessageToWebView(this._view, {
+          type: MessageToWebViewType.ApiKeyMissingModels,
+          models: await getMissingOpenAIModels(),
         });
 
         //update initial executions

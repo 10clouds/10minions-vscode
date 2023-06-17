@@ -1,3 +1,4 @@
+
 import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
 import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
 import { Schema } from "jsonschema";
@@ -8,7 +9,7 @@ import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import AsyncLock = require("async-lock");
 
 export type GptMode = "FAST" | "QUALITY";
-export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613" | "gpt-4-32k-0613";
+export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613"; // | "gpt-4-32k-0613"
 export type OutputType = "string" | FunctionDef;
 export type FunctionParams = { type: "object", properties: {[key: string]: Schema}, required: string[] };
 
@@ -29,7 +30,7 @@ export type ModelData = {
 
 export const MODEL_DATA: ModelData = {
   "gpt-4-0613": { maxTokens: 8192, encode: encodeGPT4, inputCostPer1K: 0.03, outputCostPer1K: 0.06 },
-  "gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4, inputCostPer1K: 0.06, outputCostPer1K: 0.12 },
+  //"gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4, inputCostPer1K: 0.06, outputCostPer1K: 0.12 },
   "gpt-3.5-turbo-0613": { maxTokens: 4096, encode: encodeGPT35, inputCostPer1K: 0.0015, outputCostPer1K: 0.002 },
   "gpt-3.5-turbo-16k-0613": { maxTokens: 16384, encode: encodeGPT35, inputCostPer1K: 0.003, outputCostPer1K: 0.004 },
 };
@@ -67,7 +68,7 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
       let errorObject = JSON.parse(chunkBuffer);
 
       if (errorObject.error) {
-        throw new Error(errorObject.error.message);
+        throw new Error(JSON.stringify(errorObject));
       } else {
         throw new Error(`Unexpected JSON object: ${chunkBuffer}`);
       }
@@ -143,6 +144,41 @@ async function processOpenAIResponseStream({
       reject(err);
     });
   });
+}
+
+/** 
+ * Function to check the availability of all models in OpenAI. 
+ */
+export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
+  
+  const apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
+
+  let missingModels: AVAILABLE_MODELS[] = Object.keys(MODEL_DATA) as AVAILABLE_MODELS[];
+  
+  try {
+    let response = await fetch("https://api.openai.com/v1/models", {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    const responseData = await response.json() as any;
+
+    if(!responseData || !responseData.data){
+      console.error("No data received from OpenAI models API.");
+      return missingModels;
+    }
+
+    const availableModels = responseData.data.map((model: any) => model.id);
+
+    return missingModels.filter((model) => !availableModels.includes(model));
+
+  } catch (error) {
+    console.error(`Error occurred while checking models: ${error}`);
+    return missingModels;
+  }
 }
 
 /**
@@ -234,7 +270,7 @@ export async function gptExecute({
       AnalyticsManager.instance.reportOpenAICall(requestData, result);
 
       const inputTokens = countTokens(JSON.stringify(requestData.messages), mode) + (outputType === "string" ? 0 : countTokens(JSON.stringify(requestData.functions), mode));
-      const outputTokens = countTokens(result, mode);
+      const outputTokens = requestData.max_tokens; //TODO: Is the actuall dolar cost on the OpenAI side is based max_tokens or actual tokens returned?
       const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
       const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
       const totalCost = inputCost + outputCost;
@@ -292,11 +328,13 @@ export function ensureIRunThisInRange({
   preferedTokens: number;
   mode: GptMode;
 }): number {
+  const EXTRA_BUFFER_FOR_ENCODING_OVERHEAD = 50;
+
   minTokens = Math.ceil(minTokens);
   preferedTokens = Math.ceil(preferedTokens);
 
   const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
-  const usedTokens = MODEL_DATA[model].encode(prompt).length;
+  const usedTokens = MODEL_DATA[model].encode(prompt).length + EXTRA_BUFFER_FOR_ENCODING_OVERHEAD;
   const availableTokens = MODEL_DATA[model].maxTokens - usedTokens;
 
   if (availableTokens < minTokens) {
@@ -305,8 +343,3 @@ export function ensureIRunThisInRange({
 
   return Math.min(availableTokens, preferedTokens);
 }
-
-
-/*
-Recently applied task: Replace with count tokens
-*/

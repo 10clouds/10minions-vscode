@@ -5,6 +5,7 @@ export enum MessageToWebViewType {
   ExecutionsUpdated,
   UpdateSidebarVisibility,
   ApiKeySet,
+  ApiKeyMissingModels,
   TokenCount,
   ChosenCodeUpdated,
   Suggestion,
@@ -27,6 +28,7 @@ export enum MessageToVSCodeType {
   ApplyAndReviewTask,
   OpenSelection,
   MarkAsApplied,
+  EditApiKey
 }
 
 export type MessageToWebView =
@@ -34,6 +36,7 @@ export type MessageToWebView =
   | { type: MessageToWebViewType.ExecutionsUpdated; executions: MinionTaskUIInfo[] }
   | { type: MessageToWebViewType.UpdateSidebarVisibility; value: boolean }
   | { type: MessageToWebViewType.ApiKeySet; value: boolean }
+  | { type: MessageToWebViewType.ApiKeyMissingModels; models: string[] }
   | { type: MessageToWebViewType.TokenCount; value: number }
   | { type: MessageToWebViewType.ChosenCodeUpdated; code: string }
   | { type: MessageToWebViewType.Suggestion; suggestion: string, forCode: string, forInput : string }
@@ -52,6 +55,7 @@ export type MessageToVSCode =
   | { type: MessageToVSCodeType.SuggestionCancel }
   | { type: MessageToVSCodeType.CloseExecution; minionTaskId: string }
   | { type: MessageToVSCodeType.ReadyForMessages }
+  | { type: MessageToVSCodeType.EditApiKey }
   | { type: MessageToVSCodeType.ApplyAndReviewTask; minionTaskId: string, reapply: boolean }
   | { type: MessageToVSCodeType.OpenSelection; minionTaskId: string }
   | { type: MessageToVSCodeType.MarkAsApplied; minionTaskId: string };

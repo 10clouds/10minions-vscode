@@ -5,6 +5,8 @@ import { TASK_STRATEGY_ID } from "../strategies";
 
 
 function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
+    const settingsKeyword = vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword');
+
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to help him with some code, the task is provided below in TASK section.
@@ -34,6 +36,7 @@ Your job is to do the task, so your college will be exteremely happy. If asked f
 If asked to refactor code, critically analyze the provided code and propose a refactoring plan focusing on improving readability and maintainability. Your revised code should remain functional with no change in output or side effects. Suggest renaming functions, creating subroutines, or modifying types as needed, to achieve the aim of simplicity and readability. Ensure your code and any documentation meet the quality standards of a top open source project.  
 If asked to write documentation, write nice comment at the top and consise to the point JSdocs above the signatures of each function.
 If asked to remove comments, don't add your own comments as this is probably not what your college wants.
+If asked to perform a task from a "${settingsKeyword}:" comment, perform the task and remove the comment.
 
 ${selectedText
       ? `

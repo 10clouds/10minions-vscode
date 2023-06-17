@@ -8,6 +8,8 @@ import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTas
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { MessageToVSCodeType } from "../Messages";
+import { useUserQueryPreview } from "./useUserQueryPreview";
+import { OutlineButton } from "./OutlineButton";
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
   target.style.height = "auto";
@@ -15,49 +17,7 @@ function adjustTextAreaHeight(target: HTMLTextAreaElement) {
 }
 
 // Constants
-const MAX_PREVIEW_LENGTH = 100;
-
-function useUserQueryPreview(userQuery: string) {
-  const [preview, setPreview] = React.useState("");
-
-  React.useEffect(() => {
-    const lines = userQuery.split("\n");
-    let newPreview = lines[0].substring(0, MAX_PREVIEW_LENGTH);
-
-    if (lines.length > 1 || lines[0].length > MAX_PREVIEW_LENGTH) {
-      newPreview += "…";
-    }
-
-    setPreview(newPreview);
-  }, [userQuery]);
-
-  return preview;
-}
-
-function OutlineButton({
-  title,
-  onClick,
-  description,
-  className = "",
-}: {
-  description: string;
-  title: string;
-  onClick: React.MouseEventHandler<HTMLButtonElement>;
-  className?: string;
-}) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      style={{
-        borderColor: "var(--vscode-button-separator)",
-      }}
-      className={"cursor-pointer border rounded px-2 " + className}
-    >
-      {description}
-    </button>
-  );
-}
+export const MAX_PREVIEW_LENGTH = 100;
 
 export const MinionTaskComponent = forwardRef(
   ({ minionTask, ...props }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {

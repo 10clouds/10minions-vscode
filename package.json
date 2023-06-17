@@ -60,10 +60,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "10minions.setApiKey",
-        "title": "10Minions: Set OpenAI API key"
-      },
-      {
         "command": "10minions.ask",
         "title": "10Minions: Ask 10Minions to do something"
       }
@@ -99,7 +95,7 @@
         },
         "10minions.taskCommentKeyword": {
           "type": "string",
-          "default": "TASK",
+          "default": "TODO",
           "markdownDescription": "Specify the comment keyword that Minions will look for to automatically run tasks (leave it empty to disable this functionality)",
           "order": 3
         }

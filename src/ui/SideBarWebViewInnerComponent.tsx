@@ -2,7 +2,7 @@ import * as React from "react";
 import { CSSTransition } from "react-transition-group";
 import { createRoot } from "react-dom/client";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
-import { ApiKeyInfoMessage } from "./ApiKeyInfoMessage";
+import { MissingApiKeyInfoMessage } from "./MissingApiKeyInfoMessage";
 import { GoButton } from "./GoButton";
 import { Header } from "./Header";
 import { Logo } from "./Logo";
@@ -34,6 +34,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [userInputPrompt, setUserInputPrompt] = React.useState("");
   const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
+  const [missingApiModels, setMissingApiModels] = React.useState<string[] | undefined>(undefined);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
   const [justClickedGo, markJustClickedGo] = useTemporaryFlag();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
@@ -105,6 +106,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
             break;
           case MessageToWebViewType.ApiKeySet:
             setApiKeySet(message.value);
+            break;
+          case MessageToWebViewType.ApiKeyMissingModels:
+            setMissingApiModels(message.models);
             break;
           case MessageToWebViewType.UpdateSidebarVisibility:
             setIsSidebarVisible(message.value);
@@ -197,9 +201,11 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       <div className="p-4 mb-16">
         <Header RobotIcon1={RobotIcon1} RobotIcon2={RobotIcon2} />
 
-        {apiKeySet === false && <ApiKeyInfoMessage />}
 
-        {apiKeySet === true && (
+        {apiKeySet === false && <MissingApiKeyInfoMessage />}
+        {apiKeySet === true && !!missingApiModels?.length && <MissingApiKeyInfoMessage missingModels={missingApiModels} />}
+
+        {apiKeySet === true && missingApiModels?.length === 0 && (
           <>
             <div className="mb-2">
               Summon a Minion! Jot down your coding task and delegate to your loyal Minion. Remember, each Minion lives in a context of a specific file. For
@@ -337,7 +343,3 @@ const container = document.getElementById("root");
 const root = createRoot(container!);
 root.render(<SideBarWebViewInnerComponent />);
 
-
-/*
-Recently applied task: Refactor this function to correct the spelling of the "Immediately" and improve code readability by renaming it to setImmediatelySuggest.
-*/

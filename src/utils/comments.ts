@@ -1,3 +1,5 @@
+//TODO: JSDoc for each function
+
 export function escapeContentForLanguage(language: string, content: string) {
   switch (language) {
     case "python":

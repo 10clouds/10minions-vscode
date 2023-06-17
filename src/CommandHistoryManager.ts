@@ -211,8 +211,3 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
 function stripQuotes(input: string): string {
   return input.replace(/^"|"$/g, "");
 }
-
-
-/*
-Recently applied task: Implement the cancelSuggestion function to properly handle canceling suggestions in the application.
-*/

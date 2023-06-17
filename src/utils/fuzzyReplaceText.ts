@@ -291,7 +291,7 @@ export function fuzzyFindText({
   };
 }
 
-export function fuzzyReplaceText({
+export function fuzzyReplaceTextInner({
   currentCode,
   replaceText,
   withText,
@@ -318,6 +318,27 @@ export function fuzzyReplaceText({
     //console.log("adjustedWithText", adjustedWithText.split("\n").map((line) => `"${line}"`).join("\n"));
     //console.log("postChange", postChange.split("\n").map((line) => `"${line}"`).join("\n"));
 
-    return `${preChange}${"\n"}${adjustedWithText}${postChange ? "\n" : ""}${postChange}`;
+    return [
+      preChange + "\n",
+      adjustedWithText,
+      (postChange ? "\n" : "") + postChange,
+    ];
   }
+}
+
+
+export function fuzzyReplaceText({
+  currentCode,
+  replaceText,
+  withText,
+  similarityFunction = coreSimilarityFunction,
+  similarityThreshold = 0.75,
+}: ReplaceWindowParams) {
+  return fuzzyReplaceTextInner({
+    currentCode,
+    replaceText,
+    withText,
+    similarityFunction,
+    similarityThreshold,
+  })?.join("");
 }

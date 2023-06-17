@@ -75,11 +75,7 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     executionStage: data.executionStage,
     strategy: data.strategy === null ? undefined : data.strategy,
     onChanged: async (important) => {
-      if (important) {
-        MinionTasksManager.instance.notifyExecutionsUpdatedImmediate(minionTask, true);
-      } else {
-        MinionTasksManager.instance.notifyExecutionsUpdated(minionTask);
-      }
+      MinionTasksManager.instance.updateExecution(important, minionTask);
     },
     logContent: data.logContent,
     contentWhenDismissed: data.contentWhenDismissed,
