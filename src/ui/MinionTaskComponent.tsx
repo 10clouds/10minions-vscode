@@ -71,10 +71,10 @@ export const MinionTaskComponent = forwardRef(
     const [updatedPrompt, setUpdatedPrompt] = React.useState(minionTask.userQuery);
 
     React.useEffect(() => {
-      if (minionTask.classification === "AnswerQuestion") {
+      if (minionTask.inlineMessage) {
         setIsExpanded(true);
       }
-    }, [minionTask.classification]);
+    }, [minionTask.inlineMessage]);
 
     React.useEffect(() => {
       setUpdatedPrompt(minionTask.userQuery);
@@ -268,9 +268,9 @@ export const MinionTaskComponent = forwardRef(
         className={`execution mb-4 overflow-hidden rounded flex flex-col ${className}`}
         {...propsWithoutClassName}
       >
-        <div className="pl-3 pr-3 pt-3 pb-3">
+        <div className="pt-3">
           <div
-            className="flex justify-between cursor-pointer"
+            className="flex justify-between cursor-pointer pl-3 pr-3 "
             title={!isExpanded ? "Click for more info" : "Click to hide"}
             onClick={() => {
               setIsExpanded(!isExpanded);
@@ -289,7 +289,7 @@ export const MinionTaskComponent = forwardRef(
             </div>
             {minionTask.modificationDescription &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
-              (minionTask.classification === "AnswerQuestion" ? markAsReadButton : assessButton)}
+              (minionTask.modificationProcedure ? assessButton : markAsReadButton)}
             {(minionTask.executionStage === CANCELED_STAGE_NAME || isError(minionTask)) && retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
@@ -297,9 +297,9 @@ export const MinionTaskComponent = forwardRef(
             {closeButton}
           </div>
 
-          {isExpanded && (
+          {!isExpanded ? <div className="pb-3" /> : (
             <>
-              <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 mb-2">
+              <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 pb-3 pl-3 pr-3 overflow-auto">
                 <div className="mb-2">Log:</div>
                 <span className="mb-2">{openLogFileButton}</span>
 
@@ -316,7 +316,7 @@ export const MinionTaskComponent = forwardRef(
                       });
                     }}
                   >
-                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && minionTask.classification  !== "AnswerQuestion" && diffButton}
+                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && minionTask.modificationProcedure && diffButton}
                   </span>
                 </span>
 
@@ -330,7 +330,7 @@ export const MinionTaskComponent = forwardRef(
 
                 <div className="mb-2">Task:</div>
 
-                <div className="mb-2 overflow-x-auto">
+                <div className="mb-2">
                   {isInputOpen ? (
                     <textarea
                       style={{
@@ -370,7 +370,7 @@ export const MinionTaskComponent = forwardRef(
                 {minionTask.selectedText && <div>Selection:</div>}
                 {minionTask.selectedText && (
                   <div
-                    className="text-xs overflow-auto cursor-pointer"
+                    className="text-xs cursor-pointer"
                     onClick={() => {
                       postMessageToVsCode({
                         type: MessageToVSCodeType.OpenSelection,
@@ -385,8 +385,8 @@ export const MinionTaskComponent = forwardRef(
                   </div>
                 )}
               </div>
-              <div>
-                {minionTask.classification === "AnswerQuestion" ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.modificationDescription}</pre> : <></>}
+              <div className="pl-3 pr-3 pb-3">
+                {minionTask.inlineMessage ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.inlineMessage}</pre> : <></>}
               </div>
             </>
           )}

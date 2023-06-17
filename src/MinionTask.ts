@@ -2,10 +2,10 @@ import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
 import { MinionTasksManager } from "./MinionTasksManager";
-import { gptExecute } from "./gptExecute";
-import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
-import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
+import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
+import { gptExecute } from "./openai";
+import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from "./strategies/strategies";
 
 export class MinionTask {
   readonly userQuery: string;
@@ -22,6 +22,7 @@ export class MinionTask {
 
 
   private _originalContent: string;
+  
 
   get originalContent(): string {
     return this._originalContent;
@@ -46,8 +47,10 @@ export class MinionTask {
   stopped: boolean = true;
   progress: number = 1;
   executionStage: string;
-  classification?: TASK_CLASSIFICATION_NAME;
+  strategy?: TASK_STRATEGY_ID;
+  inlineMessage: string;
   logContent: string = "";
+  stages: Stage[] = PRE_STAGES;
 
   constructor({
     id,
@@ -64,9 +67,9 @@ export class MinionTask {
     shortName = "",
     modificationDescription = "",
     modificationProcedure = "",
-    modificationApplied = false,
+    inlineMessage = "",
     executionStage = "",
-    classification = undefined,
+    strategy = undefined,
     logContent = "",
   }: {
     id: string;
@@ -83,9 +86,9 @@ export class MinionTask {
     shortName?: string;
     modificationDescription?: string;
     modificationProcedure?: string;
-    modificationApplied?: boolean;
     executionStage?: string;
-    classification?: TASK_CLASSIFICATION_NAME;
+    inlineMessage?: string;
+    strategy?: TASK_STRATEGY_ID;
     logContent?: string;
   }) {
     this.id = id;
@@ -102,8 +105,9 @@ export class MinionTask {
     this.shortName = shortName;
     this.modificationDescription = modificationDescription;
     this.modificationProcedure = modificationProcedure;
+    this.inlineMessage = inlineMessage;
     this.executionStage = executionStage;
-    this.classification = classification;
+    this.strategy = strategy;
     this.logContent = logContent;
   }
 
@@ -120,6 +124,16 @@ export class MinionTask {
     this.logContent += content;
 
     MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+  }
+
+  appendSectionToLog(section: string): void {
+    this.appendToLog(
+      [
+        `////////////////////////////////////////////////////////////////////////////////`,
+        `// ${section}`,
+        `////////////////////////////////////////////////////////////////////////////////`,
+      ].join("\n") + "\n\n"
+    );
   }
   
   clearLog() {
@@ -186,15 +200,19 @@ export class MinionTask {
     await this.onChanged(important);
   }
 
+  private calculateTotalWeights(): number {
+    return this.stages.reduce((total, stage) => total + stage.weight, 0);
+  }
+
   public reportSmallProgress(fractionOfBigTask: number = 0.005) {
-    const weigtsNextStepTotal = STAGES.reduce((acc, stage, index) => {
+    const weigtsNextStepTotal = this.stages.reduce((acc, stage, index) => {
       if (index > this.currentStageIndex) {
         return acc;
       }
       return acc + stage.weight;
     }, 0);
 
-    const remainingProgress = (1.0 * weigtsNextStepTotal) / STAGES_TOTAL_WEIGHTS;
+    const remainingProgress = (1.0 * weigtsNextStepTotal) / this.calculateTotalWeights();
     const currentProgress = this.progress;
 
     const totalPending = remainingProgress - currentProgress;
@@ -216,23 +234,23 @@ export class MinionTask {
       this.setShortName();
 
       try {
-        while (this.currentStageIndex < STAGES.length && !this.stopped) {
-          this.executionStage = STAGES[this.currentStageIndex].name;
+        while (this.currentStageIndex < this.stages.length && !this.stopped) {
+          this.executionStage = this.stages[this.currentStageIndex].name;
 
-          await STAGES[this.currentStageIndex].execution.apply(this);
+          await this.stages[this.currentStageIndex].execution.apply(this);
 
           if (this.stopped) {
             break;
           }
 
-          const weigtsNextStepTotal = STAGES.reduce((acc, stage, index) => {
+          const weigtsNextStepTotal = this.stages.reduce((acc, stage, index) => {
             if (index > this.currentStageIndex) {
               return acc;
             }
             return acc + stage.weight;
           }, 0);
 
-          this.progress = weigtsNextStepTotal / STAGES_TOTAL_WEIGHTS;
+          this.progress = weigtsNextStepTotal / this.calculateTotalWeights();
           this.onChanged(false);
           this.currentStageIndex++;
         }
@@ -267,6 +285,7 @@ ${this.baseName}
       `.trim();
 
     await gptExecute({
+      mode: "FAST",
       maxTokens: 20,
       fullPrompt: `
       Create a very short summary of a task. Maximum of 20 characters. You MUST not exceed this number. Try to combine info both from what user said and what user selected / file name. If a selected identifier is too long or file name is too long, just use some keywords from it.
@@ -277,6 +296,7 @@ ${this.baseName}
       ${context}
       
       `.trim(),
+      outputType: "string",
     }).then((res) => {
       this.shortName = res || this.baseName;
       this.onChanged(true);

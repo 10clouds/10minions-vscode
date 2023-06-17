@@ -1,51 +1,53 @@
+import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
+import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
+import { Schema } from "jsonschema";
 import fetch, { Response } from "node-fetch";
 import * as vscode from "vscode";
-import AsyncLock = require("async-lock");
+import { AnalyticsManager } from "./AnalyticsManager";
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
+import AsyncLock = require("async-lock");
 
-export type AVAILABLE_MODELS = "gpt-4" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-4-32k";
-
-import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
-import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
-
-type ModelData = {
+export type GptMode = "FAST" | "QUALITY";
+export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613" | "gpt-4-32k-0613";
+export type OutputType = "string" | FunctionDef;
+export type FunctionParams = { type: "object", properties: {[key: string]: Schema}, required: string[] };
+export type FunctionDef = {
+  name: string;
+  description: string;
+  parameters: FunctionParams;
+};
+export type ModelData = {
   [key in AVAILABLE_MODELS]: {
     maxTokens: number;
     encode: typeof encodeGPT4;
-  }
+  };
 };
 
 export const MODEL_DATA: ModelData = {
-  'gpt-4': {maxTokens: 8192, encode: encodeGPT4},
-  'gpt-4-32k': {maxTokens: 32768, encode: encodeGPT4},
-  'gpt-3.5-turbo': {maxTokens: 4096, encode: encodeGPT35},
-  'gpt-3.5-turbo-16k': {maxTokens: 16384, encode: encodeGPT35},
+  "gpt-4-0613": { maxTokens: 8192, encode: encodeGPT4 },
+  "gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4 },
+  "gpt-3.5-turbo-0613": { maxTokens: 4096, encode: encodeGPT35 },
+  "gpt-3.5-turbo-16k-0613": { maxTokens: 16384, encode: encodeGPT35 },
 };
-
-export function canIRunThis({ prompt, maxTokens = 2000, model = (vscode.workspace.getConfiguration("10minions").get("model") as AVAILABLE_MODELS)}: {
-  prompt: string;
-  maxTokens?: number;
-  model?: AVAILABLE_MODELS;
-}) {
-  let usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
-  return usedTokens <= MODEL_DATA[model].maxTokens;
-}
 
 let openAILock = new AsyncLock();
 
-/* The extractParsedLines function takes a chunk string as input and returns
- * an array of parsed JSON objects. */
 function extractParsedLines(chunkBuffer: string): [any[], string] {
   let parsedLines: any[] = [];
 
   while (chunkBuffer.includes("\n")) {
-    let [line, ...rest] = chunkBuffer.split("\n");
-    chunkBuffer = rest.join("\n");
 
-    if (line === "" || line === "data: [DONE]")
+    if (chunkBuffer.startsWith("\n")) {
+      chunkBuffer = chunkBuffer.slice(1);
       continue;
+    }
+    
+    if (chunkBuffer.startsWith("data: ")) {
+      let [line, ...rest] = chunkBuffer.split("\n");
+      chunkBuffer = rest.join("\n");
 
-    if (line.startsWith("data: ")) {
+      if (line === "data: [DONE]") continue;
+
       let parsedLine = line.replace(/^data: /, "").trim();
       if (parsedLine !== "") {
         try {
@@ -56,13 +58,12 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
         }
       }
     } else {
-      console.log(line);
-      let errorObject = JSON.parse(line);
+      let errorObject = JSON.parse(chunkBuffer);
 
       if (errorObject.error) {
         throw new Error(errorObject.error.message);
       } else {
-        throw new Error(`Unexpected JSON object: ${line}`);
+        throw new Error(`Unexpected JSON object: ${chunkBuffer}`);
       }
     }
   }
@@ -70,56 +71,10 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
   return [parsedLines, chunkBuffer];
 }
 
-/* The queryOpenAI function takes a fullPrompt and other optional parameters to
- * send a request to OpenAI's API. It returns a response object. */
-export async function queryOpenAI({
-  fullPrompt,
-  controller,
-  maxTokens = 2000,
-  model = (vscode.workspace.getConfiguration("10minions").get("model") as AVAILABLE_MODELS),
-  temperature,
-}: {
-  fullPrompt: string;
-  maxTokens: number;
-  model: AVAILABLE_MODELS;
-  temperature: number;
-  controller: AbortController;
-}) {
-  const signal = controller.signal;
-
-  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
-
-  if (!apiKey) {
-    throw new Error("OpenAI API key not found. Please set it in the settings.");
-  }
-
-  console.log("Querying OpenAI");
-
-  return await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: fullPrompt,
-        },
-      ],
-      max_tokens: maxTokens,
-      temperature,
-      stream: true,
-    }),
-    signal,
-  });
-}
 
 /* The processOpenAIResponseStream function processes the response from the
  * API and extracts tokens from the response stream. */
-export async function processOpenAIResponseStream({
+async function processOpenAIResponseStream({
   response,
   onChunk,
   isCancelled,
@@ -145,20 +100,24 @@ export async function processOpenAIResponseStream({
         }
         const chunk = decoder.decode(value);
         chunkBuffer += chunk;
-  
+
         const [parsedLines, newChunkBuffer] = extractParsedLines(chunkBuffer);
 
         chunkBuffer = newChunkBuffer;
 
+        console.log(parsedLines);
+
         const tokens = parsedLines
-          .map((l) => l.choices[0].delta.content)
+          .map((l) => l.choices[0].delta.content || l.choices[0].delta.function_call?.arguments || "")
           .filter((c) => c)
           .join("");
-  
+
+        console.log(tokens);
+
         await openAILock.acquire("openAI", async () => {
           await onChunk(tokens);
         });
-  
+
         fullContent += tokens;
       } catch (e) {
         console.error("Error processing response stream: ", e);
@@ -182,17 +141,144 @@ export async function processOpenAIResponseStream({
   });
 }
 
+export function countTokens(text: string, mode: GptMode) {
+  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
+  return MODEL_DATA[model].encode(text).length;
+}
 
+export async function gptExecute({
+  fullPrompt,
+  onChunk = async (chunk: string) => {},
+  isCancelled = () => false,
+  maxTokens = 2000,
+  mode,
+  temperature = 1,
+  controller = new AbortController(),
+  outputType,
+}: {
+  fullPrompt: string;
+  onChunk?: (chunk: string) => Promise<void>;
+  isCancelled?: () => boolean;
+  maxTokens?: number;
+  mode: GptMode;
+  temperature?: number;
+  controller?: AbortController;
+  outputType: OutputType;
+}) {
+  let model: AVAILABLE_MODELS = "gpt-4-0613";
 
+  if (mode === "FAST") {
+    model = "gpt-3.5-turbo-16k-0613";
 
+    let usedTokens = MODEL_DATA[model].encode(fullPrompt).length + maxTokens;
 
-/*
-Recently applied task: Take the default from:
+    if (usedTokens < MODEL_DATA["gpt-3.5-turbo-0613"].maxTokens) {
+      model = "gpt-3.5-turbo-0613";
+    }
+  }
 
-"10minions.model": {
-          "type": "string",
-          "default": "gpt-4",
-          "markdownDescription": "Select the available model for 10Minions tasks: `gpt-4`, `gpt-3.5-turbo`, `gpt-3.5-turbo-16k`, or `gpt-4-32k`",
-          "order": 3
-        }
-*/
+  ensureICanRunThis({ prompt: fullPrompt, mode, maxTokens });
+
+  const signal = controller.signal;
+
+  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
+
+  if (!apiKey) {
+    throw new Error("OpenAI API key not found. Please set it in the settings.");
+  }
+
+  console.log("Querying OpenAI");
+
+  let requestData = {
+    model,
+    messages: [
+      {
+        role: "user",
+        content: fullPrompt,
+      },
+    ],
+    max_tokens: maxTokens,
+    temperature,
+    stream: true,
+    ...outputType === "string" ? {} : {function_call: { name: outputType.name }, functions: [outputType]},
+  };
+  
+  console.log(requestData);
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      let response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(requestData),
+        signal,
+      });
+
+      console.log("RESP", response);
+
+      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled, controller });
+
+      AnalyticsManager.instance.reportOpenAICall(requestData, result);
+
+      return result;
+    } catch (error) {
+      console.error(`Error on attempt ${attempt}: ${error}`);
+
+      AnalyticsManager.instance.reportOpenAICall(requestData, { error: String(error) });
+
+      if (attempt === 3) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Assertion: Should never get here");
+}
+
+export function ensureICanRunThis({ prompt, maxTokens, mode }: { prompt: string; maxTokens: number; mode: GptMode }) {
+  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
+  let usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
+
+  if (usedTokens > MODEL_DATA[model].maxTokens) {
+    console.error(`Not enough tokens to perform the modification. absolute minimum: ${usedTokens} available: ${MODEL_DATA[model].maxTokens}`);
+    throw new Error(`Combination of file size, selection, and your command is too big for us to handle.`);
+  }
+}
+
+/**
+ * Checks if the given prompt can fit within a specified range of token lengths
+ * for the specified AI model.
+ *
+ * @param prompt The input prompt for the AI model.
+ * @param minTokens The minimum number of tokens that the prompt should fit within.
+ * @param maxTokens The maximum number of tokens that the prompt should fit within.
+ * @param model The AI model to be used.
+ * @returns The number of used tokens if the prompt can fit within the specified range, false otherwise.
+ */
+export function ensureIRunThisInRange({
+  prompt,
+  minTokens,
+  preferedTokens,
+  mode,
+}: {
+  prompt: string;
+  minTokens: number;
+  preferedTokens: number;
+  mode: GptMode;
+}): number {
+  minTokens = Math.ceil(minTokens);
+  preferedTokens = Math.ceil(preferedTokens);
+
+  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
+  const usedTokens = MODEL_DATA[model].encode(prompt).length;
+  const availableTokens = MODEL_DATA[model].maxTokens - usedTokens;
+
+  if (availableTokens < minTokens) {
+    throw new Error(`Not enough tokens to perform the modification. absolute minimum: ${minTokens} available: ${availableTokens}`);
+  }
+
+  return Math.min(availableTokens, preferedTokens);
+}

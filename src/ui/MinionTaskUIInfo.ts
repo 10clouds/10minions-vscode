@@ -1,7 +1,3 @@
-export type TASK_CLASSIFICATION_NAME =
-  | "AnswerQuestion"
-  | "CodeChange";
-
 export const APPLIED_STAGE_NAME = "Applied";
 export const FINISHED_STAGE_NAME = "Finished";
 export const CANCELED_STAGE_NAME = "Canceled";
@@ -15,8 +11,9 @@ export type MinionTaskUIInfo = {
   executionStage: string;
   progress: number;
   stopped: boolean;
-  classification?: TASK_CLASSIFICATION_NAME;
+  inlineMessage: string;
   modificationDescription: string;
+  modificationProcedure: string;
   selectedText: string;
   shortName: string;
 };

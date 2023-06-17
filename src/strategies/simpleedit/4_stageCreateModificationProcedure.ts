@@ -1,10 +1,7 @@
-import { encode } from "gpt-tokenizer/cjs/model/gpt-4";
 import * as vscode from "vscode";
-import { MinionTask } from "../MinionTask";
-import { EXTENSIVE_DEBUG } from "../const";
-import { gptExecute } from "../gptExecute";
-import { TASK_CLASSIFICATION_NAME } from "../ui/MinionTaskUIInfo";
-import { AVAILABLE_MODELS, MODEL_DATA } from "../openai";
+import { MinionTask } from "../../MinionTask";
+import { EXTENSIVE_DEBUG } from "../../const";
+import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
 
 export const AVAILABE_COMMANDS = [
 `
@@ -80,7 +77,6 @@ ${AVAILABE_COMMANDS.join("\n\n")}
 `.trim();
 
 async function createConsolidated(
-  classification: TASK_CLASSIFICATION_NAME,
   refCode: string,
   modification: string,
   onChunk: (chunk: string) => Promise<void>,
@@ -99,7 +95,38 @@ async function createConsolidated(
     }
   );
 
-  let promptWithContext = `
+  let promptWithContext = createPrompt(refCode, modification);
+
+  let tokensModification = countTokens(modification, "QUALITY");
+  let tokensCode = countTokens(promptWithContext, "QUALITY");
+  let luxiouriosTokens = Math.max(tokensCode, tokensModification) * 1.5;
+  let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
+
+  if (EXTENSIVE_DEBUG) {
+    
+    onChunk("<<<< PROMPT >>>>\n\n");
+    onChunk(promptWithContext + "\n\n");
+    onChunk("<<<< EXECUTION >>>>\n\n");
+  }
+
+  return await gptExecute({
+    fullPrompt: promptWithContext,
+    onChunk,
+    maxTokens: ensureIRunThisInRange({ 
+      prompt: promptWithContext,
+      mode: "QUALITY",
+      preferedTokens: luxiouriosTokens,
+      minTokens: absoluteMinimumTokens,
+    }),
+    temperature: 0,
+    isCancelled,
+    mode: "FAST",
+    outputType: "string",
+  });
+}
+
+function createPrompt(refCode: string, modification: string) {
+  return `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
 ==== FORMAT OF THE ANSWER ====
@@ -124,52 +151,14 @@ You are a higly intelligent AI file composer tool, you can take a piece of text 
 
 Let's take this step by step, first, describe in detail what you are going to do, and then perform previously described commands in FORMAT OF THE ANSWER section.
 `.trim();
-
-  let tokensCode = encode(promptWithContext).length;
-  let tokensModification = encode(modification).length;
-
-  let luxiouriosTokens = Math.max(tokensCode, tokensModification) * 1.5;
-
-  let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
-
-  const model = 'gpt-4';
-
-  let availableTokens = MODEL_DATA[model].maxTokens - encode(promptWithContext).length;
-
-  console.log(
-    `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}`
-  );
-
-  if (availableTokens < absoluteMinimumTokens) {
-    throw new Error(
-      `Not enough tokens to perform the modification. Available tokens: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}`
-    );
-  }
-
-  if (EXTENSIVE_DEBUG) {
-    onChunk(
-      `Tokens available: ${availableTokens} absolute minimum: ${absoluteMinimumTokens} luxiourios: ${luxiouriosTokens} cap: ${MODEL_DATA[model].maxTokens}\n\n`
-    );
-    onChunk("<<<< PROMPT >>>>\n\n");
-    onChunk(promptWithContext + "\n\n");
-    onChunk("<<<< EXECUTION >>>>\n\n");
-  }
-
-  return await gptExecute({
-    fullPrompt: promptWithContext,
-    onChunk,
-    maxTokens: Math.round(Math.min(availableTokens, luxiouriosTokens)),
-    temperature: 0,
-    isCancelled,
-  });
 }
 
 export async function stageCreateModificationProcedure(this: MinionTask) {
-  if (this.classification === undefined) {
+  if (this.strategy === undefined) {
     throw new Error("Classification is undefined");
   }
 
-  if (this.classification === "AnswerQuestion") {
+  if (this.strategy === "AnswerQuestion") {
     return;
   }
 
@@ -177,16 +166,15 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
   
   try {
     this.modificationProcedure = await createConsolidated(
-      this.classification,
       this.originalContent,
       this.modificationDescription,
       async (chunk: string) => {
         this.reportSmallProgress();
-        if (EXTENSIVE_DEBUG) {
+        //if (EXTENSIVE_DEBUG) {
           this.appendToLog(chunk);
-        } else {
-          this.appendToLog(".");
-        }
+       // } else {
+        ///  this.appendToLog(".");
+//}
       },
       () => {
         return this.stopped;

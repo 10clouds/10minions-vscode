@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { MinionTask } from "../MinionTask";
+import { MinionTask } from "../../MinionTask";
 
 export async function stageStarting(this: MinionTask) {
   let document = await vscode.workspace.openTextDocument(vscode.Uri.parse(this.documentURI));

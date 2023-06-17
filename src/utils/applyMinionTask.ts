@@ -181,11 +181,6 @@ ${minionTask.modificationDescription}
 }
 
 export async function applyMinionTask(minionTask: MinionTask) {
-  if (minionTask.classification === "AnswerQuestion") {
-    vscode.window.showErrorMessage(`Cannot apply AnswerQuestion task.`);
-    return;
-  }
-
   if (minionTask.executionStage !== FINISHED_STAGE_NAME) {
     vscode.window.showErrorMessage(`Cannot apply unfinished task.`);
     return;

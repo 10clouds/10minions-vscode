@@ -1,7 +1,7 @@
 import { MinionTask } from "./MinionTask";
 import { MinionTasksManager } from "./MinionTasksManager";
-import { TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import * as vscode from "vscode";
+import { TASK_STRATEGY_ID } from "./strategies/strategies";
 
 export type SerializedMinionTask = {
   id: string;
@@ -21,8 +21,9 @@ export type SerializedMinionTask = {
   shortName: string;
   modificationDescription: string;
   modificationProcedure: string;
+  inlineMessage: string;
   executionStage: string;
-  classification: TASK_CLASSIFICATION_NAME | null;
+  strategy: TASK_STRATEGY_ID | null;
   logContent: string;
   contentWhenDismissed: string;
 };
@@ -46,8 +47,9 @@ export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTas
     shortName: minionTask.shortName,
     modificationDescription: minionTask.modificationDescription,
     modificationProcedure: minionTask.modificationProcedure,
+    inlineMessage: minionTask.inlineMessage,
     executionStage: minionTask.executionStage,
-    classification: minionTask.classification === undefined ? null : minionTask.classification,
+    strategy: minionTask.strategy === undefined ? null : minionTask.strategy,
     logContent: minionTask.logContent,
     contentWhenDismissed: minionTask.contentWhenDismissed,
   };
@@ -71,7 +73,7 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     modificationDescription: data.modificationDescription,
     modificationProcedure: data.modificationProcedure,
     executionStage: data.executionStage,
-    classification: data.classification === null ? undefined : data.classification,
+    strategy: data.strategy === null ? undefined : data.strategy,
     onChanged: async (important) => {
       if (important) {
         MinionTasksManager.instance.notifyExecutionsUpdatedImmediate(minionTask, true);

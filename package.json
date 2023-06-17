@@ -97,16 +97,10 @@
           "markdownDescription": "Allow tasks to be sent for diagnostic purposes to improve accuracy of results. This data will only be used to improve the service and will not be shared with third parties. If turned off, no data will be sent to 10Clouds, only to OpenAI.",
           "order": 2
         },
-        "10minions.model": {
+        "10minions.taskCommentKeyword": {
           "type": "string",
-          "enum": [
-            "gpt-4",
-            "gpt-3.5-turbo",
-            "gpt-3.5-turbo-16k",
-            "gpt-4-32k"
-          ],
-          "default": "gpt-4",
-          "markdownDescription": "Select the available model for 10Minions tasks:\n\n- `gpt-4`: Default model, designed for general-purpose tasks\n- `gpt-3.5-turbo`: High-performance model, suitable for faster processing\n- `gpt-3.5-turbo-16k`: Similar to gpt-3.5-turbo but with a larger context window\n- `gpt-4-32k`: Extended version of gpt-4 for handling larger datasets\n",
+          "default": "TASK",
+          "markdownDescription": "Specify the comment keyword that Minions will look for to automatically run tasks (leave it empty to disable this functionality)",
           "order": 3
         }
       }
@@ -188,6 +182,7 @@
     "async-lock": "^1.4.0",
     "firebase": "^9.22.2",
     "gpt-tokenizer": "^2.1.1",
+    "jsonschema": "^1.4.1",
     "langchain": "^0.0.77",
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1",

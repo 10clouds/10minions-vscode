@@ -1,4 +1,3 @@
-import { encode } from "gpt-tokenizer";
 import * as vscode from "vscode";
 import { AnalyticsManager } from "./AnalyticsManager";
 import { CommandHistoryManager } from "./CommandHistoryManager";
@@ -26,6 +25,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
 
 public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
   this._view = webviewView;
+
 
   this.commandHistoryManager.updateView(webviewView);
   this.executionsManager.updateView(webviewView);
@@ -139,16 +139,6 @@ private updateSidebarVisibility(visible: boolean) {
     const activeEditor = vscode.window.activeTextEditor;
 
     switch (data.type) {
-      case MessageToVSCodeType.GetTokenCount: {
-        let tokenCount = activeEditor ? encode(activeEditor.document.getText()).length : 0;
-
-        postMessageToWebView(this._view, {
-          type: MessageToWebViewType.TokenCount,
-          value: tokenCount,
-        });
-
-        break;
-      }
       case MessageToVSCodeType.NewMinionTask: {
         let prompt = data.value ? data.value : "Refactor this code";
 

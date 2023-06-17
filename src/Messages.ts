@@ -14,7 +14,6 @@ export enum MessageToWebViewType {
 }
 
 export enum MessageToVSCodeType {
-  GetTokenCount,
   NewMinionTask,
   OpenDocument,
   OpenLog,
@@ -43,7 +42,6 @@ export type MessageToWebView =
   | { type: MessageToWebViewType.SuggestionLoadedOrCanceled; };
 
 export type MessageToVSCode =
-  | { type: MessageToVSCodeType.GetTokenCount }
   | { type: MessageToVSCodeType.NewMinionTask; value?: string }
   | { type: MessageToVSCodeType.OpenDocument; minionTaskId: string }
   | { type: MessageToVSCodeType.OpenLog; minionTaskId: string}

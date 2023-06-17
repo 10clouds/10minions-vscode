@@ -1,8 +1,8 @@
 
 import * as vscode from "vscode";
-import { gptExecute } from "./gptExecute";
 import { postMessageToWebView } from "./TenMinionsViewProvider";
 import { MessageToWebViewType } from "./Messages";
+import { gptExecute } from "./openai";
 
 const BASE_COMMANDS = [
   { command: "Refactor this", timeStamp: Date.now() },
@@ -181,7 +181,7 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
     this.currentSuggestion = "";
   
     try {
-      await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, model: "gpt-3.5-turbo-16k" });
+      await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, mode: "FAST", outputType: "string" });
       
       // Send the final suggestion after gptExecute has finished execution
       postMessageToWebView(this._view, {

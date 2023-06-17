@@ -303,8 +303,10 @@ export class MinionTasksManager {
       documentURI: e.documentURI,
       progress: e.progress,
       stopped: e.stopped,
-      classification: e.classification,
+      classification: e.strategy,
       modificationDescription: e.modificationDescription,
+      modificationProcedure: e.modificationProcedure,
+      inlineMessage: e.inlineMessage,
       selectedText: e.selectedText,
       shortName: e.shortName,
     }));
@@ -313,6 +315,11 @@ export class MinionTasksManager {
       type: MessageToWebViewType.ExecutionsUpdated,
       executions: executionInfo,
     });
+
+    this._view!.badge = {
+      tooltip: `${this.minionTasks.length} minion tasks`,
+      value:  this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME).length
+    };
 
     this.saveExecutions();
 
