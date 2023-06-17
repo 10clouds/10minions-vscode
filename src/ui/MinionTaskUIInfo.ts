@@ -16,4 +16,5 @@ export type MinionTaskUIInfo = {
   modificationProcedure: string;
   selectedText: string;
   shortName: string;
+  isError: boolean;
 };

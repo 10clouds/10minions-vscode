@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
 import { MinionTasksManager } from "./MinionTasksManager";
-import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
 import { gptExecute } from "./openai";
 import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from "./strategies/strategies";
@@ -20,9 +20,27 @@ export class MinionTask {
   rejectProgress?: (error: string) => void;
   resolveProgress?: () => void;
 
-
   private _originalContent: string;
-  
+
+  get isError(): boolean {
+    if (!this.stopped) {
+      return false;
+    }
+
+    if (this.executionStage === FINISHED_STAGE_NAME) {
+      return false;
+    }
+
+    if (this.executionStage === CANCELED_STAGE_NAME) {
+      return false;
+    }
+
+    if (this.executionStage === APPLIED_STAGE_NAME) {
+      return false;
+    }
+
+    return true;
+  }
 
   get originalContent(): string {
     return this._originalContent;
@@ -37,7 +55,7 @@ export class MinionTask {
   // tracking variables between stages
   //
   shortName: string;
-  
+
   contentAfterApply: string;
   contentWhenDismissed: string;
   currentStageIndex: number = 0;
@@ -51,6 +69,7 @@ export class MinionTask {
   inlineMessage: string;
   logContent: string = "";
   stages: Stage[] = PRE_STAGES;
+  totalCost: number = 0;
 
   constructor({
     id,
@@ -63,7 +82,9 @@ export class MinionTask {
     finalContent = "",
     contentWhenDismissed = "",
     startTime,
-    onChanged = async (important: boolean) => { throw new Error("Should be implemented"); },
+    onChanged = async (important: boolean) => {
+      throw new Error("Should be implemented");
+    },
     shortName = "",
     modificationDescription = "",
     modificationProcedure = "",
@@ -111,7 +132,6 @@ export class MinionTask {
     this.logContent = logContent;
   }
 
-
   get logURI() {
     return `10minions-log:minionTaskId/${this.id}/${("[" + this.shortName + "].md").replace(/ /g, "%20")}`;
   }
@@ -135,7 +155,7 @@ export class MinionTask {
       ].join("\n") + "\n\n"
     );
   }
-  
+
   clearLog() {
     this.logContent = "";
     MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
@@ -265,7 +285,7 @@ export class MinionTask {
         const executionTime = Date.now() - this.startTime;
         const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
 
-        this.appendToLog( `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
+        this.appendToLog(`${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
 
         this.progress = 1;
       }

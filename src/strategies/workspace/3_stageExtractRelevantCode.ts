@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
-import { EXTENSIVE_DEBUG } from "../../const";
+import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { countTokens, ensureICanRunThis, gptExecute } from "../../openai";
 
 export function extractRelevantCodePrompt({
@@ -54,7 +54,7 @@ export async function stageExtractRelevantCode(this: MinionTask) {
 
   let promptWithContext = extractRelevantCodePrompt({ userQuery, selectedText, fullFileContents, selectionPosition, document });
 
-  if (EXTENSIVE_DEBUG) {
+  if (DEBUG_PROMPTS) {
     this.reportSmallProgress();
     this.appendSectionToLog(this.executionStage);
     this.appendToLog("<<<< PROMPT >>>>\n\n");
@@ -71,11 +71,11 @@ export async function stageExtractRelevantCode(this: MinionTask) {
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.reportSmallProgress();
-      //if (EXTENSIVE_DEBUG) {
+      if (DEBUG_RESPONSES) {
         this.appendToLog(chunk);
-      //} else {
-      //  this.appendToLog(".");
-      //}
+      } else {
+        this.appendToLog(".");
+      }
     },
     isCancelled: () => {
       return this.stopped;

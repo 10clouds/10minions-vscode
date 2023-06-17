@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
-import { EXTENSIVE_DEBUG } from "../../const";
+import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { ensureICanRunThis, gptExecute } from "../../openai";
 import { TASK_STRATEGIES } from "../strategies";
 
@@ -44,7 +44,7 @@ ${this.userQuery}
 Classify the task.
 `.trim();
 
-  if (EXTENSIVE_DEBUG) {
+  if (DEBUG_PROMPTS) {
     this.appendSectionToLog(this.executionStage);
     this.appendToLog("<<<< PROMPT >>>>\n\n");
     this.appendToLog(promptWithContext + "\n\n");
@@ -57,7 +57,7 @@ Classify the task.
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.reportSmallProgress();
-      if (EXTENSIVE_DEBUG) {
+      if (DEBUG_RESPONSES) {
         this.appendToLog(chunk);
       } else {
         this.appendToLog(".");
@@ -95,7 +95,10 @@ Classify the task.
 
   this.strategy = classifications[0].name;
 
-  if (EXTENSIVE_DEBUG) {
+  this.stages = classifications[0].stages;
+  this.currentStageIndex = 0 - 1;
+
+  if (DEBUG_PROMPTS) {
     this.appendToLog(`Classification: ${this.strategy}\n\n`);
   }
 }

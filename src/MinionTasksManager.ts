@@ -309,6 +309,7 @@ export class MinionTasksManager {
       inlineMessage: e.inlineMessage,
       selectedText: e.selectedText,
       shortName: e.shortName,
+      isError: e.isError
     }));
 
     postMessageToWebView(this._view, {
@@ -318,7 +319,7 @@ export class MinionTasksManager {
 
     this._view!.badge = {
       tooltip: `${this.minionTasks.length} minion tasks`,
-      value:  this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME).length
+      value:  this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME || e.isError).length
     };
 
     this.saveExecutions();

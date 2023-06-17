@@ -236,25 +236,6 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
-    function isError(execution: MinionTaskUIInfo) {
-      if (!execution.stopped) {
-        return false;
-      }
-
-      if (execution.executionStage === FINISHED_STAGE_NAME) {
-        return false;
-      }
-  
-      if (execution.executionStage === CANCELED_STAGE_NAME) {
-        return false;
-      }
-  
-      if (execution.executionStage === APPLIED_STAGE_NAME) {
-        return false;
-      }
-  
-      return true;
-    }
 
     return (
       <div
@@ -277,7 +258,7 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""} ${isError(minionTask) ? "error-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""} ${minionTask.isError ? "error-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
@@ -290,7 +271,7 @@ export const MinionTaskComponent = forwardRef(
             {minionTask.modificationDescription &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
               (minionTask.modificationProcedure ? assessButton : markAsReadButton)}
-            {(minionTask.executionStage === CANCELED_STAGE_NAME || isError(minionTask)) && retryButton}
+            {(minionTask.executionStage === CANCELED_STAGE_NAME || minionTask.isError) && retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}

@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
-import { EXTENSIVE_DEBUG } from "../../const";
+import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
 
 export const AVAILABE_COMMANDS = [
-`
+  `
 # REPLACE / WITH / END_REPLACE
 
 Use this se to replace a piece of code with another piece of code. Start it with the following line:
@@ -22,11 +22,9 @@ END_REPLACE
 Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
 * After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
-`.trim()
+`.trim(),
 
-,
-
-/*`
+  /*`
 
 # REPLACE_ALL / END_REPLACE_ALL
 
@@ -48,7 +46,7 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 
 ,
 */
-`
+  `
 
 # MODIFY_OTHER / END_MODIFY_OTHER
 
@@ -60,8 +58,7 @@ Followed by the lines of instructions on what to modify and how. Followed by the
 
 END_MODIFY_OTHER
 
-`.trim()
-
+`.trim(),
 ];
 
 export const OUTPUT_FORMAT = `
@@ -76,24 +73,16 @@ ${AVAILABE_COMMANDS.join("\n\n")}
 
 `.trim();
 
-async function createConsolidated(
-  refCode: string,
-  modification: string,
-  onChunk: (chunk: string) => Promise<void>,
-  isCancelled: () => boolean
-) {
+async function createConsolidated(refCode: string, modification: string, onChunk: (chunk: string) => Promise<void>, isCancelled: () => boolean) {
   const activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
     return "";
   }
 
   //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
-  modification = modification.replace(
-    /^(====+)([^=]+)(====+)$/gm,
-    (match, p1, p2, p3) => {
-      return `#${p2}`;
-    }
-  );
+  modification = modification.replace(/^(====+)([^=]+)(====+)$/gm, (match, p1, p2, p3) => {
+    return `#${p2}`;
+  });
 
   let promptWithContext = createPrompt(refCode, modification);
 
@@ -102,8 +91,7 @@ async function createConsolidated(
   let luxiouriosTokens = Math.max(tokensCode, tokensModification) * 1.5;
   let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
 
-  if (EXTENSIVE_DEBUG) {
-    
+  if (DEBUG_PROMPTS) {
     onChunk("<<<< PROMPT >>>>\n\n");
     onChunk(promptWithContext + "\n\n");
     onChunk("<<<< EXECUTION >>>>\n\n");
@@ -112,7 +100,7 @@ async function createConsolidated(
   return await gptExecute({
     fullPrompt: promptWithContext,
     onChunk,
-    maxTokens: ensureIRunThisInRange({ 
+    maxTokens: ensureIRunThisInRange({
       prompt: promptWithContext,
       mode: "QUALITY",
       preferedTokens: luxiouriosTokens,
@@ -163,18 +151,18 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
   }
 
   this.reportSmallProgress();
-  
+
   try {
     this.modificationProcedure = await createConsolidated(
       this.originalContent,
       this.modificationDescription,
       async (chunk: string) => {
         this.reportSmallProgress();
-        //if (EXTENSIVE_DEBUG) {
+        if (DEBUG_RESPONSES) {
           this.appendToLog(chunk);
-       // } else {
-        ///  this.appendToLog(".");
-//}
+        } else {
+          this.appendToLog(".");
+        }
       },
       () => {
         return this.stopped;
@@ -184,5 +172,5 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
     this.appendToLog(`Error while creating modification procedure:\n\n ${error}\n\n`);
   }
 
-  this.appendToLog( "\n\n");
+  this.appendToLog("\n\n");
 }
