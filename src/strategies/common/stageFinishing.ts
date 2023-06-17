@@ -9,5 +9,7 @@ export async function stageFinishing(this: MinionTask) {
 
   this.stopExecution();
 
+  this.appendToLog(`Total Cost: ~${this.totalCost.toFixed(2)}$\n\n`);
+
   playNotificationSound();
 }

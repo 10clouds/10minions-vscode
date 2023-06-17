@@ -89,7 +89,7 @@ export async function stageCreateModification(this: MinionTask) {
     minTokens: absoluteMinimumTokens,
   });
 
-  this.modificationDescription = await gptExecute({
+  let {result, cost} = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.modificationDescription += chunk;
@@ -102,6 +102,9 @@ export async function stageCreateModification(this: MinionTask) {
     controller: new AbortController(),
     outputType: "string",
   });
+
+  this.modificationDescription = result;
+  this.totalCost += cost;
 
   this.reportSmallProgress();
   this.appendToLog("\n\n");

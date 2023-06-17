@@ -67,7 +67,7 @@ export async function stageExtractRelevantCode(this: MinionTask) {
 
   ensureICanRunThis({ prompt: promptWithContext, mode: "QUALITY", maxTokens: tokensNeeded });
 
-  await gptExecute({
+  let {cost} = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.reportSmallProgress();
@@ -100,6 +100,8 @@ export async function stageExtractRelevantCode(this: MinionTask) {
     },*/,
     controller: new AbortController(),
   });
+
+  this.totalCost += cost;
 
   this.appendToLog( "\n\n");
 }

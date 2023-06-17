@@ -69,7 +69,7 @@ export class MinionTask {
   inlineMessage: string;
   logContent: string = "";
   stages: Stage[] = PRE_STAGES;
-  totalCost: number = 0;
+  totalCost: number;
 
   constructor({
     id,
@@ -92,6 +92,7 @@ export class MinionTask {
     executionStage = "",
     strategy = undefined,
     logContent = "",
+    totalCost = 0,
   }: {
     id: string;
     minionIndex: number;
@@ -111,6 +112,7 @@ export class MinionTask {
     inlineMessage?: string;
     strategy?: TASK_STRATEGY_ID;
     logContent?: string;
+    totalCost?: number;
   }) {
     this.id = id;
     this.minionIndex = minionIndex;
@@ -130,6 +132,7 @@ export class MinionTask {
     this.executionStage = executionStage;
     this.strategy = strategy;
     this.logContent = logContent;
+    this.totalCost = totalCost;
   }
 
   get logURI() {
@@ -317,8 +320,9 @@ ${this.baseName}
       
       `.trim(),
       outputType: "string",
-    }).then((res) => {
-      this.shortName = res || this.baseName;
+    }).then(({result, cost}) => {
+      this.shortName = result || this.baseName;
+      this.totalCost += cost;
       this.onChanged(true);
     });
   }

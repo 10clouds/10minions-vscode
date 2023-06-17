@@ -53,7 +53,7 @@ Classify the task.
 
   ensureICanRunThis({ prompt: promptWithContext, maxTokens: 50, mode: "FAST" });
 
-  let classification = await gptExecute({
+  let {result, cost} = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.reportSmallProgress();
@@ -82,15 +82,17 @@ Classify the task.
     },
   });
 
-  console.log("Classification: ", classification);
+  this.totalCost += cost;
+
+  console.log("Classification: ", result);
 
   this.appendToLog("\n\n");
 
   //find classification in text
-  let classifications = TASK_STRATEGIES.filter((c) => classification.indexOf(c.name) !== -1);
+  let classifications = TASK_STRATEGIES.filter((c) => result.indexOf(c.name) !== -1);
 
   if (classifications.length !== 1) {
-    throw new Error(`Could not find classification in the text: ${classification}`);
+    throw new Error(`Could not find classification in the text: ${result}`);
   }
 
   this.strategy = classifications[0].name;

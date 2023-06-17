@@ -11,23 +11,27 @@ export type GptMode = "FAST" | "QUALITY";
 export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613" | "gpt-4-32k-0613";
 export type OutputType = "string" | FunctionDef;
 export type FunctionParams = { type: "object", properties: {[key: string]: Schema}, required: string[] };
+
 export type FunctionDef = {
   name: string;
   description: string;
   parameters: FunctionParams;
 };
+
 export type ModelData = {
   [key in AVAILABLE_MODELS]: {
     maxTokens: number;
     encode: typeof encodeGPT4;
+    inputCostPer1K: number;
+    outputCostPer1K: number;
   };
 };
 
 export const MODEL_DATA: ModelData = {
-  "gpt-4-0613": { maxTokens: 8192, encode: encodeGPT4 },
-  "gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4 },
-  "gpt-3.5-turbo-0613": { maxTokens: 4096, encode: encodeGPT35 },
-  "gpt-3.5-turbo-16k-0613": { maxTokens: 16384, encode: encodeGPT35 },
+  "gpt-4-0613": { maxTokens: 8192, encode: encodeGPT4, inputCostPer1K: 0.03, outputCostPer1K: 0.06 },
+  "gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4, inputCostPer1K: 0.06, outputCostPer1K: 0.12 },
+  "gpt-3.5-turbo-0613": { maxTokens: 4096, encode: encodeGPT35, inputCostPer1K: 0.0015, outputCostPer1K: 0.002 },
+  "gpt-3.5-turbo-16k-0613": { maxTokens: 16384, encode: encodeGPT35, inputCostPer1K: 0.003, outputCostPer1K: 0.004 },
 };
 
 let openAILock = new AsyncLock();
@@ -45,6 +49,8 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
     if (chunkBuffer.startsWith("data: ")) {
       let [line, ...rest] = chunkBuffer.split("\n");
       chunkBuffer = rest.join("\n");
+
+      console.log(line);
 
       if (line === "data: [DONE]") continue;
 
@@ -105,8 +111,6 @@ async function processOpenAIResponseStream({
 
         chunkBuffer = newChunkBuffer;
 
-        console.log(parsedLines);
-
         const tokens = parsedLines
           .map((l) => l.choices[0].delta.content || l.choices[0].delta.function_call?.arguments || "")
           .filter((c) => c)
@@ -141,11 +145,17 @@ async function processOpenAIResponseStream({
   });
 }
 
+/**
+ * 
+ */
 export function countTokens(text: string, mode: GptMode) {
   const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
   return MODEL_DATA[model].encode(text).length;
 }
 
+/**
+ * 
+ */
 export async function gptExecute({
   fullPrompt,
   onChunk = async (chunk: string) => {},
@@ -223,7 +233,17 @@ export async function gptExecute({
 
       AnalyticsManager.instance.reportOpenAICall(requestData, result);
 
-      return result;
+      const inputTokens = countTokens(JSON.stringify(requestData.messages), mode) + (outputType === "string" ? 0 : countTokens(JSON.stringify(requestData.functions), mode));
+      const outputTokens = countTokens(result, mode);
+      const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
+      const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
+      const totalCost = inputCost + outputCost;
+
+      console.log("RESPONSE", response);
+      return {
+        result: result,
+        cost: totalCost, 
+      };
     } catch (error) {
       console.error(`Error on attempt ${attempt}: ${error}`);
 
@@ -238,6 +258,9 @@ export async function gptExecute({
   throw new Error("Assertion: Should never get here");
 }
 
+/**
+ * 
+ */
 export function ensureICanRunThis({ prompt, maxTokens, mode }: { prompt: string; maxTokens: number; mode: GptMode }) {
   const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
   let usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
@@ -282,3 +305,8 @@ export function ensureIRunThisInRange({
 
   return Math.min(availableTokens, preferedTokens);
 }
+
+
+/*
+Recently applied task: Replace with count tokens
+*/
