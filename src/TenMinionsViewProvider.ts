@@ -5,7 +5,7 @@ import { MinionTasksManager } from "./MinionTasksManager";
 import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "./Messages";
 import { MinionTaskAutoRunner } from "./MinionTaskAutoRunner";
-import { getMissingOpenAIModels as getMissingOpenAIModels } from "./openai";
+import { getMissingOpenAIModels as getMissingOpenAIModels, setOpenAIApiKey } from "./openai";
 
 export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
   return view?.webview.postMessage(message);
@@ -27,18 +27,30 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     this.taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
   }
 
-public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
-  this._view = webviewView;
+  private async updateApiKeyAndModels() {
+    setOpenAIApiKey(vscode.workspace.getConfiguration("10minions").get("apiKey") || "");
+    postMessageToWebView(this._view, {
+      type: MessageToWebViewType.ApiKeySet,
+      value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
+    });
 
+    postMessageToWebView(this._view, {
+      type: MessageToWebViewType.ApiKeyMissingModels,
+      models: await getMissingOpenAIModels(),
+    });
+  }
 
-  this.commandHistoryManager.updateView(webviewView);
-  this.executionsManager.updateView(webviewView);
+  public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
+    this._view = webviewView;
 
-  // Add an event listener for visibility change
-  webviewView.onDidChangeVisibility(() => this.updateSidebarVisibility(webviewView.visible));
+    this.commandHistoryManager.updateView(webviewView);
+    this.executionsManager.updateView(webviewView);
 
-  // Adding an event listener for when the active text editor selection changes
-  vscode.window.onDidChangeTextEditorSelection(() => this.handleSelectionChange());
+    // Add an event listener for visibility change
+    webviewView.onDidChangeVisibility(() => this.updateSidebarVisibility(webviewView.visible));
+
+    // Adding an event listener for when the active text editor selection changes
+    vscode.window.onDidChangeTextEditorSelection(() => this.handleSelectionChange());
 
     // set options for the webview, allow scripts
     webviewView.webview.options = {
@@ -54,22 +66,9 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
 
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration(async (e) => {
-
       if (e.affectsConfiguration("10minions.apiKey")) {
 
-        let missingModels = await getMissingOpenAIModels();
-
-        //TODO: Extract the two calls below Into a function and replace the it with the function call
-
-        postMessageToWebView(this._view, {
-          type: MessageToWebViewType.ApiKeySet,
-          value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
-        });
-
-        postMessageToWebView(this._view, {
-          type: MessageToWebViewType.ApiKeyMissingModels,
-          models: missingModels,
-        });
+        this.updateApiKeyAndModels();
 
         if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
           AnalyticsManager.instance.reportEvent("setOpenAIApiKey");
@@ -122,31 +121,30 @@ public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.Webvi
 
   timeoutRef?: NodeJS.Timeout;
 
-private handleSelectionChange() {
+  private handleSelectionChange() {
+    // Clear previous timeout before setting a new one
+    if (this.timeoutRef) {
+      clearTimeout(this.timeoutRef);
+    }
 
-  // Clear previous timeout before setting a new one
-  if (this.timeoutRef) {
-    clearTimeout(this.timeoutRef);
+    // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
+    this.timeoutRef = setTimeout(() => {
+      const activeEditor = vscode.window.activeTextEditor;
+      const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
+
+      postMessageToWebView(this._view, {
+        type: MessageToWebViewType.ChosenCodeUpdated,
+        code: selectedText ? selectedText : activeEditor?.document.getText() || "",
+      });
+    }, 100);
   }
 
-  // Set a new timeout for 1 second and fire postMessageToVsCode if uninterrupted
-  this.timeoutRef = setTimeout(() => {
-    const activeEditor = vscode.window.activeTextEditor;
-    const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
-  
+  private updateSidebarVisibility(visible: boolean) {
     postMessageToWebView(this._view, {
-      type: MessageToWebViewType.ChosenCodeUpdated,
-      code: selectedText ? selectedText : (activeEditor?.document.getText() || ""),
+      type: MessageToWebViewType.UpdateSidebarVisibility,
+      value: visible,
     });
-  }, 100);
-}
-
-private updateSidebarVisibility(visible: boolean) {
-  postMessageToWebView(this._view, {
-    type: MessageToWebViewType.UpdateSidebarVisibility,
-    value: visible,
-  });
-}
+  }
 
   async handleWebviewMessage(data: MessageToVSCode) {
     console.log("CMD", data);
@@ -209,7 +207,6 @@ private updateSidebarVisibility(visible: boolean) {
         break;
       }
       case MessageToVSCodeType.SuggestionCancel: {
-
         this.commandHistoryManager.cancelSuggestion();
 
         break;
@@ -218,12 +215,8 @@ private updateSidebarVisibility(visible: boolean) {
         const input = data.input || "";
         const activeEditor = vscode.window.activeTextEditor;
         const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "";
-        
-        this.commandHistoryManager.getCommandSuggestionGPT(
-          input,
-          code,
-          activeEditor?.document.languageId || ""
-        );
+
+        this.commandHistoryManager.getCommandSuggestionGPT(input, code, activeEditor?.document.languageId || "");
 
         break;
       }
@@ -233,16 +226,7 @@ private updateSidebarVisibility(visible: boolean) {
         break;
       }
       case MessageToVSCodeType.ReadyForMessages: {
-        
-        postMessageToWebView(this._view, {
-          type: MessageToWebViewType.ApiKeySet,
-          value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
-        });
-
-        postMessageToWebView(this._view, {
-          type: MessageToWebViewType.ApiKeyMissingModels,
-          models: await getMissingOpenAIModels(),
-        });
+        this.updateApiKeyAndModels();
 
         //update initial executions
         this.executionsManager.notifyExecutionsUpdatedImmediate();
