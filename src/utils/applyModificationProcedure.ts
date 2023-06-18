@@ -8,7 +8,7 @@ export function applyModificationProcedure(originalCode: string, modificationPro
   let storedArg: string[] = [];
   let currentCommand: string = "";
   let currentArg: string[] = [];
-  let firstEditApplied = recentTaskComment ? false : true;
+  let firstEditApplied = false;
 
   function finishLastCommand() {
     console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
@@ -17,7 +17,9 @@ export function applyModificationProcedure(originalCode: string, modificationPro
       let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
       currentCode = innerContent;
       if (!firstEditApplied) {
-        currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        if (recentTaskComment) {
+          currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        }
         firstEditApplied = true;
       }
     } else if (currentCommand.startsWith("MODIFY_OTHER")) {
@@ -25,7 +27,9 @@ export function applyModificationProcedure(originalCode: string, modificationPro
       let commentContent = currentArg.join("\n");
       currentCode = getCommentForLanguage(languageId, commentContent) + "\n" + currentCode;
       if (!firstEditApplied) {
-        currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        if (recentTaskComment) {
+          currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
+        }
         firstEditApplied = true;
       }
     } else if (currentCommand.startsWith("REPLACE")) {
@@ -47,13 +51,14 @@ ${replaceText}
         );
       }
 
-      if (!firstEditApplied) {
+      if (!firstEditApplied && recentTaskComment) {
         currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
         console.log('APPLY MINION TASK', [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]]);
-        firstEditApplied = true;
       } else {
         currentCode = replacementArray.join("");
       }
+
+      firstEditApplied = true;
 
       storedArg = [];
     } else if (currentCommand.startsWith("BEFORE")) {
@@ -71,12 +76,14 @@ ${beforeText}
         );
       }
 
-      if (!firstEditApplied) {
+      if (!firstEditApplied && recentTaskComment) {
         currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
-        firstEditApplied = true;
+        console.log('APPLY MINION TASK', [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]]);
       } else {
         currentCode = replacementArray.join("");
       }
+
+      firstEditApplied = true;
 
       storedArg = [];
     } else if (currentCommand.startsWith("RENAME")) {
@@ -153,6 +160,10 @@ ${beforeText}
   }
 
   finishLastCommand();
+
+  if (!firstEditApplied) {
+    throw new Error("No procedure");
+  }
 
   return currentCode;
 }

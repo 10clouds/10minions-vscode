@@ -194,8 +194,78 @@ function findPossibleIndents(s: string): string[] {
 */
 
 export function exactLinesSimilarity(original: string[], replace: string[], lineSimilarityFunction: SingleLineSimilarityFunction): number {
-  if (original.length !== replace.length) {
-    return 0;
+  let originalLine = 0;
+  let replaceLine = 0;
+
+  let options = [
+    {
+      condition: () => originalLine < original.length && replaceLine < replace.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine], replace[replaceLine]),
+      charsSkipped: () => 0,
+      apply: () => { originalLine++; replaceLine++; originalSimilarityLines++; },
+    },
+    {
+      condition: () => originalLine + 1 < original.length && replaceLine < replace.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine + 1], replace[replaceLine]),
+      charsSkipped: () => original[originalLine].trim().length + 1,
+      apply: () => { originalLine += 2; replaceLine++; originalSimilarityLines++; },
+    },
+    {
+      condition: () => originalLine < original.length && replaceLine + 1 < replace.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine], replace[replaceLine + 1]),
+      charsSkipped: () => replace[replaceLine].trim().length + 1,
+      apply: () => { originalLine++; replaceLine += 2; originalSimilarityLines++; },
+    },
+    {
+      condition: () => originalLine < original.length && replaceLine >= replace.length,
+      simiarity: () => 0,
+      charsSkipped: () => original[originalLine].trim().length + 1,
+      apply: () => { originalLine++;},
+    },
+    {
+      condition: () => originalLine >= original.length && replaceLine < replace.length,
+      simiarity: () => 0,
+      charsSkipped: () => replace[replaceLine].trim().length + 1,
+      apply: () => { replaceLine++;},
+    }
+  ];
+
+  let similaritySum = 0;
+  let lineSkipped = 0;
+  let originalSimilarityLines = 0;
+
+  while (true) {
+    let bestOption;
+    let bestSimialrity = -1;
+
+    for (let option of options) {
+      if (option.condition()) {
+        let similarity = option.simiarity();
+
+        if (similarity > bestSimialrity) {
+          bestSimialrity = similarity;
+          bestOption = option;
+        }
+      }
+    }
+
+    //console.log(`bestSimialrity: ${bestSimialrity} bestOption: ${bestOption?.charsSkipped()}`);
+
+    if (bestOption === undefined) {
+      break;
+    }
+
+
+    if (bestOption.charsSkipped() === 0) {
+      //nothing skipped
+    } else if (bestOption.charsSkipped() === 1) {
+      lineSkipped += 0.02;
+    } else {
+      lineSkipped += 1;
+    }
+
+    bestOption.apply();
+    similaritySum += bestSimialrity;
   }
 
   if (original.length === 0 && replace.length === 0) {
@@ -206,14 +276,12 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
     return 0;
   }
 
-  let similaritySum = 0;
-  for (let i = 0; i < original.length; i++) {
-    similaritySum += lineSimilarityFunction(original[i], replace[i]);
-  }
+  const averageSimilarity = similaritySum / originalSimilarityLines;
+  const noSkipRatio = 1 - lineSkipped / original.length;
 
-  const averageSimilarity = similaritySum / original.length;
+  //console.log(`averageSimilarity: ${averageSimilarity} noSkipRatio: ${noSkipRatio} original.length: ${original.length} replace.length: ${replace.length} original: ${original.join("\\n")} replace: ${replace.join("\\n")}`);
 
-  return averageSimilarity;
+  return averageSimilarity * noSkipRatio;
 }
 
 export const coreSimilarityFunction = (original: string[], replacement: string[]) => {
@@ -222,13 +290,15 @@ export const coreSimilarityFunction = (original: string[], replacement: string[]
   }
 
   function calculateSimlarity(a: string[], b: string[]) {
-    let similartyWithWsDistance = exactLinesSimilarity(removeEmptyLines(a), removeEmptyLines(b), (a, b) =>
-      ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
+    let similartyWithWsDistance = exactLinesSimilarity(
+      a,
+      b,
+      (a, b) => ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
     );
 
     let similarityNotIgnoringWhitespace = exactLinesSimilarity(
-      removeEmptyLines(normalizeIndent(a)),
-      removeEmptyLines(normalizeIndent(b)),
+      normalizeIndent(a),
+      normalizeIndent(b),
       levenshteinDistanceSimilarity
     );
 
@@ -238,15 +308,7 @@ export const coreSimilarityFunction = (original: string[], replacement: string[]
   }
 
   let normalSimilarity = calculateSimlarity(original, replacement);
-
-  let trimmedSimilarity = calculateSimlarity(trimEmptyLinesAtTheBeginingAndEnd(original), trimEmptyLinesAtTheBeginingAndEnd(replacement));
-
-  if (trimmedSimilarity > normalSimilarity) {
-    let difference = trimmedSimilarity - normalSimilarity;
-    return normalSimilarity + difference * 0.9; //still it's not as good as plain similarity
-  } else {
-    return normalSimilarity;
-  }
+  return normalSimilarity;
 };
 
 export function fuzzyFindText({
@@ -272,11 +334,13 @@ export function fuzzyFindText({
   let maxLinesToReplace = findTextLines.length + lineNumTolerance;
 
   for (let start = 0; start < currentCodeLines.length - minLinesToReplace; start++) {
-    for (let end = start + minLinesToReplace; end < Math.min(currentCodeLines.length + 1, start + maxLinesToReplace); end++) {
+    for (let end = start + minLinesToReplace; end <= Math.min(currentCodeLines.length, start + maxLinesToReplace); end++) {
       const currentSlice = currentCodeLines.slice(start, end);
       const similarity = similarityFunction(currentSlice, findTextLines);
 
       if (similarity > maxSimilarity) {
+        //console.log(`sim: ${similarity} start: ${start} end: ${end} minLinesToReplace: ${minLinesToReplace} maxLinesToReplace: ${maxLinesToReplace}`);
+      
         maxSimilarity = similarity;
         maxSimilarityLineStartIndex = start;
         maxSimilarityLineEndIndex = end;
@@ -303,7 +367,7 @@ export function fuzzyReplaceTextInner({
   if (confidence >= similarityThreshold) {
     const currentCodeLines = currentCode.split("\n");
 
-    console.log(`sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
+    console.log(`final sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
     const currentSlice = currentCodeLines.slice(startIndex, endIndex);
     let indentDifference = findIndentationDifference(currentSlice, replaceText.split("\n"), equalsStringSimilarity) || "";
     console.log("indent difference", indentDifference.length, `"${indentDifference}"`);

@@ -17,11 +17,17 @@ suite("Replace Procedure Test Suite", () => {
       const procedure = readFileSync(path.resolve(baseDir, testDir, "procedure.txt"), "utf8");
       const expectedOutput = readFileSync(path.resolve(baseDir, testDir, "result.txt"), "utf8");
   
-      let modifiedContent = applyModificationProcedure(
-        currentCode,
-        procedure,
-        "typescript",
-      );
+      let modifiedContent;
+      try {
+        modifiedContent = applyModificationProcedure(
+          currentCode,
+          procedure,
+          "typescript",
+        );
+      } catch (e: any) {
+        modifiedContent = e.toString();
+      }
+      
       assert.strictEqual(modifiedContent, expectedOutput);
     });
   }
