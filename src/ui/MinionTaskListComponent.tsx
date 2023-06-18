@@ -3,7 +3,7 @@ import FlipMove from "react-flip-move";
 import { MinionTaskComponent } from "./MinionTaskComponent";
 import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
 
-export function MinionTaskListComponent({ executionList }: { executionList: MinionTaskUIInfo[]; }) {
+export function MinionTaskListComponent({ executionList }: { executionList: MinionTaskUIInfo[] }) {
   return (
     <FlipMove
       enterAnimation={{
@@ -30,7 +30,6 @@ export function MinionTaskListComponent({ executionList }: { executionList: Mini
           opacity: "0.1",
         },
       }}
-      
     >
       {executionList.length === 0 && (
         <div key="no-minions" className="text-center">

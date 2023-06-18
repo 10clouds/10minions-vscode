@@ -11,7 +11,7 @@
     "issues": "https://github.com/10clouds/10Minions/issues",
     "discord": "https://discord.gg/your_invite_link"
   },
-  "version": "0.9.9-dev",
+  "version": "0.9.9",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
@@ -98,6 +98,12 @@
           "default": "TODO",
           "markdownDescription": "Specify the comment keyword that Minions will look for to automatically run tasks (leave it empty to disable this functionality)",
           "order": 3
+        },
+        "10minions.taskCommentScanPattern": {
+          "type": "string",
+          "default": "{**/*.js,**/*.ts,**/*.java,**/*.py,**/*.cpp,**/*.c,**/*.cs,**/*.rb,**/*.go,**/*.php,**/*.rs,**/*.kt,**/*.groovy,**/*.swift,**/*.m,**/*.hs,**/*.jl,**/*.r,**/*.pl,**/*.lua,**/*.scala,**/*.clj,**/*.elm,**/*.erl,**/*.purs,**/*.v,**/*.cr,**/*.dart,**/*.h,**/*.hpp,**/*.sh,**/*.bash}",
+          "markdownDescription": "Specify the glob pattern that 10minions will use to scan for tasks in files. \n Default includes common programming language files, but not text files.",
+          "order": 4
         }
       }
     },
@@ -135,17 +141,13 @@
     }
   },
   "scripts": {
-    "vscode:package": "yarn run package && vsce package",
     "vscode:publish": "yarn run package && vsce publish",
-    "vscode:prepublish": "yarn run package",
+    "vscode:pre-release": "yarn run package && vsce publish --pre-release",
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "tsx ./src/test/runTest.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.21.8",
@@ -169,6 +171,7 @@
     "mocha": "^10.2.0",
     "process": "^0.11.10",
     "ts-loader": "^9.4.2",
+    "tsx": "^3.12.7",
     "typescript": "^5.0.4",
     "webpack": "^5.81.0",
     "webpack-cli": "^5.0.2"

@@ -1,13 +1,11 @@
-
 import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
 import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
 import { Schema } from "jsonschema";
 import fetch, { Response } from "node-fetch";
-import * as vscode from "vscode";
 import { AnalyticsManager } from "./AnalyticsManager";
+import { DEBUG_RESPONSES } from "./const";
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import AsyncLock = require("async-lock");
-import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "./const";
 
 export type GptMode = "FAST" | "QUALITY";
 export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613"; // | "gpt-4-32k-0613"
@@ -37,6 +35,11 @@ export const MODEL_DATA: ModelData = {
 };
 
 let openAILock = new AsyncLock();
+let openAIApiKey: string | undefined;
+
+export function setOpenAIApiKey(apiKey: string) {
+  openAIApiKey = apiKey;
+}
 
 function extractParsedLines(chunkBuffer: string): [any[], string] {
   let parsedLines: any[] = [];
@@ -151,9 +154,6 @@ async function processOpenAIResponseStream({
  * Function to check the availability of all models in OpenAI. 
  */
 export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
-  
-  const apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
-
   let missingModels: AVAILABLE_MODELS[] = Object.keys(MODEL_DATA) as AVAILABLE_MODELS[];
   
   try {
@@ -161,7 +161,7 @@ export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${openAIApiKey}`
       }
     });
 
@@ -228,9 +228,7 @@ export async function gptExecute({
 
   const signal = controller.signal;
 
-  let apiKey = vscode.workspace.getConfiguration("10minions").get("apiKey");
-
-  if (!apiKey) {
+  if (!openAIApiKey) {
     throw new Error("OpenAI API key not found. Please set it in the settings.");
   }
 
@@ -261,7 +259,7 @@ export async function gptExecute({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${openAIApiKey}`,
         },
         body: JSON.stringify(requestData),
         signal,

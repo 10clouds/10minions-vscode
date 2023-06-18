@@ -1,0 +1,7 @@
+I will modify the original code by changing the value of the constant `MAX_PREVIEW_LENGTH` to 200 as per the requested modification.
+
+# REPLACE
+export const MAX_PREVIEW_LENGTH = 100; //TODO: Increase this value to 200
+# WITH
+export const MAX_PREVIEW_LENGTH = 200; // Increased the value to 200 as per requirement.
+# END_REPLACE

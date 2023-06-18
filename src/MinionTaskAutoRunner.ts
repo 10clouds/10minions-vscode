@@ -1,6 +1,11 @@
+
+
+
+
 import * as vscode from "vscode";
 import { MinionTasksManager } from "./MinionTasksManager";
 
+//TODO: Add a lot of logging to this class so it's easy to track wha tis going on.
 export class MinionTaskAutoRunner {
   public static instance: MinionTaskAutoRunner;
   private documentTimeouts: Map<string, NodeJS.Timeout> = new Map();
@@ -18,26 +23,35 @@ export class MinionTaskAutoRunner {
 
 
   private monitorFilesForTasks() {
+    //TODO: Use the scan pattern to filter out files that we don't want to scan.
+    let scanPattern = vscode.workspace.getConfiguration("10minions").get<string>("taskCommentScanPattern");
+
     //TOOD: Initially check for tasks in all files, make it slow, and throttled, so we don't kill the entire system.
 
     //TODO: Any changes to the file should cancel the timeout AND if the minion is working on this, it should cancel the minion as well.
-    vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-      const uri = event.document.uri.toString();
-      const existingTimeout = this.documentTimeouts.get(uri);
-      if (existingTimeout) {
+
+
+vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+    const uri = event.document.uri.toString();
+    const existingTimeout = this.documentTimeouts.get(uri);
+    if (existingTimeout) {
         clearTimeout(existingTimeout);
-      }
-  
-      // Store the timeout for the file to check after 5 seconds
-      const timeoutId = setTimeout(() => {
+    }
+
+    // Additional modification to handle Minion task cancellation
+    // Cancel any ongoing Minion task related to the file
+    //MinionTasksManager.instance.cancelMinionForDoc(event.document);
+
+    // Store the timeout for the file to check after 5 seconds
+    const timeoutId = setTimeout(() => {
         if (!this.checkIfCursorInTaskCommentLine(event.document)) {
-          this.checkForTaskComments(event.document);
+            this.checkForTaskComments(event.document);
         }
         this.documentTimeouts.delete(uri);
-      }, 5000);
+    }, 5000);
   
-      this.documentTimeouts.set(uri, timeoutId);
-    });
+    this.documentTimeouts.set(uri, timeoutId);
+});
   
     // Add event listener for the cursor movement
     vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
@@ -98,7 +112,24 @@ export class MinionTaskAutoRunner {
     const existingTask = MinionTasksManager.instance.getExecutionByUserQueryAndDoc(task, document);
 
     if (!existingTask) {
-        MinionTasksManager.instance.runMinionOnCurrentSelectionAndEditor(task, document, selection);
+      // The message shown can be modified accordingly
+      // Added clickable button to the vscode.window.showInformationMessage
+      vscode.window.showInformationMessage('The task is being executed: ' + task, {
+        modal: true,
+      }, 
+      {
+        title: "Go to Task", // This is the clickable button
+      }).then(clicked => { // Contains the action performed when the button is clicked
+        if (clicked?.title === "Go to Task") {
+          // Add the action you want to perform when the go to task button is clicked
+          vscode.workspace.openTextDocument(document.uri) // Opens up the document where the task is located 
+          .then(doc => {
+              vscode.window.showTextDocument(doc);  // Display the newly opened document to the user
+          });
+        }
+      });
+      
+      MinionTasksManager.instance.runMinionOnCurrentSelectionAndEditor(task, document, selection);
     }
   }
 }

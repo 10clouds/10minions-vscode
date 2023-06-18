@@ -1,0 +1,32 @@
+I will add a new property called `contentWhenRemoved` to the MinionTask class and create a new method called `remove()` that will be called when the user removes the task. Inside this method, I'll set the `contentWhenRemoved` property to the current content and call the `stopExecution()` method to stop the task execution.
+
+REPLACE
+  contentWhenDismissed: string;
+WITH
+  contentWhenDismissed: string;
+  contentWhenRemoved: string;
+END_REPLACE
+
+REPLACE
+    contentWhenDismissed = "",
+WITH
+    contentWhenDismissed = "",
+    contentWhenRemoved = "",
+END_REPLACE
+
+REPLACE
+    this.contentWhenDismissed = contentWhenDismissed;
+WITH
+    this.contentWhenDismissed = contentWhenDismissed;
+    this.contentWhenRemoved = contentWhenRemoved;
+END_REPLACE
+
+ADD
+  public async remove() {
+    // Store the content when the task is removed
+    this.contentWhenRemoved = this.finalContent;
+
+    // Stop the task execution
+    await this.stopExecution(undefined, true);
+  }
+END_ADD

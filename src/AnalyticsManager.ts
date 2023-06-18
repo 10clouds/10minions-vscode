@@ -7,6 +7,8 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, setDoc, doc } from "firebase/firestore";
 import { serializeMinionTask } from "./SerializedMinionTask";
 
+import * as packageJson from "../package.json";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
   authDomain: "minions-diagnostics.firebaseapp.com",
@@ -21,9 +23,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 // Create Firestore instance using the Client SDK
 const firestore = getFirestore(firebaseApp);
-
-// package.json is exposed through webpack
-declare const NPM_PACKAGE: any;
 
 export class AnalyticsManager {
   public static instance: AnalyticsManager;
@@ -52,7 +51,7 @@ export class AnalyticsManager {
     return {
       installationId: this.installationId,
       vsCodeVersion: vscode.version,
-      pluginVersion: NPM_PACKAGE.version,
+      pluginVersion: packageJson.version,
       timestamp: new Date(),
     };
   }

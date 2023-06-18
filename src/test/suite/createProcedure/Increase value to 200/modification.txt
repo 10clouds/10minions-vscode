@@ -1,0 +1,18 @@
+Step 1
+Identify the part of the code where the value needs to be changed.
+
+Upon analysing the file, I can see that the requirement is to change the MAX_PREVIEW_LENGTH constant value to 200 from 100. 
+
+Now, Let's modify the code accordingly.
+
+Step 2
+Update the value of the constant.
+
+Here's the modified code.
+
+```typescript
+// Constants
+export const MAX_PREVIEW_LENGTH = 200; // Increased the value to 200 as per requirement.
+```
+
+In this code snippet, I have modified the value of the constant MAX_PREVIEW_LENGTH to 200 as per the requirement.

@@ -1,8 +1,8 @@
 import * as assert from "assert";
 import { decomposeMarkdownString } from "../../utils/decomposeMarkdownString";
 
-suite("Replace With Sliding Indent Test Suite", () => {
-  test("Basic test case: Exact match found", () => {
+suite("Decomposer Test Suite", () => {
+  test("Basic test case", () => {
     const currentCode = `
 Task: Implement this
 
