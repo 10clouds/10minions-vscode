@@ -38,7 +38,6 @@ export function commonStringEndArray(indents: string[]) {
   return commonIndent;
 }
 
-
 export function removeEmptyLines(slice: string[]) {
   return slice.filter((line) => line.trim().length > 0);
 }
@@ -57,7 +56,7 @@ export function removeIndent(slice: string[], indent?: string) {
 }
 
 export function applyIndent(slice: string[], indent: string) {
-  return slice.map((line) => line.trim().length > 0 ? indent + line : line);
+  return slice.map((line) => (line.trim().length > 0 ? indent + line : line));
 }
 
 export function jaccardSimilarityIndex(a: string, b: string): number {
@@ -112,7 +111,11 @@ export function levenshteinDistance(a: string, b: string): number {
 }
 
 export function levenshteinDistanceSimilarity(a: string, b: string): number {
-  return 1  - levenshteinDistance(a, b) / Math.max(a.length, b.length);
+  let len = Math.max(a.length, b.length);
+  if (len === 0) {
+    return 1;
+  }
+  return 1 - levenshteinDistance(a, b) / len;
 }
 
 export function sorensenDiceCoefficient(first: string, second: string) {
@@ -202,10 +205,14 @@ export function normalizeWhiteSpace(s: string): string {
 export function codeStringSimilarity(a: string, b: string): number {
   const preprocessedA = normalizeWhiteSpace(a);
   const preprocessedB = normalizeWhiteSpace(b);
+  const maxLength = Math.max(preprocessedA.length, preprocessedB.length);
+
+  if (maxLength === 0) {
+    return 1;
+  }
 
   const changes = levenshteinDistance(preprocessedA, preprocessedB);
 
-  const maxLength = Math.max(preprocessedA.length, preprocessedB.length);
   const similarityScore = 1 - changes / maxLength;
 
   return similarityScore;
