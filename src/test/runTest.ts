@@ -1,4 +1,4 @@
-import { run } from './suite/index.ts';
+import { run } from './suite/index';
 
 async function main() {
 	try {
