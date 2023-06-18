@@ -1,0 +1,48 @@
+First, I will describe my plan to implement the requested change. Then, I will provide the updated code with my modifications and comments.
+
+Plan:
+1. Update the `splitCommentIntoLines` function to preserve newlines from the original comment.
+2. Modify the loop to detect and handle newline characters properly.
+
+Now, I will elaborate on each step and provide the modified code snippet.
+
+1. Update the `splitCommentIntoLines` function to preserve newlines from the original comment.
+    - I will update the function to treat newline characters as word boundaries.
+    - I will split the comment into words without removing newline characters.
+
+2. Modify the loop to detect and handle newline characters properly. 
+   - I will change the loop to check if the current word is a newline character.
+   - If it's a newline character, I will push the current line to the lines array and start a new line.
+   - Otherwise, I will perform the existing line length check to ensure the line doesn't exceed the maximum characters limit.
+
+Modified code snippet:
+
+
+// Modified the helper function:
+function splitCommentIntoLines(comment: string, maxChars = 80): string[] {
+  // Updated the regular expression to treat newline characters as word boundaries
+  const words = comment.split(/(\s+|\n)/);
+  const lines: string[] = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    // Check if the current word is a newline character
+    if (word === '\n') {
+      // If it's a newline character, push the current line and start a new line
+      lines.push(currentLine);
+      currentLine = '';
+    } else if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}

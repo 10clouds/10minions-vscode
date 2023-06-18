@@ -1,0 +1,158 @@
+I will add the `contentWhenDismissed` field to the `SerializedMinionTask` type definition and update the `serializeMinionTask` and `deserializeMinionTask` functions to include this new field. Note that you also need to update the `MinionTask` class in the `MinionTask.ts` file as described in the REQUESTED MODIFICATION section.
+
+REPLACE
+export type SerializedMinionTask = {
+  id: string;
+  minionIndex: number;
+  documentURI: string;
+  userQuery: string;
+  selection: {
+    startLine: number;
+    startCharacter: number;
+    endLine: number;
+    endCharacter: number;
+  };
+  selectedText: string;
+  originalContent: string;
+  finalContent: string;
+  startTime: number;
+  shortName: string;
+  modificationDescription: string;
+  modificationProcedure: string;
+  modificationApplied: boolean;
+  executionStage: string;
+  classification: TASK_CLASSIFICATION_NAME | null;
+  logContent: string;
+};
+WITH
+export type SerializedMinionTask = {
+  id: string;
+  minionIndex: number;
+  documentURI: string;
+  userQuery: string;
+  selection: {
+    startLine: number;
+    startCharacter: number;
+    endLine: number;
+    endCharacter: number;
+  };
+  selectedText: string;
+  originalContent: string;
+  finalContent: string;
+  startTime: number;
+  shortName: string;
+  modificationDescription: string;
+  modificationProcedure: string;
+  modificationApplied: boolean;
+  executionStage: string;
+  classification: TASK_CLASSIFICATION_NAME | null;
+  logContent: string;
+  contentWhenDismissed: string;
+};
+
+REPLACE
+export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTask {
+  return {
+    id: minionTask.id,
+    minionIndex: minionTask.minionIndex,
+    documentURI: minionTask.documentURI,
+    userQuery: minionTask.userQuery,
+    selection: {
+      startLine: minionTask.selection.start.line,
+      startCharacter: minionTask.selection.start.character,
+      endLine: minionTask.selection.end.line,
+      endCharacter: minionTask.selection.end.character,
+    },
+    selectedText: minionTask.selectedText,
+    originalContent: minionTask.originalContent,
+    finalContent: minionTask.finalContent,
+    startTime: minionTask.startTime,
+    shortName: minionTask.shortName,
+    modificationDescription: minionTask.modificationDescription,
+    modificationProcedure: minionTask.modificationProcedure,
+    modificationApplied: minionTask.modificationApplied,
+    executionStage: minionTask.executionStage,
+    classification: minionTask.classification === undefined ? null : minionTask.classification,
+    logContent: minionTask.logContent,
+  };
+}
+WITH
+export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTask {
+  return {
+    id: minionTask.id,
+    minionIndex: minionTask.minionIndex,
+    documentURI: minionTask.documentURI,
+    userQuery: minionTask.userQuery,
+    selection: {
+      startLine: minionTask.selection.start.line,
+      startCharacter: minionTask.selection.start.character,
+      endLine: minionTask.selection.end.line,
+      endCharacter: minionTask.selection.end.character,
+    },
+    selectedText: minionTask.selectedText,
+    originalContent: minionTask.originalContent,
+    finalContent: minionTask.finalContent,
+    startTime: minionTask.startTime,
+    shortName: minionTask.shortName,
+    modificationDescription: minionTask.modificationDescription,
+    modificationProcedure: minionTask.modificationProcedure,
+    modificationApplied: minionTask.modificationApplied,
+    executionStage: minionTask.executionStage,
+    classification: minionTask.classification === undefined ? null : minionTask.classification,
+    logContent: minionTask.logContent,
+    contentWhenDismissed: minionTask.contentWhenDismissed,
+  };
+}
+
+REPLACE
+export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
+  return new MinionTask({
+    id: data.id,
+    minionIndex: data.minionIndex || 0,
+    documentURI: data.documentURI,
+    userQuery: data.userQuery,
+    selection: new vscode.Selection(
+      new vscode.Position(data.selection.startLine, data.selection.startCharacter),
+      new vscode.Position(data.selection.endLine, data.selection.endCharacter)
+    ),
+    selectedText: data.selectedText,
+    originalContent: data.originalContent,
+    finalContent: data.finalContent,
+    startTime: data.startTime,
+    shortName: data.shortName,
+    modificationDescription: data.modificationDescription,
+    modificationProcedure: data.modificationProcedure,
+    modificationApplied: data.modificationApplied,
+    executionStage: data.executionStage,
+    classification: data.classification === null ? undefined : data.classification,
+    onChanged: async (important: boolean) => {},
+    logContent: data.logContent,
+  });
+}
+WITH
+export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
+  return new MinionTask({
+    id: data.id,
+    minionIndex: data.minionIndex || 0,
+    documentURI: data.documentURI,
+    userQuery: data.userQuery,
+    selection: new vscode.Selection(
+      new vscode.Position(data.selection.startLine, data.selection.startCharacter),
+      new vscode.Position(data.selection.endLine, data.selection.endCharacter)
+    ),
+    selectedText: data.selectedText,
+    originalContent: data.originalContent,
+    finalContent: data.finalContent,
+    startTime: data.startTime,
+    shortName: data.shortName,
+    modificationDescription: data.modificationDescription,
+    modificationProcedure: data.modificationProcedure,
+    modificationApplied: data.modificationApplied,
+    executionStage: data.executionStage,
+    classification: data.classification === null ? undefined : data.classification,
+    onChanged: async (important: boolean) => {},
+    logContent: data.logContent,
+    contentWhenDismissed: data.contentWhenDismissed,
+  });
+}
+END_REPLACE

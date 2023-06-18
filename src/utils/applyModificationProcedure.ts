@@ -11,7 +11,7 @@ export function applyModificationProcedure(originalCode: string, modificationPro
   let firstEditApplied = false;
 
   function finishLastCommand() {
-    console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
+    //console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
     if (currentCommand.startsWith("REPLACE_ALL")) {
       let consolidatedContent = currentArg.join("\n");
       let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
@@ -149,7 +149,7 @@ ${beforeText}
       isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT") || line.startsWith("MODIFY_OTHER");
     }
 
-    console.log(`isANewCommand: ${isANewCommand} currentCommand: ${currentCommand} line: ${line}`);
+    //console.log(`isANewCommand: ${isANewCommand} currentCommand: ${currentCommand} line: ${line}`);
 
     if (isANewCommand) {
       finishLastCommand();

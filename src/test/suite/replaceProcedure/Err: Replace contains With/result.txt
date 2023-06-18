@@ -1,0 +1,29 @@
+Error: Could not find:
+// Modified the helper function:
+function splitCommentIntoLines(comment: string, maxChars = 80): string[] {
+  // Updated the regular expression to treat newline characters as word boundaries
+  const words = comment.split(/(\s+|\n)/);
+  const lines: string[] = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    // Check if the current word is a newline character
+    if (word === '\n') {
+      // If it's a newline character, push the current line and start a new line
+      lines.push(currentLine);
+      currentLine = '';
+    } else if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}

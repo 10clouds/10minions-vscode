@@ -1,0 +1,136 @@
+I will implement the improvements as described in the REQUESTED MODIFICATION section. I will create a new function called splitLongWord() to handle splitting long words, modify the splitCommentIntoLines() function to use the new function and apply other improvements, and remove the unused 'codeLanguage' variable from the decomposeMarkdownString() function.
+
+REPLACE
+import { getCommentForLanguage } from "../utils/comments";
+
+export function splitCommentIntoLines(comment: string, maxChars = 80): string[] {
+  const finalLines: string[] = [];
+
+  const lines = comment.split("\n");
+
+  lines.forEach((line) => {
+    const words = line.split(/\s+/);
+
+    // The next two variables will hold the current line length and the word to be checked
+    let currentLine = "";
+
+    // Iterate over each word in the line and break lines if they exceed maxChars
+    words.forEach((word) => {
+      // Handle the case when a single word is longer than maxChars
+      if (word.length > maxChars) {
+        const subStrings = word.match(new RegExp(`.{1,${maxChars}}`, "g")) || [];
+        subStrings.forEach((subString) => finalLines.push(subString));
+      }
+      // Handle the case when adding the word doesn't exceed maxChars
+      else if (currentLine.length + word.length + (currentLine.length > 0 ? 1 : 0) <= maxChars) {
+        currentLine += currentLine.length > 0 ? " " : "";
+        currentLine += word;
+      }
+      // Handle the case when adding the word exceeds maxChars
+      else {
+        finalLines.push(currentLine);
+        currentLine = word;
+      }
+    });
+
+    finalLines.push(currentLine);
+  });
+
+  return finalLines;
+}
+
+export function decomposeMarkdownString(markdownString: string, languageId: string): string[] {
+  const lines = markdownString.split("\n");
+  let inCodeBlock = false;
+  let codeLanguage = "";
+
+  const decomposedStringParts: string[] = [];
+  let commentBuffer: string[] = [];
+
+  lines.forEach((line) => {
+    if (line.startsWith("```")) {
+      inCodeBlock = !inCodeBlock;
+
+      if (inCodeBlock) {
+        codeLanguage = line.slice(3).trim();
+      } else {
+        decomposedStringParts.push(""); // Extra newline after code block
+      }
+    } else if (inCodeBlock) {
+      //TODO: ... && codeLanguage === languageId
+      dumpCommentBuffer(languageId, commentBuffer, decomposedStringParts);
+
+      decomposedStringParts.push(line);
+    } else {
+      commentBuffer.push(line);
+    }
+  });
+
+  dumpCommentBuffer(languageId, commentBuffer, decomposedStringParts);
+
+  return decomposedStringParts;
+}
+WITH
+import { getCommentForLanguage } from "../utils/comments";
+
+function splitLongWord(word: string, maxChars: number): string[] {
+  return word.match(new RegExp(`.{1,${maxChars}}`, 'g')) || [];
+}
+
+export function splitCommentIntoLines(comment: string, maxChars = 80): string[] {
+  const linesResult: string[] = [];
+
+  const lines = comment.split('\n');
+
+  lines.forEach((line) => {
+    const words = line.split(/\s+/);
+
+    let currentLine = '';
+
+    words.forEach((word) => {
+      if (word.length > maxChars) {
+        const subStrings = splitLongWord(word, maxChars);
+        linesResult.push(...subStrings);
+      } else if (currentLine.length + word.length + (currentLine.length ? 1 : 0) <= maxChars) {
+        currentLine += (currentLine ? ' ' : '') + word;
+      } else {
+        linesResult.push(currentLine);
+        currentLine = word;
+      }
+    });
+
+    linesResult.push(currentLine);
+  });
+
+  return linesResult;
+}
+
+export function decomposeMarkdownString(markdownString: string, languageId: string): string[] {
+  const lines = markdownString.split('\n');
+  let inCodeBlock = false;
+
+  const decomposedStringParts: string[] = [];
+  let commentBuffer: string[] = [];
+
+  lines.forEach((line) => {
+    if (line.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+
+      if (inCodeBlock) {
+      } else {
+        decomposedStringParts.push(''); // Extra newline after code block
+      }
+    } else if (inCodeBlock) {
+      dumpCommentBuffer(languageId, commentBuffer, decomposedStringParts);
+
+      decomposedStringParts.push(line);
+    } else {
+      commentBuffer.push(line);
+    }
+  });
+
+  dumpCommentBuffer(languageId, commentBuffer, decomposedStringParts);
+
+  return decomposedStringParts;
+}
+END_REPLACE

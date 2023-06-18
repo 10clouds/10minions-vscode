@@ -1,0 +1,59 @@
+I will perform the following modifications:
+1. Create an interface for stages.
+2. Change the Stage objects into instances of a new Stage class implementing the interface.
+3. Move the STAGES array and TOTAL_WEIGHTS constant into a separate module.
+
+REPLACE
+export const STAGES = [
+  ...
+];
+
+export const TOTAL_WEIGHTS = STAGES.reduce((acc, stage) => {
+  return acc + stage.weight;
+}, 0);
+WITH
+// STEP 1: CREATE INTERFACE
+interface IStage {
+  name: string;
+  weight: number;
+  execution: Function;
+}
+
+// STEP 2: DEFINE STAGE CLASS
+class Stage implements IStage {
+  constructor(public name: string, public weight: number, public execution: Function) {}
+}
+
+// STEP 3A: MOVE ARRAY AND CONSTANT INTO SEPARATE FILE (stageConstants.ts)
+// Moved STAGES array and TOTAL_WEIGHTS constant to stageConstants.ts
+
+// STEP 3B: UPDATE IMPORTS
+import { STAGES, TOTAL_WEIGHTS } from './stageConstants';
+END_REPLACE
+
+Now, create a new file named stageConstants.ts with the following content:
+
+---- Start new file stageConstants.ts ----
+
+import { stageStarting } from "./1_stageStarting";
+import { stageClassifyTask } from "./2_stageClassifyTask";
+import { stageCreateModification } from "./3_stageCreateModification";
+import { stageCreateModificationProcedure } from "./4_stageCreateModificationProcedure";
+import { stageFinishing } from "./7_stageFinishing";
+
+import { Stage } from './[FILE_NAME_OF_Refactored_changes]';
+
+
+export const STAGES: Stage[] = [
+  new Stage("Starting ...", 10, stageStarting),
+  new Stage("Understanding ...", 50, stageClassifyTask),
+  new Stage("Conceptualising ...", 100, stageCreateModification),
+  new Stage("Preparing Changes ...", 80, stageCreateModificationProcedure),
+  new Stage("Finishing ...", 10, stageFinishing),
+];
+
+export const TOTAL_WEIGHTS = STAGES.reduce((acc, stage) => {
+  return acc + stage.weight;
+}, 0);
+
+---- End new file stageConstants.ts ----

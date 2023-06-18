@@ -1,0 +1,135 @@
+I will now apply the requested modifications to the original code. I will add a class-level comment for the `MinionTask` class, refactor the constructor to use a single parameter object, and add comments for the methods.
+
+REPLACE
+/**
+ * MinionTask class represents a task to be executed in the application.
+ * It handles the task lifecycle from creation, execution, logging, reporting progress, and stopping the execution.
+ */
+export class MinionTask {
+WITH
+/**
+ * MinionTask class represents a task to be executed in the application.
+ * It handles the task lifecycle from creation, execution, logging, reporting progress, and stopping the execution.
+ */
+export class MinionTask {
+END_REPLACE
+
+REPLACE
+  constructor({
+    id,
+    minionIndex,
+    documentURI,
+    userQuery,
+    selection,
+    selectedText,
+    originalContent,
+    finalContent = "",
+    contentWhenDismissed = "",
+    startTime,
+    onChanged = async (important: boolean) => { throw new Error("Should be implemented"); },
+    shortName = "",
+    modificationDescription = "",
+    modificationProcedure = "",
+    modificationApplied = false,
+    executionStage = "",
+    classification = undefined,
+    logContent = "",
+  }: {
+    id: string;
+    minionIndex: number;
+    documentURI: string;
+    userQuery: string;
+    selection: vscode.Selection;
+    selectedText: string;
+    originalContent: string;
+    finalContent?: string;
+    contentWhenDismissed?: string;
+    startTime: number;
+    onChanged?: (important: boolean) => Promise<void>;
+    shortName?: string;
+    modificationDescription?: string;
+    modificationProcedure?: string;
+    modificationApplied?: boolean;
+    executionStage?: string;
+    classification?: TASK_CLASSIFICATION_NAME;
+    logContent?: string;
+  }) {
+WITH
+  constructor(options: {
+    id: string;
+    minionIndex: number;
+    documentURI: string;
+    userQuery: string;
+    selection: vscode.Selection;
+    selectedText: string;
+    originalContent: string;
+    finalContent?: string;
+    contentWhenDismissed?: string;
+    startTime: number;
+    onChanged?: (important: boolean) => Promise<void>;
+    shortName?: string;
+    modificationDescription?: string;
+    modificationProcedure?: string;
+    modificationApplied?: boolean;
+    executionStage?: string;
+    classification?: TASK_CLASSIFICATION_NAME;
+    logContent?: string;
+  }) {
+    this.id = options.id;
+    this.minionIndex = options.minionIndex;
+    this.documentURI = options.documentURI;
+    this.userQuery = options.userQuery;
+    this.selection = options.selection;
+    this.selectedText = options.selectedText;
+    this._originalContent = options.originalContent;
+    this.finalContent = options.finalContent || "";
+    this.contentWhenDismissed = options.contentWhenDismissed || "";
+    this.startTime = options.startTime;
+    this.onChanged = options.onChanged || (async (important: boolean) => { throw new Error("Should be implemented"); });
+    this.shortName = options.shortName || "";
+    this.modificationDescription = options.modificationDescription || "";
+    this.modificationProcedure = options.modificationProcedure || "";
+    this.executionStage = options.executionStage || "",
+    this.classification = options.classification;
+    this.logContent = options.logContent || "";
+  }
+END_REPLACE
+
+REPLACE
+  get logURI() {
+WITH
+  /**
+   * Returns the log URI string for the MinionTask.
+   */
+  get logURI() {
+END_REPLACE
+
+REPLACE
+  get originalContentURI() {
+WITH
+  /**
+   * Returns the original content URI string for the MinionTask.
+   */
+  get originalContentURI() {
+END_REPLACE
+
+REPLACE
+  appendToLog(content: string): void {
+WITH
+  /**
+   * Appends the content to the log of the MinionTask and reports the change.
+   * @param {string} content - Content to append to the log.
+   */
+  appendToLog(content: string): void {
+END_REPLACE
+
+REPLACE
+  clearLog() {
+WITH
+  /**
+   * Clears the log content of the MinionTask and reports the change.
+   */
+  clearLog() {
+END_REPLACE
+
+// ...rest of the code remains the same

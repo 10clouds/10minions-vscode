@@ -1,0 +1,112 @@
+First, let's go through the code to get an overview of the main elements that need refactoring or comments. Then, we'll make changes one by one.
+
+1. The class `MinionTask` seems to contain overall structure and logic for the application. Add a class-level comment to provide context for the class.
+
+2. Retain the "import" statements at the beginning as they are necessary for the code execution.
+
+3. The constructor of `MinionTask` has many parameters, which makes it difficult to read and prone to errors. We will refactor it to use a single parameter object and destructure its properties within the constructor.
+
+4. Some methods of the `MinionTask` class need comments to provide context for their purpose and usage.
+
+Now, we'll go through the steps and provide the modified code for each section.
+
+1. Add a comment before the class declaration:
+
+```typescript
+/**
+ * MinionTask class represents a task to be executed in the application.
+ * It handles the task lifecycle from creation, execution, logging, reporting progress, and stopping the execution.
+ */
+```
+
+3. Refactor the constructor of `MinionTask`:
+
+```typescript
+  /**
+   * Constructs a MinionTask instance with the provided parameters.
+   * @param {Object} options - Options for initializing the MinionTask.
+   * @param {string} options.id - The unique ID of the MinionTask.
+   * @param {number} options.minionIndex - The index of the minion within the execution sequence.
+   * @param {string} options.documentURI - The URI of the document associated with the task.
+   * @param {string} options.userQuery - The user's query associated with the task.
+   * @param {vscode.Selection} options.selection - The selected text within the document.
+   * @param {string} options.selectedText - The text selected by the user within the document.
+   * @param {string} options.originalContent - The original content of the document.
+   * @param {string} [options.finalContent=""] - Optional final content of the task.
+   * @param {string} [options.contentWhenDismissed=""] - Optional content of the task when dismissed.
+   * @param {number} options.startTime - The start time of the task execution.
+   * @param {(important: boolean) => Promise<void>} [options.onChanged] - Optional handler for change events related to the task's state. Defaults to throwing an error if not provided.
+   * @param {string} [options.shortName=""] - Optional short name for the task.
+   * @param {string} [options.modificationDescription=""] - Optional description of the modification to be applied or applied.
+   * @param {string} [options.modificationProcedure=""] - Optional procedure to take when applying modification.
+   * @param {boolean} [options.modificationApplied=false] - Indicates whether the modification has been applied or not.
+   * @param {string} [options.executionStage=""] - Optional name of the execution stage.
+   * @param {TASK_CLASSIFICATION_NAME} [options.classification] - Optional classification of the task.
+   * @param {string} [options.logContent=""] - Optional initial log content.
+   */
+  constructor(options: {
+    id: string;
+    minionIndex: number;
+    documentURI: string;
+    userQuery: string;
+    selection: vscode.Selection;
+    selectedText: string;
+    originalContent: string;
+    finalContent?: string;
+    contentWhenDismissed?: string;
+    startTime: number;
+    onChanged?: (important: boolean) => Promise<void>;
+    shortName?: string;
+    modificationDescription?: string;
+    modificationProcedure?: string;
+    modificationApplied?: boolean;
+    executionStage?: string;
+    classification?: TASK_CLASSIFICATION_NAME;
+    logContent?: string;
+  }) {
+    this.id = options.id;
+    this.minionIndex = options.minionIndex;
+    this.documentURI = options.documentURI;
+    this.userQuery = options.userQuery;
+    this.selection = options.selection;
+    this.selectedText = options.selectedText;
+    this._originalContent = options.originalContent;
+    this.finalContent = options.finalContent || "";
+    this.contentWhenDismissed = options.contentWhenDismissed || "";
+    this.startTime = options.startTime;
+    this.onChanged = options.onChanged || (async (important: boolean) => { throw new Error("Should be implemented"); });
+    this.shortName = options.shortName || "";
+    this.modificationDescription = options.modificationDescription || "";
+    this.modificationProcedure = options.modificationProcedure || "";
+    this.executionStage = options.executionStage || "",
+    this.classification = options.classification;
+    this.logContent = options.logContent || "";
+  }
+```
+
+4. Add comments for the methods:
+
+```typescript
+  /**
+   * Returns the log URI string for the MinionTask.
+   */
+  get logURI() {...}
+
+  /**
+   * Returns the original content URI string for the MinionTask.
+   */
+  get originalContentURI() {...}
+
+  /**
+   * Appends the content to the log of the MinionTask and reports the change.
+   * @param {string} content - Content to append to the log.
+   */
+  appendToLog(content: string): void {...}
+  
+  /**
+   * Clears the log content of the MinionTask and reports the change.
+   */
+  clearLog() {...}
+
+  //... other methods following the same pattern
+```
