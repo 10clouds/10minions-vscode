@@ -4,9 +4,9 @@ import { countTokens, ensureIRunThisInRange, gptExecute } from "../openai";
 
 export const AVAILABE_COMMANDS = [
   `
-# REPLACE / WITH / END_REPLACE
+# Syntax and description of a REPLACE command
 
-Use this se to replace a piece of code with another piece of code. Start it with the following line:
+Use this to replace a piece of code with another piece of code. Start it with the following line:
 
 REPLACE
 
@@ -20,9 +20,28 @@ END_REPLACE
 
 Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
-* After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
+* You MUST use all 3 parts of the command: REPLACE, WITH and END_REPLACE.
 `.trim(),
 
+`
+# Syntax and description of a INSERT command
+
+Use this to insert new code after a given piece of code. Start it with the following line:
+
+INSERT
+
+Followed by the lines of code you are inserting, and then, when ready to output the text that should follow the inserted text, start it with the following command:
+
+BEFORE
+
+Followed by the code that should follow the inserted code. End the sequence with the following command:
+
+END_INSERT
+
+Follow this rules when using INSERT / BEFORE / END_INSERT command sequence:
+* All lines and whitespace in the text you are inserting matter.
+* You MUST use all 3 parts of the command: INSERT, BEFORE and END_INSERT.
+`.trim(),
 
 
   /*`
@@ -48,8 +67,7 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
   ,
   */
   `
-
-# MODIFY_OTHER / END_MODIFY_OTHER
+# Syntax and description of a MODIFY_OTHER command
 
 If REQUESTED_MODIFICATION specifies that other files must be created or modified, use this command to specify any modifications that need to happen in other files. User will apply them manually, so they don't have to compile, and can have instructions on how to apply them. Start it with the following line:
 
@@ -68,6 +86,7 @@ Star your answer with the overview of what you are going to do, and then, follow
 
 ## General considerations:
 * Do not invent your own commands, use only the ones described below.
+* After all INSERTS and REPLACEmeents the code should be final, production ready, as described in REQUESTED MODIFICATION.
 
 ## Available commands are:
 ${AVAILABE_COMMANDS.join("\n\n")}

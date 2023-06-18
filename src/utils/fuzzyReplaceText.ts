@@ -4,9 +4,9 @@ import {
   equalsStringSimilarity,
   levenshteinDistanceSimilarity,
   removeEmptyLines,
-  removeIndent,
-  trimEmptyLinesAtTheBeginingAndEnd,
+  removeIndent
 } from "./stringUtils";
+import { stripAllComments } from "./stripAllComments";
 
 export type SingleLineSimilarityFunction = (original: string, replacement: string) => number;
 export type MultiLineSimilarityFunction = (original: string[], replacement: string[]) => number;
@@ -303,12 +303,14 @@ export const coreSimilarityFunction = (original: string[], replacement: string[]
     );
 
     let similarityNotIgnoringWhitespace = exactLinesSimilarity(
-      normalizeIndent(a),
-      normalizeIndent(b),
+      normalizeIndent(stripAllComments(a)),
+      normalizeIndent(stripAllComments(b)),
       levenshteinDistanceSimilarity
     );
 
-    let similarity = 0.5 * similartyWithWsDistance + 0.5 * similarityNotIgnoringWhitespace;
+    let core = Math.max(similartyWithWsDistance, similarityNotIgnoringWhitespace);
+
+    let similarity = 0.8 * core + 0.1 * similartyWithWsDistance + 0.1 * similarityNotIgnoringWhitespace;
 
     return similarity;
   }
@@ -412,3 +414,4 @@ export function fuzzyReplaceText({
     similarityThreshold,
   })?.join("");
 }
+

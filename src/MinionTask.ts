@@ -311,12 +311,17 @@ ${this.baseName}
       mode: "FAST",
       maxTokens: 20,
       fullPrompt: `
-      Create a very short summary of a task. Maximum of 20 characters. You MUST not exceed this number. Try to combine info both from what user said and what user selected / file name. If a selected identifier is too long or file name is too long, just use some keywords from it.
+User just created a task, he said what the task is, but also selected the code and file this task refers to.
+Create a very short summary of what the task is in it's essence.
+Maximum of 20 characters. You MUST not exceed this number.
+Try to combine info from what user said and what user selected and file name.
+If a selected identifier is too long or file name is too long, just use some keywords from it.
+You can abbreviate words if needed.
 
-      ==== WHAT USER SAID ====
-      ${this.userQuery}
+==== WHAT USER SAID ====
+${this.userQuery}
 
-      ${context}
+${context}
       
       `.trim(),
       outputType: "string",

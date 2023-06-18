@@ -59,13 +59,13 @@ export async function stageCreateAnswer(this: MinionTask) {
 
   let promptWithContext = createPrompt(selectedText, document, fullFileContents, this.selection.start, userQuery);
 
-  let tokensCode = countTokens(promptWithContext, "QUALITY");
+  let tokensCode = countTokens(promptWithContext, "FAST");
   let luxiouriosTokens = tokensCode * 1.5;
   let absoluteMinimumTokens = tokensCode;
 
   let tokensToUse = ensureIRunThisInRange({
     prompt: promptWithContext,
-    mode: "QUALITY",
+    mode: "FAST",
     preferedTokens: luxiouriosTokens,
     minTokens: absoluteMinimumTokens,
   });
@@ -78,7 +78,7 @@ export async function stageCreateAnswer(this: MinionTask) {
       this.reportSmallProgress();
     },
     isCancelled,
-    mode: "QUALITY",
+    mode: "FAST",
     maxTokens: tokensToUse,
     controller: new AbortController(),
     outputType: "string",
