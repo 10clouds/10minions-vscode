@@ -91,9 +91,8 @@ export async function createModificationProcedure(
   let promptWithContext = createPrompt(refCode, modification);
 
   let tokensModification = countTokens(modification, "QUALITY");
-  let tokensCode = countTokens(promptWithContext, "QUALITY");
-  let luxiouriosTokens = Math.max(tokensCode, tokensModification) * 1.5;
-  let absoluteMinimumTokens = Math.max(tokensCode, tokensModification);
+  let luxiouriosTokens = tokensModification * 1.5;
+  let absoluteMinimumTokens = tokensModification;
 
   if (DEBUG_PROMPTS) {
 
