@@ -197,6 +197,8 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
   let originalLine = 0;
   let replaceLine = 0;
 
+  let originalSimilarityLines = 0;
+
   let options = [
     {
       condition: () => originalLine < original.length && replaceLine < replace.length,
@@ -230,17 +232,21 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
     }
   ];
 
+
   let similaritySum = 0;
   let lineSkipped = 0;
-  let originalSimilarityLines = 0;
 
   while (true) {
     let bestOption;
-    let bestSimialrity = -1;
+    let bestSimialrity = Number.MIN_SAFE_INTEGER;
 
     for (let option of options) {
       if (option.condition()) {
         let similarity = option.simiarity();
+
+        if (isNaN(similarity)) {
+          throw new Error("similarity is NaN");
+        }
 
         if (similarity > bestSimialrity) {
           bestSimialrity = similarity;
@@ -249,7 +255,7 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
       }
     }
 
-    //console.log(`bestSimialrity: ${bestSimialrity} bestOption: ${bestOption?.charsSkipped()}`);
+    //console.log(`bestSimialrity: ${bestSimialrity} bestOption: ${bestOption?.charsSkipped()} originalLine: ${originalLine} replaceLine: ${replaceLine}`);
 
     if (bestOption === undefined) {
       break;
@@ -279,7 +285,7 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
   const averageSimilarity = similaritySum / originalSimilarityLines;
   const noSkipRatio = 1 - lineSkipped / original.length;
 
-  //console.log(`averageSimilarity: ${averageSimilarity} noSkipRatio: ${noSkipRatio} original.length: ${original.length} replace.length: ${replace.length} original: ${original.join("\\n")} replace: ${replace.join("\\n")}`);
+  //console.log(`averageSimilarity: ${averageSimilarity} similaritySum: ${similaritySum}  noSkipRatio: ${noSkipRatio} originalSimilarityLines: ${originalSimilarityLines} original.length: ${original.length} replace.length: ${replace.length} original: "${original.join("\\n")}" replace: "${replace.join("\\n")}"`);
 
   return averageSimilarity * noSkipRatio;
 }
@@ -367,10 +373,10 @@ export function fuzzyReplaceTextInner({
   if (confidence >= similarityThreshold) {
     const currentCodeLines = currentCode.split("\n");
 
-    console.log(`final sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
+    //console.log(`final sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
     const currentSlice = currentCodeLines.slice(startIndex, endIndex);
     let indentDifference = findIndentationDifference(currentSlice, replaceText.split("\n"), equalsStringSimilarity) || "";
-    console.log("indent difference", indentDifference.length, `"${indentDifference}"`);
+    //console.log("indent difference", indentDifference.length, `"${indentDifference}"`);
 
     const adjustedWithTextLines = applyIndent(withText.split("\n"), indentDifference);
     const adjustedWithText = adjustedWithTextLines.join("\n");
