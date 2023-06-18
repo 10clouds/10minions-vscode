@@ -265,8 +265,6 @@ export async function gptExecute({
         signal,
       });
 
-      console.log("RESP", response);
-
       const result = await processOpenAIResponseStream({ response, onChunk, isCancelled, controller });
 
       AnalyticsManager.instance.reportOpenAICall(requestData, result);
@@ -276,10 +274,6 @@ export async function gptExecute({
       const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
       const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
       const totalCost = inputCost + outputCost;
-
-      if (DEBUG_RESPONSES) {
-        console.log("RESPONSE", response);
-      }
       
       return {
         result: result,
