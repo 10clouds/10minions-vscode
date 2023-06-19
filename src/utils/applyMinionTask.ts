@@ -53,7 +53,6 @@ export async function applyMinionTask(minionTask: MinionTask) {
       preprocessedContent,
       minionTask.modificationProcedure,
       document.languageId,
-      `Recently applied task: ${minionTask.userQuery}`
     );
 
     console.log(`modifiedContent: "${modifiedContent}"`);

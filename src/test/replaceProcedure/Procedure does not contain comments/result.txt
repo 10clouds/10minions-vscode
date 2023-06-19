@@ -133,6 +133,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   const [prefixWidth, setPrefixWidth] = React.useState(0);
 
+  // Separate effect hook for updating prefix width
   // Set up an effect hook for updating the prefix width
   React.useEffect(() => {
     // Define a function to update the prefixWidth state if prefixSpanRef.current is defined

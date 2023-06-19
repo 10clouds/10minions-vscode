@@ -1,69 +1,23 @@
-import {
-  applyIndent,
-  codeStringSimilarity,
-  equalsStringSimilarity,
-  levenshteinDistanceSimilarity,
-  removeEmptyLines,
-  removeIndent
-} from "./stringUtils";
+import { applyIndent, codeStringSimilarity, equalsStringSimilarity, levenshteinDistanceSimilarity, removeEmptyLines, removeIndent } from "./stringUtils";
 import { stripAllComments } from "./stripAllComments";
 
 export type SingleLineSimilarityFunction = (original: string, replacement: string) => number;
 export type MultiLineSimilarityFunction = (original: string[], replacement: string[]) => number;
 
-interface ReplaceWindowParams {
-  currentCode: string;
-  replaceText: string;
-  withText: string;
-  similarityFunction?: MultiLineSimilarityFunction;
-  similarityThreshold?: number;
-  lineNumTolerance?: number;
-}
-
-type Indent = {
-  type: "negative" | "positive";
-  str: string;
-};
-
-/*function fuzzyIndexOf(currentCodeLine: string, replaceTextLine: string, similarityFunction: (a: string, b: string) => number, maxCharLengthTolerance = 10): { startIndex: number, endIndex: number, confidence: number } | undefined {
-  let maxSimilarity = -1;
-  let maxSimilarityStartIndex = -1;
-  let maxSimilarityEndIndex = -1;
-
-  let minCodeSliceLength = Math.max(0, replaceTextLine.length - maxCharLengthTolerance);
-  let maxCodeSliceLength = replaceTextLine.length + maxCharLengthTolerance;
-
-  for (let start = 0; start < currentCodeLine.length - minCodeSliceLength; start++) {
-    for (let end = start + minCodeSliceLength; end < Math.min(currentCodeLine.length + 1, start + maxCodeSliceLength); end++) {
-      const currntChars = currentCodeLine.slice(start, end);
-      const similarity = similarityFunction(currntChars, replaceTextLine);
-
-      if (similarity > maxSimilarity) {
-        maxSimilarity = similarity;
-        maxSimilarityStartIndex = start;
-        maxSimilarityEndIndex = end;
-      }
-    } 
-  }
-  
-  return {
-    startIndex: maxSimilarityStartIndex,
-    endIndex: maxSimilarityEndIndex,
-    confidence: maxSimilarity
-  };
-}*/
+const DEFAULT_SIMILARITY_THRESHOLD = 0.75;
 
 function fuzzyGetIndentationDifference(currentLine: string, replaceTextLine: string, similarityFunction: (a: string, b: string) => number) {
-  //extract leading whitespace
-  const currentIndent = currentLine.match(/(^\s*)/)?.[1] || "";
-  const replaceTextIndent = replaceTextLine.match(/(^\s*)/)?.[1] || "";
-  //jebac to po dlugosci
-  const indentDifference = currentIndent.slice(0, currentIndent.length - replaceTextIndent.length);
-
   return {
     confidence: similarityFunction(currentLine.trim(), replaceTextLine.trim()),
-    indent: indentDifference,
+    indent: getIndentationDifference(currentLine, replaceTextLine),
   };
+}
+
+function getIndentationDifference(currentLine: string, replaceTextLine: string) {
+  const currentIndent = currentLine.match(/(^\s*)/)?.[1] || "";
+  const replaceTextIndent = replaceTextLine.match(/(^\s*)/)?.[1] || "";
+  const indentDifference = currentIndent.slice(0, currentIndent.length - replaceTextIndent.length);
+  return indentDifference;
 }
 
 function ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(
@@ -123,118 +77,105 @@ function findIndentationDifference(
     }
   }
 
-  //return smallest, negative first
-  return indentations.sort((a: string, b: string) => {
+  let sorted = indentations.sort((a: string, b: string) => {
     return a.length - b.length;
-  })[0];
+  });
+
+  //return median
+  return sorted[0];
 }
 
-/*function customIndentBasedSimilarity(possibleSpot: string, replaceText: string): number {
-  const currentCodeLines = possibleSpot.split('\n');
-  const replaceTextLines = replaceText.split("\n");
 
-  const indentation = findIndentation(currentCodeLines, replaceTextLines, equalsStringSimilarity);
 
-  if (indentation !== undefined) {
-    let adjustedReplaceTextLines = adjustLinesIndentation(replaceTextLines, indentation);
-    let adjustedReplaceText = adjustedReplaceTextLines.join("\n");
-  
-    if (possibleSpot.includes(adjustedReplaceText)) {
-      return 0.99;
-    }
-
-    //check if we match output, with any preceeding whitespace
-    const regex = new RegExp(
-      "^" +
-      replaceText
-          .split("\n")
-          .map((line) => "\\s*" + line)
-          .join("\\n"),
-      "m"
-    );
-
-    if (regex.test(possibleSpot)) {
-      return 0.90;
-    }
-  }
-
-  return 0;
-}
-*/
-
-/*
-function findCommonIndent(lines: string[]) {
-  let commonIndent = undefined;
-  for (let line of lines) {
-    let lineIndent = line.match(/(^\s*)/)?.[1] || "";
-
-    if (commonIndent === undefined) {
-      commonIndent = lineIndent;
-    } else {
-      commonIndent = commonStringEnd(commonIndent, lineIndent);
-    }
-  }
-
-  return commonIndent;
-}
-*/
-
-/*
-function findPossibleIndents(s: string): string[] {
-  let lines = s.split("\n");
-  let i1 = findCommonIndent(lines);
-  let i2 = findCommonIndent(lines.slice(1)); //first line is often not indented properly
-  let ret = [];
-
-  if (i1 !== undefined) ret.push(i1);
-  if (i2 !== undefined && i1 !== i2) ret.push(i2);
-
-  return ret;
-}
-*/
-
-export function exactLinesSimilarity(original: string[], replace: string[], lineSimilarityFunction: SingleLineSimilarityFunction): number {
+export function exactLinesSimilarityAndMap(
+  original: string[],
+  find: string[],
+  lineSimilarityFunction: SingleLineSimilarityFunction,
+  mapFindLine: (original: string | undefined, findLine: string) => string = (original, findLine) => findLine
+): { similiarity: number; mappedFind: string[] } {
+  let mappedFind: string[] = [];
   let originalLine = 0;
-  let replaceLine = 0;
+  let findLine = 0;
 
   let originalSimilarityLines = 0;
 
+  function lineSkippedValue(line: string) {
+    const baseSkippedValue = 0.02;
+    const scalableSkippedValue = 0.98;
+    const skipScaling = 1 - (1 / (1 + line.trim().length));
+    return baseSkippedValue + scalableSkippedValue * skipScaling;
+  }
+
   let options = [
     {
-      condition: () => originalLine < original.length && replaceLine < replace.length,
-      simiarity: () => lineSimilarityFunction(original[originalLine], replace[replaceLine]),
-      charsSkipped: () => 0,
-      apply: () => { originalLine++; replaceLine++; originalSimilarityLines++; },
+      condition: () => originalLine < original.length && findLine < find.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine], find[findLine]),
+      skippedOriginalLines: () => 0,
+      skippedFindLines: () => 0,
+      apply: () => {
+        mappedFind.push(mapFindLine(original[originalLine], find[findLine]));
+        originalLine++;
+        findLine++;
+        originalSimilarityLines++;
+      },
     },
+    ...([1].map((skippedOriginalLines) => ({
+      condition: () => originalLine + skippedOriginalLines < original.length && findLine < find.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine + skippedOriginalLines], find[findLine]),
+      skippedOriginalLines: () => skippedOriginalLines,
+      skippedFindLines: () => 0,
+      apply: () => {
+        mappedFind.push(mapFindLine(original[originalLine + skippedOriginalLines], find[findLine]));
+        
+        originalLine++;
+        findLine++;
+        originalSimilarityLines++;
+
+        originalLine += skippedOriginalLines;
+      },
+    }))),
+    ...([1].map((skippedFindLines) => ({
+      condition: () => originalLine < original.length && findLine + skippedFindLines < find.length,
+      simiarity: () => lineSimilarityFunction(original[originalLine], find[findLine + skippedFindLines]),
+      skippedOriginalLines: () => 0,
+      skippedFindLines: () => skippedFindLines,
+      apply: () => {
+        
+        for (let i = 0; i < skippedFindLines; i++) {
+          mappedFind.push(mapFindLine(undefined, find[findLine + i]));
+        }
+        mappedFind.push(mapFindLine(original[originalLine], find[findLine + skippedFindLines]));
+        
+        originalLine++;
+        findLine++;
+        originalSimilarityLines++;
+
+        findLine += skippedFindLines;
+      },
+    }))),
     {
-      condition: () => originalLine + 1 < original.length && replaceLine < replace.length,
-      simiarity: () => lineSimilarityFunction(original[originalLine + 1], replace[replaceLine]),
-      charsSkipped: () => original[originalLine].trim().length + 1,
-      apply: () => { originalLine += 2; replaceLine++; originalSimilarityLines++; },
-    },
-    {
-      condition: () => originalLine < original.length && replaceLine + 1 < replace.length,
-      simiarity: () => lineSimilarityFunction(original[originalLine], replace[replaceLine + 1]),
-      charsSkipped: () => replace[replaceLine].trim().length + 1,
-      apply: () => { originalLine++; replaceLine += 2; originalSimilarityLines++; },
-    },
-    {
-      condition: () => originalLine < original.length && replaceLine >= replace.length,
+      condition: () => originalLine < original.length && findLine >= find.length,
       simiarity: () => 0,
-      charsSkipped: () => original[originalLine].trim().length + 1,
-      apply: () => { originalLine++;},
+      skippedOriginalLines: () => 1,
+      skippedFindLines: () => 0,
+      apply: () => {
+        originalLine++;
+      },
     },
     {
-      condition: () => originalLine >= original.length && replaceLine < replace.length,
+      condition: () => originalLine >= original.length && findLine < find.length,
       simiarity: () => 0,
-      charsSkipped: () => replace[replaceLine].trim().length + 1,
-      apply: () => { replaceLine++;},
-    }
+      skippedOriginalLines: () => 0,
+      skippedFindLines: () => 1,
+      apply: () => {
+        mappedFind.push(mapFindLine(undefined, find[findLine]));
+        findLine++;
+      },
+    },
   ];
 
-
   let similaritySum = 0;
-  let lineSkipped = 0;
+  let linesSkipped = 0;
 
   while (true) {
     let bestOption;
@@ -255,39 +196,34 @@ export function exactLinesSimilarity(original: string[], replace: string[], line
       }
     }
 
-    //console.log(`bestSimialrity: ${bestSimialrity} bestOption: ${bestOption?.charsSkipped()} originalLine: ${originalLine} replaceLine: ${replaceLine}`);
-
     if (bestOption === undefined) {
       break;
     }
 
+    for (let orgIndex = 0; orgIndex < bestOption.skippedOriginalLines(); orgIndex++) {
+      linesSkipped += lineSkippedValue(original[originalLine + orgIndex]);
+    }
 
-    if (bestOption.charsSkipped() === 0) {
-      //nothing skipped
-    } else if (bestOption.charsSkipped() === 1) {
-      lineSkipped += 0.02;
-    } else {
-      lineSkipped += 1;
+    for (let findIndex = 0; findIndex < bestOption.skippedFindLines(); findIndex++) {
+      linesSkipped += lineSkippedValue(find[findLine + findIndex]);
     }
 
     bestOption.apply();
     similaritySum += bestSimialrity;
   }
 
-  if (original.length === 0 && replace.length === 0) {
-    return 1;
+  if (original.length === 0 && find.length === 0) {
+    return { similiarity: 1, mappedFind };
   }
 
-  if (original.length === 0 && replace.length !== 0) {
-    return 0;
+  if (original.length === 0 && find.length !== 0) {
+    return { similiarity: 0, mappedFind };
   }
 
-  const averageSimilarity = similaritySum / originalSimilarityLines;
-  const noSkipRatio = 1 - lineSkipped / original.length;
+  const averageSimilarity = originalSimilarityLines === 0 ? 1 : similaritySum / originalSimilarityLines;
+  const noSkipRatio = (3*(1 - linesSkipped / original.length) + 1*(1 / (1 + linesSkipped))) / 4;
 
-  //console.log(`averageSimilarity: ${averageSimilarity} similaritySum: ${similaritySum}  noSkipRatio: ${noSkipRatio} originalSimilarityLines: ${originalSimilarityLines} original.length: ${original.length} replace.length: ${replace.length} original: "${original.join("\\n")}" replace: "${replace.join("\\n")}"`);
-
-  return averageSimilarity * noSkipRatio;
+  return { similiarity: averageSimilarity * noSkipRatio, mappedFind };
 }
 
 export const coreSimilarityFunction = (original: string[], replacement: string[]) => {
@@ -295,40 +231,51 @@ export const coreSimilarityFunction = (original: string[], replacement: string[]
     return 1;
   }
 
-  function calculateSimlarity(a: string[], b: string[]) {
-    let similartyWithWsDistance = exactLinesSimilarity(
-      a,
-      b,
-      (a, b) => ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
-    );
+  let similartyWithWsDistance = exactLinesSimilarityAndMap(original, replacement, (a, b) =>
+    ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
+  ).similiarity;
 
-    let similarityNotIgnoringWhitespace = exactLinesSimilarity(
-      normalizeIndent(stripAllComments(a)),
-      normalizeIndent(stripAllComments(b)),
-      levenshteinDistanceSimilarity
-    );
+  let similarityNotIgnoringWhitespace = exactLinesSimilarityAndMap(
+    normalizeIndent(stripAllComments(original)),
+    normalizeIndent(stripAllComments(replacement)),
+    levenshteinDistanceSimilarity
+  ).similiarity;
 
-    let core = Math.max(similartyWithWsDistance, similarityNotIgnoringWhitespace);
+  let core = Math.max(similartyWithWsDistance, similarityNotIgnoringWhitespace);
 
-    let similarity = 0.8 * core + 0.1 * similartyWithWsDistance + 0.1 * similarityNotIgnoringWhitespace;
+  let similarity = 0.6 * core + 0.2 * similartyWithWsDistance + 0.2 * similarityNotIgnoringWhitespace;
 
-    return similarity;
+  if (isNaN(similarity)) {
+    throw new Error("similarity is NaN");
   }
 
-  let normalSimilarity = calculateSimlarity(original, replacement);
-  return normalSimilarity;
+  { // Just for testing
+    let similartyWithWsDistance = exactLinesSimilarityAndMap(original, replacement, (a, b) =>
+      ignoreLeadingAndTrailingWhiteSpaceSimilariryunction(a, b, codeStringSimilarity)
+    ).similiarity;
+
+    let similarityNotIgnoringWhitespace = exactLinesSimilarityAndMap(
+      normalizeIndent(stripAllComments(original)),
+      normalizeIndent(stripAllComments(replacement)),
+      levenshteinDistanceSimilarity
+    ).similiarity;
+  }
+
+  return similarity;
 };
 
 export function fuzzyFindText({
   currentCode,
   findText,
   similarityFunction = coreSimilarityFunction,
-  lineNumTolerance = Math.ceil(findText.split("\n").length * 0.1),
+  lineNumTolerance = Math.ceil(findText.split("\n").length * 0.05),
+  similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
 }: {
   currentCode: string;
   findText: string;
   similarityFunction?: (original: string[], replacement: string[]) => number;
   lineNumTolerance?: number;
+  similarityThreshold?: number;
 }): { lineStartIndex: number; lineEndIndex: number; confidence: number } {
   const currentCodeLines = currentCode.split("\n");
   const findTextLines = findText.split("\n");
@@ -339,19 +286,26 @@ export function fuzzyFindText({
   let maxSimilarityLineEndIndex = -1;
 
   let minLinesToReplace = Math.max(0, findTextLines.length - lineNumTolerance);
-  let maxLinesToReplace = findTextLines.length + lineNumTolerance;
-
+  
   for (let start = 0; start < currentCodeLines.length - minLinesToReplace; start++) {
+    let maxLinesToReplace = minLinesToReplace + 3; // This will get enlarged
+    let lastSimilarity = 0;
     for (let end = start + minLinesToReplace; end <= Math.min(currentCodeLines.length, start + maxLinesToReplace); end++) {
       const currentSlice = currentCodeLines.slice(start, end);
       const similarity = similarityFunction(currentSlice, findTextLines);
 
-      if (similarity > maxSimilarity) {
+      if (similarity > lastSimilarity) {
+        maxLinesToReplace += 1;
+      }
+      lastSimilarity = similarity;
+
+      if (similarity > maxSimilarity && similarity >= similarityThreshold) {
         //console.log(`sim: ${similarity} start: ${start} end: ${end} minLinesToReplace: ${minLinesToReplace} maxLinesToReplace: ${maxLinesToReplace}`);
-      
+
         maxSimilarity = similarity;
         maxSimilarityLineStartIndex = start;
         maxSimilarityLineEndIndex = end;
+        
       }
     }
   }
@@ -365,53 +319,94 @@ export function fuzzyFindText({
 
 export function fuzzyReplaceTextInner({
   currentCode,
-  replaceText,
+  findText,
   withText,
   similarityFunction = coreSimilarityFunction,
-  similarityThreshold = 0.75,
-}: ReplaceWindowParams) {
-  let { lineStartIndex: startIndex, lineEndIndex: endIndex, confidence } = fuzzyFindText({ currentCode, findText: replaceText, similarityFunction });
+  similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
+}: {
+  currentCode: string;
+  findText: string;
+  withText: string;
+  similarityFunction?: MultiLineSimilarityFunction;
+  similarityThreshold?: number;
+  lineNumTolerance?: number;
+}) {
+  let { lineStartIndex: startIndex, lineEndIndex: endIndex, confidence } = fuzzyFindText({ currentCode, findText, similarityFunction, similarityThreshold });
 
   if (confidence >= similarityThreshold) {
     const currentCodeLines = currentCode.split("\n");
 
-    //console.log(`final sim: ${confidence} start: ${startIndex} end: ${endIndex}`);
     const currentSlice = currentCodeLines.slice(startIndex, endIndex);
-    let indentDifference = findIndentationDifference(currentSlice, replaceText.split("\n"), equalsStringSimilarity) || "";
-    //console.log("indent difference", indentDifference.length, `"${indentDifference}"`);
+    const findTextLines = findText.split("\n");
+    const withTextLines = withText.split("\n");
 
-    const adjustedWithTextLines = applyIndent(withText.split("\n"), indentDifference);
-    const adjustedWithText = adjustedWithTextLines.join("\n");
+    function mapFindWithIndent(originalLine: string | undefined, searchLine: string) {
+      if (originalLine === undefined) {
+        return lastIndent + searchLine;
+      } else {
+        let indentDiff = getIndentationDifference(originalLine, searchLine);
+        lastIndent = indentDiff;
+        return indentDiff + searchLine;
+      }
+    }
+
+    let lastIndent = "";
+
+    const indentAdjustedFindLines = exactLinesSimilarityAndMap(
+      currentSlice,
+      findTextLines,
+      (a, b) => levenshteinDistanceSimilarity(a, b),
+      mapFindWithIndent
+    ).mappedFind;
+
+    lastIndent = "";
+
+    //split the withTextLines into a segment containing the segment up to first non empty first line and a segment containing the rest
+    let withTextUpToFirstNonEmptyLine = withTextLines.slice(0, 1);
+    let withTextRest = withTextLines.slice(1);
+
+    let indentAdjustedFindLinesUpToFirstNonEmptyLine = indentAdjustedFindLines.slice(0, 1);
+    let indentAdjustedFindLinesRest = indentAdjustedFindLines.slice(1);
+
+    const indentAdjustedWithTextupToFirstNonEmptyLine = exactLinesSimilarityAndMap(
+      indentAdjustedFindLinesUpToFirstNonEmptyLine,
+      withTextUpToFirstNonEmptyLine,
+      (a, b) => levenshteinDistanceSimilarity(a, b),
+      mapFindWithIndent
+    ).mappedFind;
+
+    const overalIndentDifference = findIndentationDifference(indentAdjustedFindLinesRest, withTextRest, equalsStringSimilarity) || "";
+    const indentAdjustedWithTextRest = applyIndent(withTextRest, overalIndentDifference);
+    const indentAdjustedWithLines = [...indentAdjustedWithTextupToFirstNonEmptyLine, ...indentAdjustedWithTextRest];
+    
+    const adjustedWithText = indentAdjustedWithLines.join("\n");
 
     let preChange = currentCodeLines.slice(0, startIndex).join("\n");
     let postChange = currentCodeLines.slice(endIndex).join("\n");
 
-    //console.log("preChange", preChange.split("\n").map((line) => `"${line}"`).join("\n"));
-    //console.log("adjustedWithText", adjustedWithText.split("\n").map((line) => `"${line}"`).join("\n"));
-    //console.log("postChange", postChange.split("\n").map((line) => `"${line}"`).join("\n"));
-
-    return [
-      preChange + "\n",
-      adjustedWithText,
-      (postChange ? "\n" : "") + postChange,
-    ];
+    return [preChange + (preChange ? "\n" : ""), adjustedWithText, (postChange ? "\n" : "") + postChange];
   }
 }
 
-
 export function fuzzyReplaceText({
   currentCode,
-  replaceText,
+  findText,
   withText,
   similarityFunction = coreSimilarityFunction,
-  similarityThreshold = 0.75,
-}: ReplaceWindowParams) {
+  similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
+}: {
+  currentCode: string;
+  findText: string;
+  withText: string;
+  similarityFunction?: MultiLineSimilarityFunction;
+  similarityThreshold?: number;
+  lineNumTolerance?: number;
+}) {
   return fuzzyReplaceTextInner({
     currentCode,
-    replaceText,
+    findText,
     withText,
     similarityFunction,
     similarityThreshold,
   })?.join("");
 }
-

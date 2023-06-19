@@ -1,105 +1,97 @@
 import { getCommentForLanguage } from "./comments";
 import { fuzzyReplaceTextInner } from "./fuzzyReplaceText";
 
-export function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string, recentTaskComment: string = "") {
+type CommandSegment = {
+  name: string;
+  params?: string[];
+  followedBy?: CommandSegment[];
+  execute?: (currentContent: string, languageId: string, params: { [key: string]: string }) => string;
+};
 
-  let currentCode = originalCode;
-  let lines = modificationProcedure.split("\n");
-  let storedArg: string[] = [];
-  let currentCommand: string = "";
-  let currentArg: string[] = [];
-  let firstEditApplied = false;
+let COMMAND_STRUCTURE: CommandSegment[] = [
+  {
+    name: "REPLACE",
+    followedBy: [
+      {
+        name: "WITH",
+        followedBy: [
+          {
+            name: "END_REPLACE",
+            execute: (currentContent, languageId, params) => {
+              let findText = params.REPLACE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+              let withText = params.WITH.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+              let replacementArray = fuzzyReplaceTextInner({ currentCode: currentContent, findText, withText });
+              if (replacementArray === undefined || replacementArray.length !== 3) {
+                throw new Error(`Could not find:\n${findText}`);
+              }
 
-  function finishLastCommand() {
-    //console.log(`finishLastCommand: ${currentCommand} ${currentArg.join("\n")}`);
-    if (currentCommand.startsWith("REPLACE_ALL")) {
-      let consolidatedContent = currentArg.join("\n");
-      let innerContent = consolidatedContent.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-      currentCode = innerContent;
-      if (!firstEditApplied) {
-        if (recentTaskComment) {
-          currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
-        }
-        firstEditApplied = true;
-      }
-    } else if (currentCommand.startsWith("MODIFY_OTHER")) {
-      console.log(`MODIFY_OTHER: ${currentArg.join("\n")}`);
-      let commentContent = currentArg.join("\n");
-      currentCode = getCommentForLanguage(languageId, commentContent) + "\n" + currentCode;
-      if (!firstEditApplied) {
-        if (recentTaskComment) {
-          currentCode = getCommentForLanguage(languageId, recentTaskComment) + "\n" + currentCode;
-        }
-        firstEditApplied = true;
-      }
-    } else if (currentCommand.startsWith("REPLACE")) {
-      storedArg = currentArg;
-    } else if (currentCommand.startsWith("INSERT")) {
-      storedArg = currentArg;
-    } else if (currentCommand.startsWith("WITH")) {
-      let replaceText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-      let withText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+              return replacementArray.join("");
+            },
+          },
+        ],
+      },
+    ],
+  },
 
-      let replacementArray = fuzzyReplaceTextInner({ currentCode, replaceText, withText });
+  {
+    name: "REPLACE_ALL",
+    followedBy: [
+      {
+        name: "END_REPLACE_ALL",
+        execute: (currentContent, languageId, params) => {
+          return params.REPLACE_ALL.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+        },
+      },
+    ],
+  },
+  {
+    name: "INSERT",
+    followedBy: [
+      {
+        name: "BEFORE",
+        followedBy: [
+          {
+            name: "END_INSERT",
+            execute: (currentContent, languageId, params) => {
+              let beforeText = params.BEFORE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+              let insertText = params.INSERT.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+              let replacementArray = fuzzyReplaceTextInner({ currentCode: currentContent, findText: beforeText, withText: `${insertText}\n${beforeText}` });
+              if (replacementArray === undefined || replacementArray.length !== 3) {
+                throw new Error(`Could not find:\n${beforeText}`);
+              }
 
-      if (replacementArray === undefined || replacementArray.length !== 3) {
-        throw new Error(
-          `
-Could not find:
-${replaceText}
-`.trim()
-        );
-      }
+              return replacementArray.join("");
+            },
+          },
+        ],
+      },
+    ],
+  },
 
-      if (!firstEditApplied && recentTaskComment) {
-        currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
-        console.log('APPLY MINION TASK', [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]]);
-      } else {
-        currentCode = replacementArray.join("");
-      }
+  {
+    name: "MODIFY_OTHER",
+    followedBy: [
+      {
+        name: "END_MODIFY_OTHER",
+        execute: (currentContent, languageId, params) => {
+          return getCommentForLanguage(languageId, params.MODIFY_OTHER) + "\n" + currentContent;
+        },
+      },
+    ],
+  },
 
-      firstEditApplied = true;
+  {
+    name: "RENAME",
+    params: ["from", "to"],
+    followedBy: [
+      {
+        name: "END_RENAME",
+        execute: (currentContent, languageId, params) => {
+          let context = params.RENAME.trim();
 
-      storedArg = [];
-    } else if (currentCommand.startsWith("BEFORE")) {
-      let insertText = storedArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-      let beforeText = currentArg.join("\n").replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+          return currentContent;
 
-      let replacementArray = fuzzyReplaceTextInner({ currentCode, replaceText: beforeText, withText: `${insertText}\n${beforeText}` });
-
-      if (replacementArray === undefined || replacementArray.length !== 3) {
-        throw new Error(
-          `
-Could not find:
-${beforeText}
-`.trim()
-        );
-      }
-
-      if (!firstEditApplied && recentTaskComment) {
-        currentCode = [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]].join("");
-        console.log('APPLY MINION TASK', [replacementArray[0], getCommentForLanguage(languageId, recentTaskComment) + "\n", replacementArray[1], replacementArray[2]]);
-      } else {
-        currentCode = replacementArray.join("");
-      }
-
-      firstEditApplied = true;
-
-      storedArg = [];
-    } else if (currentCommand.startsWith("RENAME")) {
-      //parse currentCommand with regex (RENAME from to)
-      let renameCommand = currentCommand.match(/^RENAME\s+(.*?)\s+(.*?)$/);
-      if (!renameCommand) {
-        throw new Error(`Unable to parse RENAME command: ${currentCommand}`);
-      }
-
-      let renameFrom = renameCommand[1];
-      let renameTo = renameCommand[2];
-      let context = currentArg.join("\n").trim();
-
-      console.log(`renameFrom: "${renameFrom}" renameTo: "${renameTo}" context: "${context}"`);
-
-      /*
+          /*
       
       TODO:
       const document = editor.document;
@@ -116,52 +108,75 @@ ${beforeText}
           newName: newFunctionName,
         }
       );*/
-    } else if (currentCommand.startsWith("END_REPLACE")) {
-      // Do nothing
-    } else if (currentCommand.startsWith("END_REPLACE_ALL")) {
-      // Do nothing
-    } else if (currentCommand.startsWith("END_MODIFY_OTHER")) {
-      // Do nothing
-    }
+        },
+      },
+    ],
+  },
+];
 
-    currentArg = [];
-  }
+export function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
+  let currentCode = originalCode;
+  let lines = modificationProcedure.split("\n");
+  let inCommand: CommandSegment | undefined = undefined;
+  let params: { [key: string]: string } = {};
 
   for (let line of lines) {
-    let isANewCommand = false;
+    let possibiltiies: CommandSegment[] = inCommand ? inCommand.followedBy || [] : COMMAND_STRUCTURE;
+    let possibleNextCommands = possibiltiies.filter((command) => line.startsWith(command.name));
 
-    if (currentCommand.startsWith("INSERT")) {
-      isANewCommand = line.startsWith("BEFORE");
-    } else if (currentCommand.startsWith("REPLACE") && !currentCommand.startsWith("REPLACE_ALL")) {
-      isANewCommand = line.startsWith("WITH");
-    } else if (currentCommand.startsWith("MODIFY_OTHER")) {
-      isANewCommand = line.startsWith("END_MODIFY_OTHER");
-    } else if (currentCommand.startsWith("REPLACE_ALL")) {
-      isANewCommand = line.startsWith("END_REPLACE_ALL");
-    } else if (currentCommand.startsWith("WITH")) {
-      isANewCommand =
-        line.startsWith("END_REPLACE") ||
-        line.startsWith("REPLACE_ALL") ||
-        line.startsWith("REPLACE") ||
-        line.startsWith("RENAME") ||
-        line.startsWith("INSERT");
-    } else {
-      isANewCommand = line.startsWith("REPLACE_ALL") || line.startsWith("REPLACE") || line.startsWith("RENAME") || line.startsWith("INSERT") || line.startsWith("MODIFY_OTHER");
+    if (possibleNextCommands.length === 0) {
+      if (inCommand) {
+
+        //If we have out of order command?
+        let outOfOrderNewCommands = COMMAND_STRUCTURE.filter((command) => line.startsWith(command.name));
+
+        if (outOfOrderNewCommands.length > 0) {
+          let outOfOrderNewCommand = outOfOrderNewCommands.sort((a, b) => a.name.length - b.name.length)[0];
+
+          //close the current command
+          let findEnd = inCommand.followedBy?.find((followedBy) => followedBy.name.startsWith("END_") && followedBy.execute);
+
+          if (findEnd) {
+            currentCode = findEnd.execute!(currentCode, languageId, params);
+            inCommand = undefined;
+            params = {};
+          } else {
+            throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
+          }
+
+          inCommand = outOfOrderNewCommand;
+        } else {
+          params[inCommand.name] += (params[inCommand.name] ? "\n" : "") + line;
+        }
+      }
+      continue;
     }
 
-    //console.log(`isANewCommand: ${isANewCommand} currentCommand: ${currentCommand} line: ${line}`);
+    inCommand = possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0];
 
-    if (isANewCommand) {
-      finishLastCommand();
-      currentCommand = line;
+    let lineWithoutCommand = line.substring(inCommand.name.length).trim();
+    let readParams = lineWithoutCommand.split(" ");
+    for (let paramName of inCommand.params || []) {
+      params[paramName] = readParams.shift() || "";
+    }
+
+    if (inCommand.execute) {
+      currentCode = inCommand.execute(currentCode, languageId, params);
+    }
+
+    if (!inCommand.followedBy || inCommand.followedBy.length === 0) {
+      inCommand = undefined;
+      params = {};
     } else {
-      currentArg.push(line);
+      params[inCommand.name] = "";
     }
   }
 
-  finishLastCommand();
+  if (inCommand) {
+    throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
+  }
 
-  if (!firstEditApplied) {
+  if (originalCode === currentCode) {
     throw new Error("No procedure");
   }
 

@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as assert from "assert";
-import { fuzzyReplaceText } from "../../../utils/fuzzyReplaceText";
 import { readFileSync } from "fs";
 import * as path from 'path';
 import * as glob from 'glob';
+import { fuzzyReplaceText } from '../../utils/fuzzyReplaceText';
 
 suite("Replace Test Suite", () => {
   test("Basic test case: Exact match found", () => {
@@ -13,7 +13,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
     
-    const replaceText = [
+    const findText = [
       `console.log("Hello, world!");`
     ].join("\n");
 
@@ -27,7 +27,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with same indentation", () => {
@@ -38,7 +38,7 @@ suite("Replace Test Suite", () => {
       `      console.log("Hello, world!");`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log("Hello, world!");`
     ].join("\n");
 
@@ -53,7 +53,7 @@ suite("Replace Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with same indentation (multiline)", () => {
@@ -66,7 +66,7 @@ suite("Replace Test Suite", () => {
       `      console.log("Hello, warg!");`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log("Hello, world!");`,
       `      console.log("Hello, warg!");`
     ].join("\n");
@@ -83,7 +83,7 @@ suite("Replace Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Only replace with nearest indentation (multiline)", () => {
@@ -100,7 +100,7 @@ suite("Replace Test Suite", () => {
       `        }`,
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log("Hello, world!");`,
       `      console.log("Hello, warg!");`
     ].join("\n");
@@ -121,7 +121,7 @@ suite("Replace Test Suite", () => {
       `        }`,
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Multiline with different indentation", () => {
@@ -134,7 +134,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log("Hello, world!");`,
       `      console.log("Hello, warg!");`,
     ].join("\n");
@@ -151,7 +151,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("First line without indentation", () => {
@@ -166,7 +166,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `console.log("Hello, world!");`,
       `      console.log("Hello, warg!");`,
     ].join("\n");
@@ -185,7 +185,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("Fuzzy match with different syntax", () => {
@@ -195,7 +195,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log(say_hello("world"));`
     ].join("\n");
 
@@ -209,7 +209,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, expectedOutput);
   });
   test("No match found", () => {
@@ -219,7 +219,7 @@ suite("Replace Test Suite", () => {
       `      }`
     ].join("\n");
 
-    const replaceText = [
+    const findText = [
       `      console.log("Hello, world!");`
     ].join("\n");
 
@@ -227,7 +227,7 @@ suite("Replace Test Suite", () => {
       `      console.log("Hello, moon!");`
     ].join("\n");
 
-    const result = fuzzyReplaceText({currentCode, replaceText, withText});
+    const result = fuzzyReplaceText({currentCode, findText, withText});
     assert.strictEqual(result, undefined);
   });
 
@@ -239,11 +239,11 @@ suite("Replace Test Suite", () => {
   for (let testDir of testDirs) {
     test(path.basename(testDir), () => {
       const currentCode = readFileSync(path.resolve(baseDir, testDir, "original.txt"), "utf8");
-      const replaceText = readFileSync(path.resolve(baseDir, testDir, "replace.txt"), "utf8");
+      const findText = readFileSync(path.resolve(baseDir, testDir, "replace.txt"), "utf8");
       const withText = readFileSync(path.resolve(baseDir, testDir, "with.txt"), "utf8");
       const expectedOutput = readFileSync(path.resolve(baseDir, testDir, "result.txt"), "utf8");
   
-      const result = fuzzyReplaceText({currentCode, replaceText, withText});
+      const result = fuzzyReplaceText({currentCode, findText, withText});
       assert.strictEqual(result, expectedOutput);
     });
   }

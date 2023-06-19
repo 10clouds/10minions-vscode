@@ -1,12 +1,42 @@
-import { run } from './suite/index';
+import * as path from "path";
+import Mocha from "mocha";
+import glob from "glob";
 
-async function main() {
-	try {
-		run();
-	} catch (err) {
-		console.error('Failed to run tests', err);
-		process.exit(1);
-	}
+export function run(): Promise<void> {
+  // Create the mocha test
+  const mocha = new Mocha({
+    ui: "tdd",
+    color: true,
+    timeout: 10000,
+    //diff: true,
+    //bail: true,
+    //grep: "Strpped comment in replace",
+  });
+
+  const testsRoot = path.resolve(__dirname);
+
+  return new Promise((c, e) => {
+    glob("**/**.test.ts", { cwd: testsRoot }, (err: any, files: string[]) => {
+      if (err) {
+        return e(err);
+      }
+
+      files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
+
+      try {
+        mocha.run((failures: any) => {
+          if (failures > 0) {
+            e(new Error(`${failures} tests failed.`));
+          } else {
+            c();
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        e(err);
+      }
+    });
+  });
 }
 
-main();
+run();
