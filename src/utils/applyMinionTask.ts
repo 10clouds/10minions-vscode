@@ -37,6 +37,9 @@ export async function applyMinionTask(minionTask: MinionTask) {
     vscode.window.showErrorMessage(`Cannot apply unfinished task.`);
     return;
   }
+  
+  minionTask.executionStage = APPLIED_STAGE_NAME;
+  await minionTask.onChanged(true);
 
   try {
     if (!minionTask.modificationProcedure) {
@@ -68,7 +71,6 @@ export async function applyMinionTask(minionTask: MinionTask) {
       );
     });
 
-    minionTask.executionStage = APPLIED_STAGE_NAME;
     minionTask.contentAfterApply = document.getText();
     minionTask.appendToLog(`Applied changes for user review.\n\n`);
     minionTask.onChanged(true);

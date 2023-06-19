@@ -5,7 +5,7 @@ import { TASK_STRATEGY_ID } from "../strategies";
 
 
 function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
-    const settingsKeyword = vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword');
+    const settingsKeyword = vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
 
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.

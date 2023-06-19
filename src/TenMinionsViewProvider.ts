@@ -18,13 +18,13 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   private commandHistoryManager: CommandHistoryManager;
   private executionsManager: MinionTasksManager;
   private analyticsManager: AnalyticsManager;
-  private taskAutoRunner: MinionTaskAutoRunner; // Added property for MinionTaskAutoRunner
+  //private taskAutoRunner: MinionTaskAutoRunner; // Added property for MinionTaskAutoRunner
 
   constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
     this.commandHistoryManager = new CommandHistoryManager(context);
     this.executionsManager = new MinionTasksManager(context);
     this.analyticsManager = new AnalyticsManager(context);
-    this.taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
+    //this.taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
   }
 
   private async updateApiKeyAndModels() {

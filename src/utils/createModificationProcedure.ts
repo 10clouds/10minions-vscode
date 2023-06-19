@@ -6,7 +6,7 @@ export const AVAILABE_COMMANDS = [
   `
 # Syntax and description of a REPLACE command
 
-Use this to replace a piece of code with another piece of code. Start it with the following line:
+Use this to replace a block of lines of code with another block of lines of code. Start it with the following line:
 
 REPLACE
 
@@ -109,7 +109,7 @@ export async function createModificationProcedure(
 
   let promptWithContext = createPrompt(refCode, modification);
 
-  let tokensModification = countTokens(modification, "QUALITY");
+  let tokensModification = countTokens(modification, "QUALITY") + 50;
   let luxiouriosTokens = tokensModification * 1.5;
   let absoluteMinimumTokens = tokensModification;
 

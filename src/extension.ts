@@ -1,16 +1,13 @@
 import * as vscode from "vscode";
-import { TenMinionsViewProvider } from "./TenMinionsViewProvider";
-import { initPlayingSounds } from "./utils/playSound";
 import { AnalyticsManager } from "./AnalyticsManager";
 import { CodeActionProvider } from "./CodeActionProvider";
+import { TenMinionsViewProvider } from "./TenMinionsViewProvider";
+import { initPlayingSounds } from "./utils/playSound";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("10Minions is now active");
 
   initPlayingSounds(context);
-
-  const diagnostics = vscode.languages.createDiagnosticCollection("10minions");
-  context.subscriptions.push(diagnostics);
 
   const fixCommandId = "10minions.fixError";
   context.subscriptions.push(
