@@ -4,6 +4,7 @@ import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
 import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
 import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { applyModificationProcedure } from "./applyModificationProcedure";
+import { convertUri } from "../vscode/vscodeUtils";
 
 export async function applyFallback(minionTask: MinionTask) {
   const document = await minionTask.document();
@@ -22,7 +23,7 @@ ${minionTask.modificationDescription}
 
   minionTask.originalContent = document.getText();
   await applyWorkspaceEdit(async (edit) => {
-    edit.insert(vscode.Uri.parse(minionTask.documentURI), new vscode.Position(0, 0), decomposedString + "\n");
+    edit.insert(convertUri(minionTask.documentURI), new vscode.Position(0, 0), decomposedString + "\n");
   });
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
@@ -62,7 +63,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     await applyWorkspaceEdit(async (edit) => {
       edit.replace(
-        document.uri,
+        convertUri(document.uri),
         new vscode.Range(
           new vscode.Position(0, 0),
           new vscode.Position(document.lineAt(document.lineCount - 1).lineNumber, document.lineAt(document.lineCount - 1).text.length)

@@ -7,7 +7,7 @@ import { createModificationProcedure } from "../../utils/createModificationProce
 import { applyModificationProcedure } from "../../utils/applyModificationProcedure";
 
 suite("Replace procedure test suite", () => {
-  const baseDir = path.resolve(__dirname, "..", "..", "..", "src", "test", "data");
+  const baseDir = path.resolve(__dirname);
 
   let allPaths = glob.sync(path.resolve(baseDir, '*'));
   let testDirs = allPaths.filter((path) => fs.lstatSync(path).isDirectory());

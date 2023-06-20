@@ -1,7 +1,7 @@
-import * as vscode from "vscode";
-import { MinionTasksManager } from "./MinionTasksManager";
 import * as fs from 'fs';
 import path from "path";
+import * as vscode from "vscode";
+import { getMinionTasksManager } from "../managers/MinionTasksManager";
 
 const settings = `
 "10minions.taskCommentKeyword": {
@@ -29,7 +29,7 @@ class TodoCodeLensProvider implements vscode.CodeLensProvider {
         const rangeForSelection = new vscode.Range(new vscode.Position(lineNum, match.index), new vscode.Position(lineNum, match.index + match[0].length));
         const selection = new vscode.Selection(rangeForSelection.start, rangeForSelection.end);
         
-        let existing = MinionTasksManager.instance.getExecutionByUserQueryAndDoc(todoMessage, document);
+        let existing = getMinionTasksManager().getExecutionByUserQueryAndDoc(todoMessage, document);
         if (existing) {
           const todoCodeLens = new vscode.CodeLens(rangeForSelection, { command: "10minions.stopTask", title: existing.executionStage, arguments: [existing.id] });
 
@@ -89,7 +89,7 @@ export class MinionTaskAutoRunner {
         //const selectionStart = Math.max(0, lineNumber - 10);
         //const selectionEnd = Math.min(lines.length, lineNumber + 20 + 1);
         //const selection = new vscode.Selection(selectionStart, 0, selectionEnd, 0);
-        MinionTasksManager.instance.runMinionOnCurrentSelectionAndEditor(
+        getMinionTasksManager().runMinionOnCurrentSelectionAndEditor(
           todoMessage,
           await vscode.workspace.openTextDocument(uri),
           selection

@@ -1,6 +1,6 @@
 import { MinionTask } from "./MinionTask";
-import { MinionTasksManager } from "./MinionTasksManager";
-import * as vscode from "vscode";
+import { getEditorManager } from "./managers/EditorManager";
+import { getMinionTasksManager } from "./managers/MinionTasksManager";
 import { TASK_STRATEGY_ID } from "./strategies/strategies";
 
 export type SerializedMinionTask = {
@@ -32,7 +32,7 @@ export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTas
   return {
     id: minionTask.id,
     minionIndex: minionTask.minionIndex,
-    documentURI: minionTask.documentURI,
+    documentURI: minionTask.documentURI.toString(),
     userQuery: minionTask.userQuery,
     selection: {
       startLine: minionTask.selection.start.line,
@@ -59,12 +59,18 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
   let minionTask = new MinionTask({
     id: data.id,
     minionIndex: data.minionIndex || 0,
-    documentURI: data.documentURI,
+    documentURI: getEditorManager().createUri(data.documentURI),
     userQuery: data.userQuery,
-    selection: new vscode.Selection(
-      new vscode.Position(data.selection.startLine, data.selection.startCharacter),
-      new vscode.Position(data.selection.endLine, data.selection.endCharacter)
-    ),
+    selection: {
+      start: {
+        line: data.selection.startLine,
+        character: data.selection.startCharacter,
+      },
+      end: {
+        line: data.selection.endLine,
+        character: data.selection.endCharacter,
+      },
+    },
     selectedText: data.selectedText,
     originalContent: data.originalContent,
     finalContent: data.finalContent,
@@ -75,7 +81,7 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     executionStage: data.executionStage,
     strategy: data.strategy === null ? undefined : data.strategy,
     onChanged: async (important) => {
-      MinionTasksManager.instance.updateExecution(important, minionTask);
+      getMinionTasksManager().updateExecution(important, minionTask);
     },
     logContent: data.logContent,
     contentWhenDismissed: data.contentWhenDismissed,

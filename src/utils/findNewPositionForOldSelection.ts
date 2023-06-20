@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { fuzzyFindText } from "./fuzzyReplaceText";
+import { EditorDocument, EditorRange } from "../managers/EditorManager";
 
-export async function findNewPositionForOldSelection(selection: vscode.Selection, selectedText: string, document: vscode.TextDocument) {
+export async function findNewPositionForOldSelection(selection: EditorRange, selectedText: string, document: EditorDocument) {
   let { lineStartIndex, lineEndIndex, confidence } = fuzzyFindText({ currentCode: document.getText(), findText: selectedText });
 
   console.log(`confidence: ${confidence} ${lineStartIndex} ${lineEndIndex}`);

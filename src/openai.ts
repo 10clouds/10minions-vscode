@@ -2,8 +2,8 @@ import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
 import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
 import { Schema } from "jsonschema";
 import fetch, { Response } from "node-fetch";
-import { AnalyticsManager } from "./AnalyticsManager";
 import { DEBUG_RESPONSES } from "./const";
+import { getAnalyticsManager } from "./managers/AnalyticsManager";
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import AsyncLock = require("async-lock");
 
@@ -267,7 +267,7 @@ export async function gptExecute({
 
       const result = await processOpenAIResponseStream({ response, onChunk, isCancelled, controller });
 
-      AnalyticsManager.instance.reportOpenAICall(requestData, result);
+      getAnalyticsManager().reportOpenAICall(requestData, result);
 
       const inputTokens = countTokens(JSON.stringify(requestData.messages), mode) + (outputType === "string" ? 0 : countTokens(JSON.stringify(requestData.functions), mode));
       const outputTokens = requestData.max_tokens; //TODO: Is the actuall dolar cost on the OpenAI side is based max_tokens or actual tokens returned?
@@ -282,7 +282,7 @@ export async function gptExecute({
     } catch (error) {
       console.error(`Error on attempt ${attempt}: ${error}`);
 
-      AnalyticsManager.instance.reportOpenAICall(requestData, { error: String(error) });
+      getAnalyticsManager().reportOpenAICall(requestData, { error: String(error) });
 
       if (attempt === 3) {
         throw error;

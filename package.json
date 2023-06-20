@@ -92,7 +92,7 @@
           "default": true,
           "markdownDescription": "Allow tasks to be sent for diagnostic purposes to improve accuracy of results. This data will only be used to improve the service and will not be shared with third parties. If turned off, no data will be sent to 10Clouds, only to OpenAI.",
           "order": 2
-        },
+        }
       }
     },
     "menus": {

@@ -1,27 +1,22 @@
 import { basename } from "path";
 import * as vscode from "vscode";
-import { AnalyticsManager } from "./AnalyticsManager";
-import { MinionTask } from "./MinionTask";
-import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from "./SerializedMinionTask";
-import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./ui/MinionTaskUIInfo";
-import { applyMinionTask } from "./utils/applyMinionTask";
-import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
-import { MessageToWebViewType } from "./Messages";
-import { OriginalContentProvider, LogProvider } from "./ContentProviders";
+import { MessageToWebViewType } from "../Messages";
+import { MinionTask } from "../MinionTask";
+import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from "../SerializedMinionTask";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "../ui/MinionTaskUIInfo";
+import { applyMinionTask } from "../utils/applyMinionTask";
+import { findNewPositionForOldSelection } from "../utils/findNewPositionForOldSelection";
+import { convertUri } from "./vscodeUtils";
+import { getViewProvider } from "../managers/ViewProvider";
+import { getAnalyticsManager } from "../managers/AnalyticsManager";
+import { MinionTasksManager, setMinionTasksManager } from "../managers/MinionTasksManager";
 
-export class MinionTasksManager {
-
-  public static instance: MinionTasksManager;
+export class VSMinionTasksManager implements MinionTasksManager {
 
   private minionTasks: MinionTask[] = [];
   private readonly _context: vscode.ExtensionContext;
-  private _view?: vscode.WebviewView;
   private _isThrottled = false;
   private _pendingUpdate = false;
-
-  originalContentProvider: OriginalContentProvider;
-  logProvider: LogProvider;
 
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -30,18 +25,8 @@ export class MinionTasksManager {
     this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) => deserializeMinionTask(data));
 
     let self = this;
-    this.originalContentProvider = new OriginalContentProvider(this);
 
-    this.logProvider = new LogProvider(this);
-
-    vscode.workspace.registerTextDocumentContentProvider("10minions-log", this.logProvider);
-    vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this.originalContentProvider);
-
-    if (MinionTasksManager.instance) {
-      throw new Error("ExecutionsManager already instantiated");
-    }
-
-    MinionTasksManager.instance = this;
+    setMinionTasksManager(this);
   }
 
   async saveExecutions() {
@@ -53,7 +38,7 @@ export class MinionTasksManager {
     let minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
-      const documentUri = vscode.Uri.parse(minionTask.documentURI);
+      const documentUri = convertUri(minionTask.documentURI);
 
       const document = await vscode.workspace.openTextDocument(documentUri);
       await vscode.window.showTextDocument(document);
@@ -71,7 +56,7 @@ export class MinionTasksManager {
     let minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
-      let documentURI = vscode.Uri.parse(minionTask.documentURI);
+      let documentURI = convertUri(minionTask.documentURI);
       await vscode.workspace.openTextDocument(documentURI);
       await vscode.window.showTextDocument(documentURI);
     }
@@ -114,10 +99,6 @@ export class MinionTasksManager {
     }
   }
 
-  updateView(view: vscode.WebviewView) {
-    this._view = view;
-  }
-
   addExecution(execution: MinionTask) {
     this.minionTasks = [execution, ...this.minionTasks];
   }
@@ -131,7 +112,7 @@ export class MinionTasksManager {
   }
 
   getExecutionByUserQueryAndDoc(task: string, document: vscode.TextDocument) {
-    return this.minionTasks.find((mt) => mt.userQuery.trim() === task.trim() && mt.documentURI === document.uri.toString());
+    return this.minionTasks.find((mt) => mt.userQuery.trim() === task.trim() && mt.documentURI.toString() === document.uri.toString());
   }
 
   clearExecutions() {
@@ -174,7 +155,7 @@ export class MinionTasksManager {
 
     const execution = await MinionTask.create({
       userQuery,
-      document: document,
+      document,
       selection,
       selectedText: document.getText(selection),
       minionIndex: this.acquireMinionIndex(),
@@ -266,7 +247,7 @@ export class MinionTasksManager {
       userQuery: e.userQuery,
       executionStage: e.executionStage,
       documentName: e.baseName,
-      documentURI: e.documentURI,
+      documentURI: e.documentURI.toString(),
       progress: e.progress,
       stopped: e.stopped,
       classification: e.strategy,
@@ -277,21 +258,21 @@ export class MinionTasksManager {
       shortName: e.shortName,
       isError: e.isError,
     }));
-
-    postMessageToWebView(this._view, {
+    
+    getViewProvider().postMessageToWebView({
       type: MessageToWebViewType.ExecutionsUpdated,
       executions: executionInfo,
     });
 
-    this._view!.badge = {
-      tooltip: `${this.minionTasks.length} minion tasks`,
-      value: this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME || e.isError).length,
-    };
+    getViewProvider().setBadge(
+      `${this.minionTasks.length} minion tasks`,
+      this.minionTasks.filter((e) => e.executionStage === FINISHED_STAGE_NAME || e.isError).length
+    );
 
     this.saveExecutions();
 
     if (minionTask && importantChange) {
-      AnalyticsManager.instance.reportOrUpdateMinionTask(minionTask);
+      getAnalyticsManager().reportOrUpdateMinionTask(minionTask);
     }
   }
 

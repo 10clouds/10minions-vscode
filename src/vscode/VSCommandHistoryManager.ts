@@ -1,8 +1,8 @@
-
 import * as vscode from "vscode";
-import { postMessageToWebView } from "./TenMinionsViewProvider";
-import { MessageToWebViewType } from "./Messages";
-import { gptExecute } from "./openai";
+import { MessageToWebViewType } from "../Messages";
+import { gptExecute } from "../openai";
+import { CommandHistoryManager, setCommandHistoryManager } from "../managers/CommandHistoryManager";
+import { getViewProvider } from "../managers/ViewProvider";
 
 const BASE_COMMANDS = [
   { command: "Refactor this", timeStamp: Date.now() },
@@ -31,10 +31,9 @@ function shuffledBaseCommands(): { command: string; timeStamp: number }[] {
   return randomizedCommands;
 }
 
-export class CommandHistoryManager {
+export class VSCommandHistoryManager implements CommandHistoryManager {
 
   private commandHistory: { command: string; timeStamp: number }[] = [];
-  private _view?: vscode.WebviewView;
   private _context: vscode.ExtensionContext;
 
   private suggestionProcessing: boolean = false;
@@ -55,10 +54,8 @@ export class CommandHistoryManager {
     }
 
     this.commandHistory = commandHistory as { command: string; timeStamp: number }[];
-  }
 
-  updateView(view: vscode.WebviewView) {
-    this._view = view;
+    setCommandHistoryManager(this);
   }
 
   cancelSuggestion() {
@@ -69,7 +66,7 @@ export class CommandHistoryManager {
     this.suggestionProcessing = false;
 
     // Step 3: Send a message to the WebView
-    postMessageToWebView(this._view, {
+    getViewProvider().postMessageToWebView({
       type: MessageToWebViewType.SuggestionLoadedOrCanceled,
     });
   }
@@ -140,7 +137,7 @@ export class CommandHistoryManager {
     this.gptSuggestionController.abort();
     this.gptSuggestionController = new AbortController();
   
-    postMessageToWebView(this._view, {
+    getViewProvider().postMessageToWebView({
       type: MessageToWebViewType.SuggestionLoading,
     });
   
@@ -184,7 +181,7 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
       await gptExecute({ fullPrompt: promptWithContext, onChunk, maxTokens: 100, controller: this.gptSuggestionController, mode: "FAST", outputType: "string" });
       
       // Send the final suggestion after gptExecute has finished execution
-      postMessageToWebView(this._view, {
+      getViewProvider().postMessageToWebView({
         type: MessageToWebViewType.Suggestion,
         suggestion: stripQuotes(this.currentSuggestion),
         forCode: code,
@@ -195,12 +192,12 @@ Your command suggestion, ${input === "" ? `based strictly what you thing someone
       this.lastInput = input;
     } catch (e) {
       console.error(e);
-      postMessageToWebView(this._view, {
+      getViewProvider().postMessageToWebView({
         type: MessageToWebViewType.SuggestionError,
         error: String(e),
       });
     } finally {
-      postMessageToWebView(this._view, {
+      getViewProvider().postMessageToWebView({
         type: MessageToWebViewType.SuggestionLoadedOrCanceled,
       });
     }

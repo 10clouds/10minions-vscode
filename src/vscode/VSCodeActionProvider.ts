@@ -1,15 +1,22 @@
 import * as vscode from "vscode";
 
-export class CodeActionProvider implements vscode.CodeActionProvider {
+export class VSCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [
     vscode.CodeActionKind.QuickFix,
   ];
 
-  private fixCommandId: string;
-
-  constructor(fixCommandId: string) {
-    this.fixCommandId = fixCommandId;
+  constructor(private context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+      vscode.languages.registerCodeActionsProvider(
+        { scheme: "file" },
+        this,
+        {
+          providedCodeActionKinds: VSCodeActionProvider.providedCodeActionKinds,
+        }
+      )
+    );
   }
+
 
   private createCommandCodeAction(
     diagnostic: vscode.Diagnostic,
@@ -17,10 +24,10 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
       "Fix with 10Minions",
-      CodeActionProvider.providedCodeActionKinds[0]
+      VSCodeActionProvider.providedCodeActionKinds[0]
     );
     action.command = {
-      command: this.fixCommandId,
+      command: "10minions.fixError",
       title: "Let AI fix this",
       arguments: [uri, diagnostic],
     };

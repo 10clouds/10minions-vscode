@@ -1,11 +1,11 @@
-import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
 import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
 import { TASK_STRATEGY_ID } from "../strategies";
+import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
 
 
-function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
-    const settingsKeyword = vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
+function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: EditorDocument, fullFileContents: string, selectionPosition: EditorPosition, userQuery: string) {
+    const settingsKeyword = "TODO"; //vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
 
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -72,12 +72,6 @@ export async function stageCreateModification(this: MinionTask) {
   const isCancelled = () => {
     return this.stopped;
   };
-
-  // Begin inlined planAndWrite function code
-  const activeEditor = vscode.window.activeTextEditor;
-  if (!activeEditor) {
-    return "";
-  }
 
   let promptWithContext = createPrompt(classification, selectedText, document, fullFileContents, this.selection.start, userQuery);
 

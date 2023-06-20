@@ -1,19 +1,21 @@
 import { randomUUID } from "crypto";
 import * as path from "path";
-import * as vscode from "vscode";
-import { MinionTasksManager } from "./MinionTasksManager";
-import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
-import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
+import { getLogProvider } from "./managers/LogProvider";
+import { getOriginalContentProvider } from "./managers/OriginalContentProvider";
 import { gptExecute } from "./openai";
 import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from "./strategies/strategies";
+import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
+import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
+import { EditorDocument, EditorRange, EditorUri, getEditorManager } from "./managers/EditorManager";
+
 
 export class MinionTask {
   readonly userQuery: string;
   readonly id: string;
   readonly minionIndex: number;
 
-  readonly documentURI: string;
-  readonly selection: vscode.Selection;
+  readonly documentURI: EditorUri;
+  readonly selection: EditorRange;
   readonly selectedText: string;
   readonly onChanged: (important: boolean) => Promise<void>;
 
@@ -48,7 +50,7 @@ export class MinionTask {
 
   set originalContent(value: string) {
     this._originalContent = value;
-    MinionTasksManager.instance.originalContentProvider.reportChange(vscode.Uri.parse(this.originalContentURI));
+    getOriginalContentProvider().reportChange(this.originalContentURI);
   }
 
   //
@@ -96,9 +98,9 @@ export class MinionTask {
   }: {
     id: string;
     minionIndex: number;
-    documentURI: string;
+    documentURI: EditorUri;
     userQuery: string;
-    selection: vscode.Selection;
+    selection: EditorRange;
     selectedText: string;
     originalContent: string;
     finalContent?: string;
@@ -146,7 +148,7 @@ export class MinionTask {
   appendToLog(content: string): void {
     this.logContent += content;
 
-    MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+    getLogProvider().reportChange(this.logURI);
   }
 
   appendSectionToLog(section: string): void {
@@ -161,7 +163,7 @@ export class MinionTask {
 
   clearLog() {
     this.logContent = "";
-    MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
+    getLogProvider().reportChange(this.logURI);
   }
 
   static async create({
@@ -173,8 +175,8 @@ export class MinionTask {
     onChanged,
   }: {
     userQuery: string;
-    document: vscode.TextDocument;
-    selection: vscode.Selection;
+    document: EditorDocument;
+    selection: EditorRange;
     selectedText: string;
     minionIndex: number;
     onChanged: (important: boolean) => Promise<void>;
@@ -184,7 +186,7 @@ export class MinionTask {
     const execution = new MinionTask({
       id: minionTaskId,
       minionIndex,
-      documentURI: document.uri.toString(),
+      documentURI: document.uri,
       userQuery,
       selection,
       selectedText,
@@ -200,7 +202,7 @@ export class MinionTask {
   }
 
   public async document() {
-    let document = await vscode.workspace.openTextDocument(vscode.Uri.parse(this.documentURI));
+    let document = await getEditorManager().openTextDocument(this.documentURI);
     return document;
   }
 
@@ -279,7 +281,7 @@ export class MinionTask {
         }
       } catch (error) {
         if (error !== CANCELED_STAGE_NAME) {
-          vscode.window.showErrorMessage(`Error in execution: ${error}`);
+          getEditorManager().showErrorMessage(`Error in execution: ${error}`);
           console.error("Error in execution", error);
         }
 
@@ -333,6 +335,6 @@ ${context}
   }
 
   get baseName() {
-    return path.basename(vscode.Uri.parse(this.documentURI).fsPath);
+    return path.basename(this.documentURI.fsPath);
   }
 }

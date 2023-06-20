@@ -1,50 +1,67 @@
 import * as vscode from "vscode";
-import { AnalyticsManager } from "./AnalyticsManager";
-import { CommandHistoryManager } from "./CommandHistoryManager";
-import { MinionTasksManager } from "./MinionTasksManager";
-import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
-import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "./Messages";
-import { MinionTaskAutoRunner } from "./MinionTaskAutoRunner";
-import { getMissingOpenAIModels as getMissingOpenAIModels, setOpenAIApiKey } from "./openai";
+import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
+import { getMissingOpenAIModels, setOpenAIApiKey } from "../openai";
+import { findNewPositionForOldSelection } from "../utils/findNewPositionForOldSelection";
+import { convertSelection, convertUri } from "./vscodeUtils";
+import { getAnalyticsManager } from "../managers/AnalyticsManager";
+import { getCommandHistoryManager } from "../managers/CommandHistoryManager";
+import { getMinionTasksManager } from "../managers/MinionTasksManager";
+import { ViewProvider, setViewProvider } from "../managers/ViewProvider";
 
-export function postMessageToWebView(view: vscode.WebviewView | undefined, message: MessageToWebView) {
-  return view?.webview.postMessage(message);
-}
-
-export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
+export class VSViewProvider implements vscode.WebviewViewProvider, ViewProvider {
   public static readonly viewType = "10minions.sideBar";
 
   private _view?: vscode.WebviewView;
-  private commandHistoryManager: CommandHistoryManager;
-  private executionsManager: MinionTasksManager;
-  private analyticsManager: AnalyticsManager;
-  //private taskAutoRunner: MinionTaskAutoRunner; // Added property for MinionTaskAutoRunner
 
-  constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
-    this.commandHistoryManager = new CommandHistoryManager(context);
-    this.executionsManager = new MinionTasksManager(context);
-    this.analyticsManager = new AnalyticsManager(context);
-    //this.taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
+  constructor(private context: vscode.ExtensionContext) {
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        VSViewProvider.viewType,
+        this,
+        {
+          webviewOptions: { retainContextWhenHidden: true },
+        }
+      )
+    );
+
+    setViewProvider(this);
   }
 
   private async updateApiKeyAndModels() {
     setOpenAIApiKey(vscode.workspace.getConfiguration("10minions").get("apiKey") || "");
-    postMessageToWebView(this._view, {
+    this.postMessageToWebView({
       type: MessageToWebViewType.ApiKeySet,
       value: !!vscode.workspace.getConfiguration("10minions").get("apiKey"),
     });
 
-    postMessageToWebView(this._view, {
+    this.postMessageToWebView({
       type: MessageToWebViewType.ApiKeyMissingModels,
       models: await getMissingOpenAIModels(),
     });
   }
 
+  public postMessageToWebView(message: MessageToWebView) {
+    if (!this._view) {
+      throw new Error("Webview not initialized");
+    }
+
+    return this._view.webview.postMessage(message);
+  }
+
+  public setBadge(tooltip: string, value: number) {
+    if (!this._view) {
+      throw new Error("Webview not initialized");
+    }
+
+    this._view.badge = {
+      tooltip,
+      value,
+    };
+  }
+
   public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
     this._view = webviewView;
-
-    this.commandHistoryManager.updateView(webviewView);
-    this.executionsManager.updateView(webviewView);
 
     // Add an event listener for visibility change
     webviewView.onDidChangeVisibility(() => this.updateSidebarVisibility(webviewView.visible));
@@ -55,7 +72,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     // set options for the webview, allow scripts
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [this._extensionUri],
+      localResourceRoots: [this.context.extensionUri],
     };
 
     // set the HTML for the webview
@@ -67,24 +84,23 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     //post message with update to set api key, each time appropriate config is updated
     vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (e.affectsConfiguration("10minions.apiKey")) {
-
         this.updateApiKeyAndModels();
 
         if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
-          AnalyticsManager.instance.reportEvent("setOpenAIApiKey");
+          getAnalyticsManager().reportEvent("setOpenAIApiKey");
         } else {
-          AnalyticsManager.instance.reportEvent("unsetOpenAIApiKey");
+          getAnalyticsManager().reportEvent("unsetOpenAIApiKey");
         }
       }
 
       if (e.affectsConfiguration("10minions.enableCompletionSounds")) {
-        AnalyticsManager.instance.reportEvent("setEnableCompletionSounds", {
+        getAnalyticsManager().reportEvent("setEnableCompletionSounds", {
           value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds"),
         });
       }
 
       if (e.affectsConfiguration("10minions.sendDiagnosticsData")) {
-        AnalyticsManager.instance.reportEvent(
+        getAnalyticsManager().reportEvent(
           "setSendDiagnosticsData",
           {
             value: !!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData"),
@@ -103,7 +119,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       this._view?.show?.(true);
     }
 
-    postMessageToWebView(this._view, {
+    this.postMessageToWebView({
       type: MessageToWebViewType.ClearAndFocusOnInput,
     });
   }
@@ -116,7 +132,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       this._view?.show?.(true);
     }
 
-    this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
+    getMinionTasksManager().runMinionOnCurrentSelectionAndEditor(prompt);
   }
 
   timeoutRef?: NodeJS.Timeout;
@@ -132,7 +148,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       const activeEditor = vscode.window.activeTextEditor;
       const selectedText = activeEditor?.document.getText(activeEditor.selection) || "";
 
-      postMessageToWebView(this._view, {
+      this.postMessageToWebView({
         type: MessageToWebViewType.ChosenCodeUpdated,
         code: selectedText ? selectedText : activeEditor?.document.getText() || "",
       });
@@ -140,7 +156,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
   }
 
   private updateSidebarVisibility(visible: boolean) {
-    postMessageToWebView(this._view, {
+    this.postMessageToWebView({
       type: MessageToWebViewType.UpdateSidebarVisibility,
       value: visible,
     });
@@ -154,22 +170,22 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
       case MessageToVSCodeType.NewMinionTask: {
         let prompt = data.value ? data.value : "Refactor this code";
 
-        await this.commandHistoryManager.updateCommandHistory(prompt);
+        await getCommandHistoryManager().updateCommandHistory(prompt);
 
-        this.executionsManager.runMinionOnCurrentSelectionAndEditor(prompt);
+        getMinionTasksManager().runMinionOnCurrentSelectionAndEditor(prompt);
         break;
       }
       case MessageToVSCodeType.OpenDocument: {
-        this.executionsManager.openDocument(data.minionTaskId);
+        getMinionTasksManager().openDocument(data.minionTaskId);
         break;
       }
       case MessageToVSCodeType.OpenSelection: {
-        let minionTask = this.executionsManager.getExecutionById(data.minionTaskId);
+        let minionTask = getMinionTasksManager().getExecutionById(data.minionTaskId);
 
         if (minionTask) {
-          const document = await minionTask.document();
+          const document = await vscode.workspace.openTextDocument(convertUri(minionTask.documentURI));
           const editor = await vscode.window.showTextDocument(document);
-          editor.selection = await findNewPositionForOldSelection(minionTask.selection, minionTask.selectedText, document);
+          editor.selection = convertSelection(await findNewPositionForOldSelection(minionTask.selection, minionTask.selectedText, document));
 
           // Reveal the range of the selected text in the editor
           editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
@@ -179,27 +195,27 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case MessageToVSCodeType.OpenLog: {
-        this.executionsManager.openLog(data.minionTaskId);
+        getMinionTasksManager().openLog(data.minionTaskId);
         break;
       }
       case MessageToVSCodeType.ShowDiff: {
-        this.executionsManager.showDiff(data.minionTaskId);
+        getMinionTasksManager().showDiff(data.minionTaskId);
         break;
       }
       case MessageToVSCodeType.MarkAsApplied: {
-        this.executionsManager.markAsApplied(data.minionTaskId);
+        getMinionTasksManager().markAsApplied(data.minionTaskId);
         break;
       }
       case MessageToVSCodeType.ApplyAndReviewTask: {
-        this.executionsManager.applyAndReviewTask(data.minionTaskId, data.reapply);
+        getMinionTasksManager().applyAndReviewTask(data.minionTaskId, data.reapply);
         break;
       }
       case MessageToVSCodeType.ReRunExecution: {
-        this.executionsManager.reRunExecution(data.minionTaskId, data.newUserQuery);
+        getMinionTasksManager().reRunExecution(data.minionTaskId, data.newUserQuery);
         break;
       }
       case MessageToVSCodeType.StopExecution: {
-        this.executionsManager.stopExecution(data.minionTaskId);
+        getMinionTasksManager().stopExecution(data.minionTaskId);
         break;
       }
       case MessageToVSCodeType.EditApiKey: {
@@ -207,8 +223,7 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         break;
       }
       case MessageToVSCodeType.SuggestionCancel: {
-        this.commandHistoryManager.cancelSuggestion();
-
+        getCommandHistoryManager().cancelSuggestion();
         break;
       }
       case MessageToVSCodeType.SuggestionGet: {
@@ -216,20 +231,20 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
         const activeEditor = vscode.window.activeTextEditor;
         const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "";
 
-        this.commandHistoryManager.getCommandSuggestionGPT(input, code, activeEditor?.document.languageId || "");
+        getCommandHistoryManager().getCommandSuggestionGPT(input, code, activeEditor?.document.languageId || "");
 
         break;
       }
       case MessageToVSCodeType.CloseExecution: {
         let minionTaskId = data.minionTaskId;
-        this.executionsManager.closeExecution(minionTaskId);
+        getMinionTasksManager().closeExecution(minionTaskId);
         break;
       }
       case MessageToVSCodeType.ReadyForMessages: {
         this.updateApiKeyAndModels();
 
         //update initial executions
-        this.executionsManager.notifyExecutionsUpdatedImmediate();
+        getMinionTasksManager().notifyExecutionsUpdatedImmediate();
 
         break;
       }
@@ -241,13 +256,13 @@ export class TenMinionsViewProvider implements vscode.WebviewViewProvider {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <base href="${webview.asWebviewUri(this._extensionUri)}/">
-      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "resources", "tailwind.min.js"))}"></script>
-      <link rel="stylesheet" href="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "resources", "global.css"))}" />
+      <base href="${webview.asWebviewUri(this.context.extensionUri)}/">
+      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "resources", "tailwind.min.js"))}"></script>
+      <link rel="stylesheet" href="${webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "resources", "global.css"))}" />
     </head>
     <body>
       <div id="root"></div>
-      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "dist", "sideBar.js"))}"></script>
+      <script src="${webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "dist", "sideBar.js"))}"></script>
     </body>
     </html>`;
   }

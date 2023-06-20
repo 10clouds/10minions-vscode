@@ -1,8 +1,8 @@
-import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
+import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
 import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
 
-function createPrompt(selectedText: string, document: vscode.TextDocument, fullFileContents: string, selectionPosition: vscode.Position, userQuery: string) {
+function createPrompt(selectedText: string, document: EditorDocument, fullFileContents: string, selectionPosition: EditorPosition, userQuery: string) {
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to tell him about something, the task is provided below in TASK section.
@@ -50,12 +50,6 @@ export async function stageCreateAnswer(this: MinionTask) {
   const isCancelled = () => {
     return this.stopped;
   };
-
-  // Begin inlined planAndWrite function code
-  const activeEditor = vscode.window.activeTextEditor;
-  if (!activeEditor) {
-    return "";
-  }
 
   let promptWithContext = createPrompt(selectedText, document, fullFileContents, this.selection.start, userQuery);
 

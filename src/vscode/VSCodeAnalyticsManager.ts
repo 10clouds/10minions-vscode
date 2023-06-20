@@ -1,13 +1,14 @@
 import * as crypto from "crypto";
 import * as vscode from "vscode";
 import { workspace } from "vscode";
-import { MinionTask } from "./MinionTask";
+import { MinionTask } from "../MinionTask";
 
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, setDoc, doc } from "firebase/firestore";
-import { serializeMinionTask } from "./SerializedMinionTask";
+import { serializeMinionTask } from "../SerializedMinionTask";
 
-import * as packageJson from "../package.json";
+import * as packageJson from "../../package.json";
+import { AnalyticsManager, setAnalyticsManager } from "../managers/AnalyticsManager";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
@@ -24,8 +25,9 @@ const firebaseApp = initializeApp(firebaseConfig);
 // Create Firestore instance using the Client SDK
 const firestore = getFirestore(firebaseApp);
 
-export class AnalyticsManager {
-  public static instance: AnalyticsManager;
+
+
+export class VSCodeAnalyticsManager implements AnalyticsManager {
   private installationId: string;
 
   constructor(context: vscode.ExtensionContext) {
@@ -40,11 +42,7 @@ export class AnalyticsManager {
 
     this.reportEvent("extensionActivated");
 
-    if (AnalyticsManager.instance) {
-      throw new Error("AnalyticsManager already instantiated");
-    }
-
-    AnalyticsManager.instance = this;
+    setAnalyticsManager(this);
   }
 
   private commonAnalyticsData(): { installationId: string; vsCodeVersion: string; pluginVersion: string; timestamp: Date } {

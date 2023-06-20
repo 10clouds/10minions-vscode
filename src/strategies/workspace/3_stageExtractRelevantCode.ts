@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
 import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
+import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
 import { countTokens, ensureICanRunThis, gptExecute } from "../../openai";
 
 export function extractRelevantCodePrompt({
@@ -13,8 +13,8 @@ export function extractRelevantCodePrompt({
   userQuery: string;
   selectedText: string;
   fullFileContents: string;
-  selectionPosition: vscode.Position;
-  document: vscode.TextDocument;
+  selectionPosition: EditorPosition;
+  document: EditorDocument;
 }) {
   return `
 You are a line assesment AI system for automatic software development with an IQ of 200.
@@ -46,11 +46,6 @@ export async function stageExtractRelevantCode(this: MinionTask) {
   const selectionPosition = this.selection.start;
   const selectedText = this.selectedText;
   const fullFileContents = this.originalContent;
-
-  const activeEditor = vscode.window.activeTextEditor;
-  if (!activeEditor) {
-    return "";
-  }
 
   let promptWithContext = extractRelevantCodePrompt({ userQuery, selectedText, fullFileContents, selectionPosition, document });
 
