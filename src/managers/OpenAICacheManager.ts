@@ -34,7 +34,6 @@ export class OpenAICacheManager {
     let data: string[] = [];
 
     snapshot.forEach((doc) => {
-      console.log(doc.id, '=>', doc.data());
       if (typeof doc.data().responseData === "string") {
         data.push(doc.data().responseData as string);
       }

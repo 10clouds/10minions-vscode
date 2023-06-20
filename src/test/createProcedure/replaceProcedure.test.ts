@@ -17,7 +17,8 @@ suite("Create procedure test suite", () => {
 
   setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "openAIKey.json"), "utf8")).openAIKey);
 
-  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
+  //const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
+  const openAiCacheManager = new OpenAICacheManager();
 
   const analyticsManager = new AnalyticsManager(
     "localTests-installationId",
@@ -32,12 +33,10 @@ suite("Create procedure test suite", () => {
       const modification = readFileSync(path.resolve(baseDir, testDir, "modification.txt"), "utf8");
       const expectedOutput = readFileSync(path.resolve(baseDir, testDir, "result.txt"), "utf8");
 
-      console.log("CREATING PROCEDURE");
       let {result: procedure, cost} = await createModificationProcedure(currentCode, modification, async (chunk) => {
 
       }, () => false);
 
-      console.log(procedure);
       fs.writeFileSync(path.resolve(baseDir, testDir, "procedure.txt"), procedure);
 
       let modifiedContent = applyModificationProcedure(

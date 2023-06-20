@@ -117,8 +117,29 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
 export function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
   let currentCode = originalCode;
   let lines = modificationProcedure.split("\n");
-  let inCommand: CommandSegment | undefined = undefined;
+  let inCommand: CommandSegment | undefined;
   let params: { [key: string]: string } = {};
+
+  function newCommand(command: CommandSegment, basedOnLine: string) {
+    inCommand = command;
+
+    let lineWithoutCommand = basedOnLine.substring(inCommand.name.length).trim();
+    let readParams = lineWithoutCommand.split(" ");
+    for (let paramName of inCommand.params || []) {
+      params[paramName] = readParams.shift() || "";
+    }
+
+    if (inCommand.execute) {
+      currentCode = inCommand.execute(currentCode, languageId, params);
+    }
+
+    if (!inCommand.followedBy || inCommand.followedBy.length === 0) {
+      inCommand = undefined;
+      params = {};
+    } else {
+      params[inCommand.name] = "";
+    }
+  }
 
   for (let line of lines) {
     let possibiltiies: CommandSegment[] = inCommand ? inCommand.followedBy || [] : COMMAND_STRUCTURE;
@@ -144,7 +165,7 @@ export function applyModificationProcedure(originalCode: string, modificationPro
             throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
           }
 
-          inCommand = outOfOrderNewCommand;
+          newCommand(outOfOrderNewCommand, line);
         } else {
           params[inCommand.name] += (params[inCommand.name] ? "\n" : "") + line;
         }
@@ -152,24 +173,7 @@ export function applyModificationProcedure(originalCode: string, modificationPro
       continue;
     }
 
-    inCommand = possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0];
-
-    let lineWithoutCommand = line.substring(inCommand.name.length).trim();
-    let readParams = lineWithoutCommand.split(" ");
-    for (let paramName of inCommand.params || []) {
-      params[paramName] = readParams.shift() || "";
-    }
-
-    if (inCommand.execute) {
-      currentCode = inCommand.execute(currentCode, languageId, params);
-    }
-
-    if (!inCommand.followedBy || inCommand.followedBy.length === 0) {
-      inCommand = undefined;
-      params = {};
-    } else {
-      params[inCommand.name] = "";
-    }
+    newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line)
   }
 
   if (inCommand) {
