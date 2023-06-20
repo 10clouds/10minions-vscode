@@ -1,5 +1,5 @@
 import { DEBUG_PROMPTS } from "../const";
-import { countTokens, ensureIRunThisInRange, gptExecute } from "../openai";
+import { GptMode, countTokens, ensureIRunThisInRange, gptExecute } from "../openai";
 
 
 export const AVAILABE_COMMANDS = [
@@ -117,24 +117,25 @@ export async function createModificationProcedure(
   let absoluteMinimumTokens = tokensModification;
 
   if (DEBUG_PROMPTS) {
-
     onChunk("<<<< PROMPT >>>>\n\n");
     onChunk(promptWithContext + "\n\n");
     onChunk("<<<< EXECUTION >>>>\n\n");
   }
+
+  let mode: GptMode = "QUALITY";
 
   return await gptExecute({
     fullPrompt: promptWithContext,
     onChunk,
     maxTokens: ensureIRunThisInRange({
       prompt: promptWithContext,
-      mode: "QUALITY",
+      mode,
       preferedTokens: luxiouriosTokens,
       minTokens: absoluteMinimumTokens,
     }),
     temperature: 0,
     isCancelled,
-    mode: "FAST",
+    mode,
     outputType: "string",
   });
 }
