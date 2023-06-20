@@ -7,6 +7,7 @@ import { createModificationProcedure } from "../../utils/createModificationProce
 import { applyModificationProcedure } from "../../utils/applyModificationProcedure";
 import { setOpenAIApiKey } from "../../openai";
 import { AnalyticsManager } from "../../managers/AnalyticsManager";
+import { OpenAICacheManager } from "../../managers/OpenAICacheManager";
 
 suite("Create procedure test suite", () => {
   const baseDir = path.resolve(__dirname);
@@ -14,7 +15,10 @@ suite("Create procedure test suite", () => {
   let allPaths = glob.sync(path.resolve(baseDir, '*'));
   let testDirs = allPaths.filter((path) => fs.lstatSync(path).isDirectory());
 
-  setOpenAIApiKey('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');
+  setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "openAIKey.json"), "utf8")).openAIKey);
+
+  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
+
   const analyticsManager = new AnalyticsManager(
     "localTests-installationId",
     "VsCodeStub",

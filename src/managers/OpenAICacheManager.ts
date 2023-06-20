@@ -1,133 +1,59 @@
-import { MinionTask } from "../MinionTask";
-
-import { initializeApp } from "firebase/app";
-import { addDoc, collection, doc, getFirestore, setDoc } from "firebase/firestore";
-import { serializeMinionTask } from "../SerializedMinionTask";
-
-import * as packageJson from "../../package.json";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
-  authDomain: "minions-diagnostics.firebaseapp.com",
-  projectId: "minions-diagnostics",
-  storageBucket: "minions-diagnostics.appspot.com",
-  messagingSenderId: "898843723711",
-  appId: "1:898843723711:web:6c12aca67575a0bea0030a",
-};
-
-// Initialize Firebase Admin
-const firebaseApp = initializeApp(firebaseConfig);
-
-// Create Firestore instance using the Client SDK
-const firestore = getFirestore(firebaseApp);
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
 
 export class OpenAICacheManager {
-    private sendDiagnosticsData: boolean = true;
+  private firestore: admin.firestore.Firestore | undefined;
 
-  constructor(private installationId: string, private vsCodeVersion: string) {
-    // Retrieve or generate a unique installation Id
-    this.installationId = installationId;
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
 
-    console.log(`Installation Id: ${this.installationId}`);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+    } else {
+      this.firestore = undefined;
+    }
 
-    this.reportEvent("extensionActivated");
-
-    setAnalyticsManager(this);
+    setOpenAICacheManager(this);
   }
 
-  private commonAnalyticsData(): { installationId: string; vsCodeVersion: string; pluginVersion: string; timestamp: Date } {
-    return {
-      installationId: this.installationId,
-      vsCodeVersion: this.vsCodeVersion,
-      pluginVersion: packageJson.version,
-      timestamp: new Date(),
-    };
-  }
-
-  public setSendDiagnosticsData(value: boolean) {
-    this.sendDiagnosticsData = value;
-  }
-
-  public async reportEvent(eventName: string, eventProperties?: { [key: string]: string | number | boolean }, forceSendEvenIfNotEnabled: boolean = false): Promise<void> {
-    // Check if sending diagnostics data is allowed by the user settings
-    if (!forceSendEvenIfNotEnabled && !this.sendDiagnosticsData) {
-      return;
+  public async getCachedResult(requestData: object): Promise<any | undefined> {
+    if (!this.firestore) {
+      return undefined;
     }
-    // Prepare the event data
-    const eventData = {
-      ...this.commonAnalyticsData(),
 
-      eventName,
-      eventProperties: eventProperties || {},
-    };
+    const requestDataHash = getAnalyticsManager().getRequestHash(requestData);
 
-    // Store the event data in Firestore
-    try {
-      await addDoc(collection(firestore, "events"), eventData);
-    } catch (error) {
-      console.error(`Error adding event to Firestore: ${error}`);
+    const snapshot = await this.firestore.collection('openAICalls').where('requestDataHash', '==', requestDataHash).get();
+
+    if (snapshot.empty) {
+      return undefined;
     }
-  }
 
-  public async reportOrUpdateMinionTask(minionTask: MinionTask): Promise<void> {
-    // Check if sending diagnostics data is allowed by the user settings
-    if (!this.sendDiagnosticsData) {
-      return;
-    }
-    // Serialize the minion task
-    const serializedMinionTask = serializeMinionTask(minionTask);
+    let data: string[] = [];
 
-    // Prepare the data to be stored in Firestore
-    const firestoreData = {
-      ...this.commonAnalyticsData(),
-      ...serializedMinionTask,
-    };
+    snapshot.forEach((doc) => {
+      console.log(doc.id, '=>', doc.data());
+      if (typeof doc.data().responseData === "string") {
+        data.push(doc.data().responseData as string);
+      }
+    });
 
-    // Store the data in Firestore
-    try {
-      await setDoc(doc(firestore, "minionTasks", serializedMinionTask.id), firestoreData, { merge: true });
-    } catch (error) {
-      console.error(`Error updating minion task in Firestore: ${error}`);
-    }
-  }
-
-  public async reportOpenAICall(requestData: any, responseData: any): Promise<void> {
-    // Check if sending diagnostics data is allowed by the user settings
-    if (!this.sendDiagnosticsData) {
-      return;
-    }
-    // Prepare the OpenAI call event data
-    const openAICallData = {
-      ...this.commonAnalyticsData(),
-
-      requestData,
-      responseData,
-    };
-
-    // Store the OpenAI call event data in Firestore
-    try {
-      await addDoc(collection(firestore, "openAICalls"), openAICallData);
-    } catch (error) {
-      console.error(`Error adding OpenAI call event to Firestore: ${error}`);
-    }
-  }
-
-  // Method to get the installation Id
-  public getInstallationId(): string {
-    return this.installationId;
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
   }
 }
 
-
 let globalManager: OpenAICacheManager;
 
-export function setAnalyticsManager(manager: OpenAICacheManager) {
+export function setOpenAICacheManager(manager: OpenAICacheManager) {
   if (globalManager) {
-    throw new Error(`AnalyticsManager is already set.`);
+    throw new Error(`OpenAICacheManager is already set.`);
   }
   globalManager = manager;
 }
 
-export function getAnalyticsManager(): OpenAICacheManager {
+export function getOpenAICacheManager(): OpenAICacheManager {
   return globalManager;
 }

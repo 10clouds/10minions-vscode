@@ -4,6 +4,8 @@ import { initializeApp } from "firebase/app";
 import { addDoc, collection, doc, getFirestore, setDoc } from "firebase/firestore";
 import { serializeMinionTask } from "../SerializedMinionTask";
 
+import * as crypto from "crypto";
+
 import * as packageJson from "../../package.json";
 
 const firebaseConfig = {
@@ -91,15 +93,23 @@ export class AnalyticsManager {
     }
   }
 
+  public getRequestHash(requestData: any): string {
+    const hash = crypto.createHash('sha256');
+    hash.update(JSON.stringify(requestData));
+    return hash.digest('hex');
+  }
+
   public async reportOpenAICall(requestData: any, responseData: any): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
     if (!this.sendDiagnosticsData) {
       return;
     }
+
     // Prepare the OpenAI call event data
     const openAICallData = {
       ...this.commonAnalyticsData(),
 
+      requestDataHash: this.getRequestHash(requestData),
       requestData,
       responseData,
     };

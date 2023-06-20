@@ -6,6 +6,7 @@ import { DEBUG_RESPONSES } from "./const";
 import { getAnalyticsManager } from "./managers/AnalyticsManager";
 import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import AsyncLock = require("async-lock");
+import { getOpenAICacheManager } from "./managers/OpenAICacheManager";
 
 export type GptMode = "FAST" | "QUALITY";
 export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613"; // | "gpt-4-32k-0613"
@@ -232,7 +233,7 @@ export async function gptExecute({
     throw new Error("OpenAI API key not found. Please set it in the settings.");
   }
 
-  console.log("Querying OpenAI");
+  //console.log("Querying OpenAI");
 
   let requestData = {
     model,
@@ -251,8 +252,17 @@ export async function gptExecute({
   if (DEBUG_RESPONSES) {
     console.log(requestData);
   }
-  
 
+  let cachedResult = await getOpenAICacheManager().getCachedResult(requestData);
+
+  if (cachedResult && typeof cachedResult === "string") {
+    await onChunk(cachedResult);
+    return {
+      result: cachedResult,
+      cost: 0,
+    };
+  }
+  
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       let response = await fetch("https://api.openai.com/v1/chat/completions", {

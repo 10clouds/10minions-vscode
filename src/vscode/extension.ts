@@ -9,6 +9,7 @@ import { VSCommandHistoryManager } from "./VSCommandHistoryManager";
 import { VSMinionTasksManager } from "./VSMinionTasksManager";
 import { VSEditorManager } from "./VSEditorManager";
 import { getViewProvider } from "../managers/ViewProvider";
+import { OpenAICacheManager } from "../managers/OpenAICacheManager";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("10Minions is now active");
@@ -22,6 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   analyticsManager.setSendDiagnosticsData(!!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData"));
 
+  const openAiCacheManager = new OpenAICacheManager();
   const originalContentProvider = new VSOriginalContentProvider(context);
   const logProvider = new VSLogProvider(context);
   const viewProvider = new VSViewProvider(context);

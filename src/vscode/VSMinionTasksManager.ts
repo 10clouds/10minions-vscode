@@ -21,7 +21,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
   constructor(context: vscode.ExtensionContext) {
     this._context = context;
 
-    const serializedExecutions = this._context.globalState.get<SerializedMinionTask[]>("10minions.executions") || [];
+    const serializedExecutions = this._context.workspaceState.get<SerializedMinionTask[]>("10minions.executions") || [];
     this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) => deserializeMinionTask(data));
 
     let self = this;
@@ -31,7 +31,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
 
   async saveExecutions() {
     const serializedExecutions = this.minionTasks.map((execution) => serializeMinionTask(execution));
-    await this._context.globalState.update("10minions.executions", serializedExecutions);
+    await this._context.workspaceState.update("10minions.executions", serializedExecutions);
   }
 
   async showDiff(minionTaskId: string) {

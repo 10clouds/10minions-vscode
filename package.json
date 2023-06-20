@@ -168,6 +168,7 @@
     "@heroicons/react": "^2.0.18",
     "async-lock": "^1.4.0",
     "firebase": "^9.22.2",
+    "firebase-admin": "^11.9.0",
     "gpt-tokenizer": "^2.1.1",
     "jsonschema": "^1.4.1",
     "langchain": "^0.0.77",
