@@ -130,7 +130,7 @@ async function processOpenAIResponseStream({
 
         fullContent += tokens;
       } catch (e) {
-        console.error("Error processing response stream: ", e);
+        console.error("Error processing response stream: ", e, value);
         reject(e);
       }
     });
