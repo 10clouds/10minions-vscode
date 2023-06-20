@@ -1,4 +1,3 @@
-import { ExtensionContext, workspace } from "vscode";
 import * as path from "path";
 import { PathLike } from "fs";
 import { exec } from 'child_process';
@@ -77,19 +76,21 @@ async function playSound(path: string, volume = 0.5) {
   }
 }
 
-let CONTEXT: ExtensionContext;
+let globalExtensionPath: string;
+let globalCompletionSoundsEnabled: boolean;
 
-export function initPlayingSounds(context: ExtensionContext) {
-  CONTEXT = context;
+export function initPlayingSounds(extensionPath: string) {
+  globalExtensionPath = extensionPath;
+}
+
+export function setCompletionSoundsEnabled(enabled: boolean) {
+  globalCompletionSoundsEnabled = enabled;
 }
 
 export function playNotificationSound() {
-  if (workspace.getConfiguration("10minions").get("enableCompletionSounds")) {
+  if (globalCompletionSoundsEnabled) {
     playSound(
-      path.join(CONTEXT.extensionPath, "resources", "notification.wav"),
+      path.join(globalExtensionPath, "resources", "notification.wav"),
     );
   }
 }
-
-
-

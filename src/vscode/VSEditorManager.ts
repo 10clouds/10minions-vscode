@@ -21,4 +21,8 @@ export class VSEditorManager implements EditorManager {
   showErrorMessage(message: string): void {
     vscode.window.showErrorMessage(message);
   }
+
+  showInformationMessage(message: string): void {
+    vscode.window.showInformationMessage(message);
+  }
 }

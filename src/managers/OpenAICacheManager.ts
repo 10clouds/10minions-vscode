@@ -1,14 +1,10 @@
-import * as crypto from "crypto";
-import * as vscode from "vscode";
-import { workspace } from "vscode";
 import { MinionTask } from "../MinionTask";
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, setDoc, doc } from "firebase/firestore";
+import { addDoc, collection, doc, getFirestore, setDoc } from "firebase/firestore";
 import { serializeMinionTask } from "../SerializedMinionTask";
 
 import * as packageJson from "../../package.json";
-import { AnalyticsManager, setAnalyticsManager } from "../managers/AnalyticsManager";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
@@ -25,18 +21,12 @@ const firebaseApp = initializeApp(firebaseConfig);
 // Create Firestore instance using the Client SDK
 const firestore = getFirestore(firebaseApp);
 
+export class OpenAICacheManager {
+    private sendDiagnosticsData: boolean = true;
 
-
-export class VSCodeAnalyticsManager implements AnalyticsManager {
-  private installationId: string;
-
-  constructor(context: vscode.ExtensionContext) {
+  constructor(private installationId: string, private vsCodeVersion: string) {
     // Retrieve or generate a unique installation Id
-    this.installationId = context.globalState.get<string>("10minions.installationId") || "";
-    if (!this.installationId) {
-      this.installationId = crypto.randomUUID();
-      context.globalState.update("10minions.installationId", this.installationId);
-    }
+    this.installationId = installationId;
 
     console.log(`Installation Id: ${this.installationId}`);
 
@@ -48,15 +38,19 @@ export class VSCodeAnalyticsManager implements AnalyticsManager {
   private commonAnalyticsData(): { installationId: string; vsCodeVersion: string; pluginVersion: string; timestamp: Date } {
     return {
       installationId: this.installationId,
-      vsCodeVersion: vscode.version,
+      vsCodeVersion: this.vsCodeVersion,
       pluginVersion: packageJson.version,
       timestamp: new Date(),
     };
   }
 
+  public setSendDiagnosticsData(value: boolean) {
+    this.sendDiagnosticsData = value;
+  }
+
   public async reportEvent(eventName: string, eventProperties?: { [key: string]: string | number | boolean }, forceSendEvenIfNotEnabled: boolean = false): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
-    if (!forceSendEvenIfNotEnabled && !workspace.getConfiguration().get<boolean>("10minions.sendDiagnosticsData")) {
+    if (!forceSendEvenIfNotEnabled && !this.sendDiagnosticsData) {
       return;
     }
     // Prepare the event data
@@ -77,7 +71,7 @@ export class VSCodeAnalyticsManager implements AnalyticsManager {
 
   public async reportOrUpdateMinionTask(minionTask: MinionTask): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
-    if (!workspace.getConfiguration().get<boolean>("10minions.sendDiagnosticsData")) {
+    if (!this.sendDiagnosticsData) {
       return;
     }
     // Serialize the minion task
@@ -99,7 +93,7 @@ export class VSCodeAnalyticsManager implements AnalyticsManager {
 
   public async reportOpenAICall(requestData: any, responseData: any): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
-    if (!workspace.getConfiguration().get<boolean>("10minions.sendDiagnosticsData")) {
+    if (!this.sendDiagnosticsData) {
       return;
     }
     // Prepare the OpenAI call event data
@@ -122,4 +116,18 @@ export class VSCodeAnalyticsManager implements AnalyticsManager {
   public getInstallationId(): string {
     return this.installationId;
   }
+}
+
+
+let globalManager: OpenAICacheManager;
+
+export function setAnalyticsManager(manager: OpenAICacheManager) {
+  if (globalManager) {
+    throw new Error(`AnalyticsManager is already set.`);
+  }
+  globalManager = manager;
+}
+
+export function getAnalyticsManager(): OpenAICacheManager {
+  return globalManager;
 }

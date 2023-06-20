@@ -1,15 +1,9 @@
-import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
 import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
 import { ensureICanRunThis, gptExecute } from "../../openai";
 import { PRE_STAGES, TASK_STRATEGIES } from "../strategies";
 
 export async function stageChooseStrategy(this: MinionTask) {
-  const activeEditor = vscode.window.activeTextEditor;
-  if (!activeEditor) {
-    return "";
-  }
-
   const document = await this.document();
 
   let fileContext = this.selectedText

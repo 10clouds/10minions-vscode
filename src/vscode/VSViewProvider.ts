@@ -14,16 +14,30 @@ export class VSViewProvider implements vscode.WebviewViewProvider, ViewProvider 
   private _view?: vscode.WebviewView;
 
   constructor(private context: vscode.ExtensionContext) {
-
     context.subscriptions.push(
-      vscode.window.registerWebviewViewProvider(
-        VSViewProvider.viewType,
-        this,
-        {
-          webviewOptions: { retainContextWhenHidden: true },
-        }
-      )
+      vscode.window.registerWebviewViewProvider(VSViewProvider.viewType, this, {
+        webviewOptions: { retainContextWhenHidden: true },
+      })
     );
+
+    //post message with update to set api key, each time appropriate config is updated
+    this.context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration("10minions.apiKey")) {
+        this.updateApiKeyAndModels();
+
+        if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
+          getAnalyticsManager().reportEvent("setOpenAIApiKey");
+        } else {
+          getAnalyticsManager().reportEvent("unsetOpenAIApiKey");
+        }
+      }
+
+      if (e.affectsConfiguration("10minions.enableCompletionSounds")) {
+        getAnalyticsManager().reportEvent("setEnableCompletionSounds", {
+          value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds"),
+        });
+      }
+    }));
 
     setViewProvider(this);
   }
@@ -81,34 +95,7 @@ export class VSViewProvider implements vscode.WebviewViewProvider, ViewProvider 
     // add an event listener for messages received by the webview
     webviewView.webview.onDidReceiveMessage(async (data: MessageToVSCode) => await this.handleWebviewMessage(data));
 
-    //post message with update to set api key, each time appropriate config is updated
-    vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (e.affectsConfiguration("10minions.apiKey")) {
-        this.updateApiKeyAndModels();
-
-        if (vscode.workspace.getConfiguration("10minions").get("apiKey")) {
-          getAnalyticsManager().reportEvent("setOpenAIApiKey");
-        } else {
-          getAnalyticsManager().reportEvent("unsetOpenAIApiKey");
-        }
-      }
-
-      if (e.affectsConfiguration("10minions.enableCompletionSounds")) {
-        getAnalyticsManager().reportEvent("setEnableCompletionSounds", {
-          value: !!vscode.workspace.getConfiguration("10minions").get("enableCompletionSounds"),
-        });
-      }
-
-      if (e.affectsConfiguration("10minions.sendDiagnosticsData")) {
-        getAnalyticsManager().reportEvent(
-          "setSendDiagnosticsData",
-          {
-            value: !!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData"),
-          },
-          true
-        ); // Force send even if just disabled
-      }
-    });
+    
   }
 
   async clearAndfocusOnInput() {

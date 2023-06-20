@@ -25,6 +25,7 @@ export type EditorDocument = {
 };
 
 export interface EditorManager {
+  showInformationMessage(message: string): unknown;
   openTextDocument(uri: EditorUri): Promise<EditorDocument>;
   showErrorMessage(message: string): void;
   createUri(uri: string): EditorUri;

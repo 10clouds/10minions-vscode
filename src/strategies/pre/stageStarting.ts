@@ -1,9 +1,8 @@
-import * as vscode from "vscode";
 import { MinionTask } from "../../MinionTask";
-import { convertUri } from "../../vscode/vscodeUtils";
+import { getEditorManager } from "../../managers/EditorManager";
 
 export async function stageStarting(this: MinionTask) {
-  let document = await vscode.workspace.openTextDocument(convertUri(this.documentURI));
+  let document = await getEditorManager().openTextDocument(this.documentURI);
 
   this.originalContent = document.getText();
 

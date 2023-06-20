@@ -7,10 +7,10 @@ export function run(): Promise<void> {
   const mocha = new Mocha({
     ui: "tdd",
     color: true,
-    timeout: 10000,
+    timeout: 600000,
     //diff: true,
-    //bail: true,
-    //grep: "Strpped comment in replace",
+    bail: true,
+    grep: "Create",
   });
 
   const testsRoot = path.resolve(__dirname);
