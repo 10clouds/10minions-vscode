@@ -119,6 +119,14 @@ async function processOpenAIResponseStream({
 
         chunkBuffer = newChunkBuffer;
 
+        console.log(parsedLines);
+
+        for (let parsedLine of parsedLines) {
+          if (parsedLine.error) {
+            throw new Error(parsedLine.error.message);
+          }
+        }
+
         const tokens = parsedLines
           .map((l) => l.choices[0].delta.content || l.choices[0].delta.function_call?.arguments || "")
           .filter((c) => c)
