@@ -173,7 +173,7 @@ export function applyModificationProcedure(originalCode: string, modificationPro
       continue;
     }
 
-    newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line)
+    newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
   }
 
   if (inCommand) {

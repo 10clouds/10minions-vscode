@@ -7,6 +7,10 @@ import { STAGES, TOTAL_WEIGHTS as STAGES_TOTAL_WEIGHTS } from "./stages/config";
 import { CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, TASK_CLASSIFICATION_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
 
+/**
+ * MinionTask class represents a task to be executed in the application.
+ * It handles the task lifecycle from creation, execution, logging, reporting progress, and stopping the execution.
+ */
 export class MinionTask {
   readonly userQuery: string;
   readonly id: string;
@@ -49,26 +53,29 @@ export class MinionTask {
   classification?: TASK_CLASSIFICATION_NAME;
   logContent: string = "";
 
-  constructor({
-    id,
-    minionIndex,
-    documentURI,
-    userQuery,
-    selection,
-    selectedText,
-    originalContent,
-    finalContent = "",
-    contentWhenDismissed = "",
-    startTime,
-    onChanged = async (important: boolean) => { throw new Error("Should be implemented"); },
-    shortName = "",
-    modificationDescription = "",
-    modificationProcedure = "",
-    modificationApplied = false,
-    executionStage = "",
-    classification = undefined,
-    logContent = "",
-  }: {
+  /**
+   * Constructs a MinionTask instance with the provided parameters.
+   * @param {Object} options - Options for initializing the MinionTask.
+   * @param {string} options.id - The unique ID of the MinionTask.
+   * @param {number} options.minionIndex - The index of the minion within the execution sequence.
+   * @param {string} options.documentURI - The URI of the document associated with the task.
+   * @param {string} options.userQuery - The user's query associated with the task.
+   * @param {vscode.Selection} options.selection - The selected text within the document.
+   * @param {string} options.selectedText - The text selected by the user within the document.
+   * @param {string} options.originalContent - The original content of the document.
+   * @param {string} [options.finalContent=""] - Optional final content of the task.
+   * @param {string} [options.contentWhenDismissed=""] - Optional content of the task when dismissed.
+   * @param {number} options.startTime - The start time of the task execution.
+   * @param {(important: boolean) => Promise<void>} [options.onChanged] - Optional handler for change events related to the task's state. Defaults to throwing an error if not provided.
+   * @param {string} [options.shortName=""] - Optional short name for the task.
+   * @param {string} [options.modificationDescription=""] - Optional description of the modification to be applied or applied.
+   * @param {string} [options.modificationProcedure=""] - Optional procedure to take when applying modification.
+   * @param {boolean} [options.modificationApplied=false] - Indicates whether the modification has been applied or not.
+   * @param {string} [options.executionStage=""] - Optional name of the execution stage.
+   * @param {TASK_CLASSIFICATION_NAME} [options.classification] - Optional classification of the task.
+   * @param {string} [options.logContent=""] - Optional initial log content.
+   */
+  constructor(options: {
     id: string;
     minionIndex: number;
     documentURI: string;
@@ -88,40 +95,53 @@ export class MinionTask {
     classification?: TASK_CLASSIFICATION_NAME;
     logContent?: string;
   }) {
-    this.id = id;
-    this.minionIndex = minionIndex;
-    this.documentURI = documentURI;
-    this.userQuery = userQuery;
-    this.selection = selection;
-    this.selectedText = selectedText;
-    this._originalContent = originalContent;
-    this.finalContent = finalContent;
-    this.contentWhenDismissed = contentWhenDismissed;
-    this.startTime = startTime;
-    this.onChanged = onChanged;
-    this.shortName = shortName;
-    this.modificationDescription = modificationDescription;
-    this.modificationProcedure = modificationProcedure;
-    this.executionStage = executionStage;
-    this.classification = classification;
-    this.logContent = logContent;
+    this.id = options.id;
+    this.minionIndex = options.minionIndex;
+    this.documentURI = options.documentURI;
+    this.userQuery = options.userQuery;
+    this.selection = options.selection;
+    this.selectedText = options.selectedText;
+    this._originalContent = options.originalContent;
+    this.finalContent = options.finalContent || "";
+    this.contentWhenDismissed = options.contentWhenDismissed || "";
+    this.startTime = options.startTime;
+    this.onChanged = options.onChanged || (async (important: boolean) => { throw new Error("Should be implemented"); });
+    this.shortName = options.shortName || "";
+    this.modificationDescription = options.modificationDescription || "";
+    this.modificationProcedure = options.modificationProcedure || "";
+    this.executionStage = options.executionStage || "",
+    this.classification = options.classification;
+    this.logContent = options.logContent || "";
   }
 
 
+  /**
+   * Returns the log URI string for the MinionTask.
+   */
   get logURI() {
     return `10minions-log:minionTaskId/${this.id}/${("[" + this.shortName + "].md").replace(/ /g, "%20")}`;
   }
 
+  /**
+   * Returns the original content URI string for the MinionTask.
+   */
   get originalContentURI() {
     return `10minions-originalContent:minionTaskId/${this.id}/${(this.shortName + ".txt").replace(/ /g, "%20")}`;
   }
 
+  /**
+   * Appends the content to the log of the MinionTask and reports the change.
+   * @param {string} content - Content to append to the log.
+   */
   appendToLog(content: string): void {
     this.logContent += content;
 
     MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));
   }
   
+  /**
+   * Clears the log content of the MinionTask and reports the change.
+   */
   clearLog() {
     this.logContent = "";
     MinionTasksManager.instance.logProvider.reportChange(vscode.Uri.parse(this.logURI));

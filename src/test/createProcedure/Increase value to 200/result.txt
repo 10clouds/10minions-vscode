@@ -17,7 +17,7 @@ function adjustTextAreaHeight(target: HTMLTextAreaElement) {
 }
 
 // Constants
-export const MAX_PREVIEW_LENGTH = 200;
+export const MAX_PREVIEW_LENGTH = 200; // Increased the value to 200 as per requirement.
 
 export const MinionTaskComponent = forwardRef(
   ({ minionTask, ...props }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {

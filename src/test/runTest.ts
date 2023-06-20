@@ -9,8 +9,8 @@ export function run(): Promise<void> {
     color: true,
     timeout: 600000,
     //diff: true,
-    bail: true,
-    grep: "Create",
+    //bail: true,
+    //grep: "Create",
   });
 
   const testsRoot = path.resolve(__dirname);

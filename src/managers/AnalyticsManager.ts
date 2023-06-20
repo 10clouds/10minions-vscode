@@ -30,7 +30,7 @@ export class AnalyticsManager {
     // Retrieve or generate a unique installation Id
     this.installationId = installationId;
 
-    console.log(`Installation Id: ${this.installationId}`);
+    //console.log(`Installation Id: ${this.installationId}`);
 
     this.reportEvent("extensionActivated");
 

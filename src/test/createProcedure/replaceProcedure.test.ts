@@ -17,8 +17,8 @@ suite("Create procedure test suite", () => {
 
   setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "openAIKey.json"), "utf8")).openAIKey);
 
-  //const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
-  const openAiCacheManager = new OpenAICacheManager();
+  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
+  //const openAiCacheManager = new OpenAICacheManager();
 
   const analyticsManager = new AnalyticsManager(
     "localTests-installationId",

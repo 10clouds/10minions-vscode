@@ -4,52 +4,22 @@ import { stageCreateModification } from "./3_stageCreateModification";
 import { stageCreateModificationProcedure } from "./4_stageCreateModificationProcedure";
 import { stageFinishing } from "./7_stageFinishing";
 
-export const STAGES = [
-  {
-    name: "Starting ...",
-    weight: 10,
-    execution: stageStarting,
-  },
-  {
-    name: "Understanding ...",
-    weight: 50,
-    execution: stageClassifyTask,
-  },
-  {
-    name: "Conceptualising ...",
-    weight: 100,
-    execution: stageCreateModification,
-  },
-  {
-    name: "Preparing Changes ...",
-    weight: 80,
-    execution: stageCreateModificationProcedure,
-  },
-  /*{
-    name: "Applying Changes ...",
-    weight: 10,
-    execution: stageApplyModificationProcedure,
-  },
-  {
-    name: "Preparing Changes (retry) ...",
-    weight: 40,
-    execution: stageCreateModificationProcedure,
-  },
-  {
-    name: "Applying Changes (retry) ...",
-    weight: 10,
-    execution: stageApplyModificationProcedure,
-  },
-  {
-    name: "Applying changes as comment (fall back) ...",
-    weight: 10,
-    execution: stageFallingBackToComment,
-  },*/
-  {
-    name: "Finishing ...",
-    weight: 10,
-    execution: stageFinishing,
-  },
+interface IStage {
+  name: string;
+  weight: number;
+  execution: Function;
+}
+
+class Stage implements IStage {
+  constructor(public name: string, public weight: number, public execution: Function) {}
+}
+
+export const STAGES: Stage[] = [
+  new Stage("Starting ...", 10, stageStarting),
+  new Stage("Understanding ...", 50, stageClassifyTask),
+  new Stage("Conceptualising ...", 100, stageCreateModification),
+  new Stage("Preparing Changes ...", 80, stageCreateModificationProcedure),
+  new Stage("Finishing ...", 10, stageFinishing),
 ];
 
 export const TOTAL_WEIGHTS = STAGES.reduce((acc, stage) => {
