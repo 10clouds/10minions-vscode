@@ -78,6 +78,7 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     shortName: data.shortName,
     modificationDescription: data.modificationDescription,
     modificationProcedure: data.modificationProcedure,
+    inlineMessage: data.inlineMessage,
     executionStage: data.executionStage,
     strategy: data.strategy === null ? undefined : data.strategy,
     onChanged: async (important) => {

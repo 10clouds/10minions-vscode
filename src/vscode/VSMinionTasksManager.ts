@@ -6,7 +6,7 @@ import { SerializedMinionTask, deserializeMinionTask, serializeMinionTask } from
 import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "../ui/MinionTaskUIInfo";
 import { applyMinionTask } from "../utils/applyMinionTask";
 import { findNewPositionForOldSelection } from "../utils/findNewPositionForOldSelection";
-import { convertUri } from "./vscodeUtils";
+import { convertSelection, convertUri } from "./vscodeUtils";
 import { getViewProvider } from "../managers/ViewProvider";
 import { getAnalyticsManager } from "../managers/AnalyticsManager";
 import { MinionTasksManager, setMinionTasksManager } from "../managers/MinionTasksManager";
@@ -224,7 +224,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
         userQuery: newUserQuery || oldExecution.userQuery,
         document: await oldExecution.document(),
         selection: newSelection,
-        selectedText: document.getText(newSelection),
+        selectedText: document.getText(convertSelection(newSelection)),
         minionIndex: oldExecution.minionIndex,
         onChanged: async (important) => {
           this.updateExecution(important, newMinionTask);

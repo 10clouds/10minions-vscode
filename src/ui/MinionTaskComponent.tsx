@@ -228,9 +228,12 @@ export const MinionTaskComponent = forwardRef(
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
               <span className="truncate">{minionTask.shortName}</span>
             </div>
-            {minionTask.modificationDescription &&
+            {minionTask.inlineMessage &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
-              (minionTask.modificationProcedure ? assessButton : markAsReadButton)}
+              markAsReadButton}
+            {minionTask.modificationProcedure  &&
+              minionTask.executionStage === FINISHED_STAGE_NAME &&
+              assessButton}
             {(minionTask.executionStage === CANCELED_STAGE_NAME || minionTask.isError) && retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
