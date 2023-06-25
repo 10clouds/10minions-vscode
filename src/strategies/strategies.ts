@@ -41,7 +41,7 @@ export const TASK_STRATEGIES: {
   description: string;
   stages: Stage[];
 }[] = [
-  {
+  /*{
     name: "AutonomousAgent",
     description:
       "Choose this strategy only if explicitly asked for in the TASK.",
@@ -57,8 +57,8 @@ export const TASK_STRATEGIES: {
         execution: stageFinishing,
       },
     ],
-  },
-  {
+  },*/
+  /*{
     name: "VectorizeAndExecute",
     description:
       "Choose this strategy only if explicitly asked for in the TASK.",
@@ -74,8 +74,8 @@ export const TASK_STRATEGIES: {
         execution: stageFinishing,
       },
     ],
-  },
-  {
+  },*/
+  /*{
     name: "WorkspaceWide",
     description:
       "Choose this strategy only if explicitly asked for in the TASK.",
@@ -91,7 +91,7 @@ export const TASK_STRATEGIES: {
         execution: stageFinishing,
       },
     ],
-  },
+  },*/
   {
     name: "AnswerQuestion",
     description:

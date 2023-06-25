@@ -91,7 +91,7 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
-    const assessButton = (
+    const applyButton = (
       <OutlineButton
         className="mb-2 ml-2"
         title="Apply and Review"
@@ -233,7 +233,7 @@ export const MinionTaskComponent = forwardRef(
               markAsReadButton}
             {minionTask.modificationProcedure  &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
-              assessButton}
+              applyButton}
             {(minionTask.executionStage === CANCELED_STAGE_NAME || minionTask.isError) && retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
