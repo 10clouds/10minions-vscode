@@ -59,8 +59,9 @@ export async function applyMinionTask(minionTask: MinionTask) {
     if (minionTask.contentAfterApply === currentDocContent) {
       
       minionTask.executionStage = APPLIED_STAGE_NAME;
-      getEditorManager().showErrorMessage(`Already applied.`);
+      minionTask.progress = 1;
       minionTask.onChanged(true);
+      getEditorManager().showErrorMessage(`Already applied.`);
 
       return;
     }
