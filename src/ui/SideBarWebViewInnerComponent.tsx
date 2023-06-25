@@ -1,5 +1,4 @@
 import * as React from "react";
-import { CSSTransition } from "react-transition-group";
 import { createRoot } from "react-dom/client";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
 import { MissingApiKeyInfoMessage } from "./MissingApiKeyInfoMessage";
@@ -19,17 +18,6 @@ export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
 
-// Custom hook to track the previous value of a state variable
-function usePrevious<T>(value: T): T | undefined {
-  const ref = React.useRef<T>();
-
-  React.useEffect(() => {
-    ref.current = value;
-  });
-
-  return ref.current;
-}
-
 export const SideBarWebViewInnerComponent: React.FC = () => {
   const [userInputPrompt, setUserInputPrompt] = React.useState("");
   const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>([]);
@@ -43,7 +31,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [selectedCode, setSelectedCode] = React.useState("");
   const [suggestionInputBase, setSuggestionInputBase] = React.useState<string | undefined>(undefined);
   const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
-  const prevIsTextAreaFocused = usePrevious(isTextAreaFocused);
 
   const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
     const randomIndex = Math.floor(Math.random() * ALL_MINION_ICONS_OUTLINE.length);
@@ -76,6 +63,14 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     setUserInputPrompt("");
     setSuggestions([]);
     setSuggestionInputBase(undefined);
+  }
+
+  function handlePreviousSuggestion(e?: React.MouseEvent<HTMLButtonElement>) {
+    setSuggestionIndex((suggestionIndex + suggestions.length - 1) % suggestions.length);
+  }
+
+  function handleNextSuggestion(e?: React.MouseEvent<HTMLButtonElement>) {
+    setSuggestionIndex((suggestionIndex + 1) % suggestions.length);
   }
 
   React.useEffect(() => {
@@ -126,7 +121,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   React.useEffect(() => {
     if (suggestionInputBase !== userInputPrompt) {
-      setSuggestions([]);
       setSuggestionInputBase(userInputPrompt);
       postMessageToVsCode({
         type: MessageToVSCodeType.SuggestionGet,
@@ -134,6 +128,8 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
       });
     }
   }, [userInputPrompt, suggestionInputBase]);
+
+  const userInputStartsSuggestion = userInputPrompt.length === 0; //suggestions[suggestionIndex] && suggestions[suggestionIndex].toLowerCase().startsWith(userInputPrompt.toLowerCase());
 
   return (
     <div className="w-full">
@@ -170,7 +166,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     ref={textAreaRef}
                     style={{
                       position: "relative",
-                      height: "10rem",
+                      height: "12rem",
                       backgroundColor: "var(--vscode-editor-background)",
                       borderColor: "var(--vscode-focusBorder)",
                     }}
@@ -186,6 +182,24 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                       setIsTextAreaFocused(false);
                     }}
                     onKeyDown={(e) => {
+                      // Get current cursor position in textarea
+                      const cursorPositionStart = e.currentTarget.selectionStart ?? 0;
+                      const cursorPositionEnd = e.currentTarget.selectionEnd ?? 0;
+                      const textAreaContent = e.currentTarget.value;
+
+                      // If left arrow key pressed and cursor is at the beginning of the content
+                      if ((e.key === "ArrowLeft" || e.key === "ArrowUp") && cursorPositionStart === 0 && cursorPositionEnd === 0) {
+                        handlePreviousSuggestion();
+                      }
+                      // If right arrow key pressed and cursor is at the end of the content
+                      else if (
+                        (e.key === "ArrowRight" || e.key === "ArrowDown") &&
+                        cursorPositionStart === textAreaContent.length &&
+                        cursorPositionEnd === textAreaContent.length
+                      ) {
+                        handleNextSuggestion();
+                      }
+
                       // Check for Tab key and if the selectedSuggestion is valid
                       if (e.key === "Tab" && suggestions[suggestionIndex] && suggestions[suggestionIndex].length > 0) {
                         e.preventDefault(); // Prevent default tab behavior
@@ -207,7 +221,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                       position: "absolute",
                       top: 0,
                       left: 0,
-                      height: "10rem",
+                      height: "12rem",
                       pointerEvents: "none",
                       color: "rgba(var(--vscode-editor-foreground), 0.5)",
                       overflow: "hidden",
@@ -217,54 +231,66 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     className="w-full h-96 p-4 text-sm resize-none focus:outline-none pointer-events-none"
                   >
                     <span style={{ opacity: 0.0 }}>{userInputPrompt}</span>
-                    {userInputPrompt !== "" && (
+                    {!userInputStartsSuggestion && (
                       <>
                         <br />
                         <br />
                       </>
                     )}
-                    {userInputPrompt !== "" && suggestions.length > 0 && isTextAreaFocused && (
-                      <span style={{ opacity: 0.5 }}>
+                    {!userInputStartsSuggestion && suggestions.length > 0 && (
+                      <span style={{ opacity: 0.4 }}>
                         Suggestion:
                         <br />
                       </span>
                     )}
                     {
-                      <CSSTransition in={suggestions.length !== 0} timeout={1200} classNames="fade" unmountOnExit>
-                        <span>{suggestions[suggestionIndex]}</span>
-                      </CSSTransition>
+                      <span style={{ opacity: 0.6 }}>
+                        {userInputStartsSuggestion ? suggestions[suggestionIndex]?.slice(userInputPrompt.length) : suggestions[suggestionIndex] || ""}
+                      </span>
                     }
                     <br />
                     {suggestions.length > 0 && (
-                      <span style={{ opacity: 0.5 }}>
-                        Press Tab to accept suggestion{" "}
+                      <span style={{ opacity: 0.4 }}>
+                        Press Tab to{" "}
                         <button
                           className="cursor-pointer pointer-events-auto"
                           onClick={(e) => {
-                            e.preventDefault();
-                            setSuggestionIndex((suggestionIndex + suggestions.length - 1) % suggestions.length);
-                            textAreaRef.current!.focus();
+                            handleSuggestionClick(suggestions[suggestionIndex]);
                           }}
                         >
-                          {"< "}
-                        </button>
-                        {suggestionIndex + 1 + " / " + suggestions.length}
-                        <button
-                          className="cursor-pointer pointer-events-auto"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setSuggestionIndex((suggestionIndex + 1) % suggestions.length);
-                            textAreaRef.current!.focus();
-                          }}
-                        >
-                          {" >"}
-                        </button>
+                          accept
+                        </button>{" "}
+                        suggestion{" "}
+                        {suggestions.length > 1 && (
+                          <>
+                            <button
+                              className="cursor-pointer pointer-events-auto"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePreviousSuggestion();
+                                textAreaRef.current!.focus();
+                              }}
+                            >
+                              {"< "}
+                            </button>
+                            {suggestionIndex + 1 + " / " + suggestions.length}
+                            <button
+                              className="cursor-pointer pointer-events-auto"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleNextSuggestion();
+                                textAreaRef.current!.focus();
+                              }}
+                            >
+                              {" >"}
+                            </button>
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
                 </div>
                 <GoButton onClick={handleSubmitCommand} justClickedGo={justClickedGo} />
-
                 <MinionTaskListComponent executionList={executionList} />
               </div>
             </div>

@@ -22,15 +22,6 @@ const BASE_COMMANDS = [
   { command: "Integrate this with external service X" },
 ];
 
-function shuffledBaseCommands(): { command: string; }[] {
-  const randomizedCommands = BASE_COMMANDS.slice(); // Make a copy of the original array to avoid modifying it
-  for (let i = randomizedCommands.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [randomizedCommands[i], randomizedCommands[j]] = [randomizedCommands[j], randomizedCommands[i]];
-  }
-  return randomizedCommands;
-}
-
 export class VSCommandHistoryManager implements CommandHistoryManager {
 
   private commandHistory: { command: string; }[] = [];
@@ -54,14 +45,9 @@ export class VSCommandHistoryManager implements CommandHistoryManager {
 
 
   async updateCommandHistory(prompt: string) {
-    // Find the index of the existing prompt in the command history
-    const commandIndex = this.commandHistory.findIndex((commandObj) => commandObj.command === prompt);
-
-    // Remove the existing prompt from the history if it exists
-    if (commandIndex !== -1) {
-      this.commandHistory.splice(commandIndex, 1);
-    }
-
+    // Remove any matching commands from the command history
+    this.commandHistory = this.commandHistory.filter((commandObj) => commandObj.command.toLowerCase() !== prompt.toLowerCase());
+    
     // Add the updated prompt to the beginning of the command history
     this.commandHistory.unshift({ command: prompt });
 
@@ -75,25 +61,35 @@ export class VSCommandHistoryManager implements CommandHistoryManager {
 
   // Move getRandomPreviousCommands() to CommandHistoryManager
   private getRelatedPreviousCommands(input: string): string[] {
-    let historyToSearch = [...this.commandHistory, ...BASE_COMMANDS];
+  // Split into two searches 
+  let historyToSearchCommandHistory = [...this.commandHistory];
+  let historyToSearchBaseCommands = [...BASE_COMMANDS];
 
-    // Step 2: Calculate relevance scores for each command in the history
-    let scoredItems: { command: string; score: number }[] = historyToSearch.map((commandObj) => {
-      const command = commandObj.command;
-      const score = (command.toLowerCase().includes(input.toLowerCase()) && command.toLowerCase() !== input.toLowerCase()) ? 1 : 0;
-      return { command, score };
-    });
+  // Step 2: Calculate relevance scores for each command in the history
+  let scoredItemsCommandHistory: { command: string; score: number }[] = historyToSearchCommandHistory.map((commandObj) => {
+    const command = commandObj.command;
+    const score = (command.toLowerCase().includes(input.toLowerCase()) && command.toLowerCase() !== input.toLowerCase()) ? 1 : 0;
+    return { command, score };
+  });
+  let scoredItemsBaseCommands: { command: string; score: number }[] = historyToSearchBaseCommands.map((commandObj) => {
+    const command = commandObj.command;
+    const score = (command.toLowerCase().includes(input.toLowerCase()) && command.toLowerCase() !== input.toLowerCase()) ? 1 : 0;
+    return { command, score };
+  });
 
-    scoredItems = scoredItems.filter(item => item.score > 0);
+  // Add Step 3.5: Filter commands to only keep those with one line and up to 400 characters long
+  scoredItemsCommandHistory = scoredItemsCommandHistory.filter(item => item.score > 0 && item.command.length <= 400 && !item.command.includes('\n'));
+  scoredItemsBaseCommands = scoredItemsBaseCommands.filter(item => item.score > 0 && item.command.length <= 400 && !item.command.includes('\n'));
 
-    // Step 3: Sort the scored items by score in descending order
-    scoredItems.sort((a, b) => b.score - a.score);
+  // Step 4: Restrict the command history to 5 items
+  scoredItemsCommandHistory = scoredItemsCommandHistory.slice(0, 7);
+  
+  // Restrict the base commands to 2 items
+  scoredItemsBaseCommands = scoredItemsBaseCommands.slice(0, 3);
 
-    // Add Step 3.5: Filter commands to only keep those with one line and up to 400 characters long
-    scoredItems = scoredItems.filter(item => item.command.length <= 400 && !item.command.includes('\n'));
-
-    return scoredItems.map((item) => item.command);
-  }
+  // Combine and return the two lists
+  return [...scoredItemsCommandHistory, ...scoredItemsBaseCommands].map((item) => item.command);
+}
 
   async sendCommandSuggestions(input: string) {
     let suggestions = this.getRelatedPreviousCommands(input) || "";
