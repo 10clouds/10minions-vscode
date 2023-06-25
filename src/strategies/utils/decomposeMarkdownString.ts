@@ -1,4 +1,4 @@
-import { getCommentForLanguage } from "../utils/comments";
+import { getCommentForLanguage } from "./comments";
 
 export function splitCommentIntoLines(comment: string, maxChars = 80): string[] {
   const finalLines: string[] = [];

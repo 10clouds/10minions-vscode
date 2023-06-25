@@ -1,10 +1,9 @@
-import * as vscode from "vscode";
-import { MinionTask } from "../MinionTask";
-import { applyWorkspaceEdit } from "../applyWorkspaceEdit";
-import { APPLIED_STAGE_NAME, FINISHED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
+import { MinionTask } from "../../MinionTask";
+import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, FINISHED_STAGE_NAME } from "../../ui/MinionTaskUIInfo";
 import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { applyModificationProcedure } from "./applyModificationProcedure";
-import { convertUri } from "../vscode/vscodeUtils";
+import { convertUri } from "../../vscode/vscodeUtils";
+import { getEditorManager } from "../../managers/EditorManager";
 
 export async function applyFallback(minionTask: MinionTask) {
   const document = await minionTask.document();
@@ -22,24 +21,31 @@ ${minionTask.modificationDescription}
   minionTask.appendToLog(`\nPLAIN COMMENT FALLBACK\n`);
 
   minionTask.originalContent = document.getText();
-  await applyWorkspaceEdit(async (edit) => {
-    edit.insert(convertUri(minionTask.documentURI), new vscode.Position(0, 0), decomposedString + "\n");
+
+  minionTask.executionStage = APPLYING_STAGE_NAME;
+  minionTask.progress = 0;
+  minionTask.onChanged(true);
+
+  await getEditorManager().applyWorkspaceEdit(async (edit) => {
+    edit.insert(convertUri(minionTask.documentURI), { line: 0, character: 0 }, decomposedString + "\n");
   });
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
   minionTask.contentAfterApply = document.getText();
   minionTask.appendToLog(`Applied modification as plain top comments\n\n`);
+  minionTask.progress = 1;
   minionTask.onChanged(true);
-  vscode.window.showInformationMessage(`Modification applied successfully.`);
+  getEditorManager().showInformationMessage(`Modification applied successfully.`);
 }
 
 export async function applyMinionTask(minionTask: MinionTask) {
   if (minionTask.executionStage !== FINISHED_STAGE_NAME) {
-    vscode.window.showErrorMessage(`Cannot apply unfinished task.`);
+    getEditorManager().showErrorMessage(`Cannot apply unfinished task.`);
     return;
   }
   
-  minionTask.executionStage = APPLIED_STAGE_NAME;
+  minionTask.executionStage = APPLYING_STAGE_NAME;
+  minionTask.progress = 0;
   await minionTask.onChanged(true);
 
   try {
@@ -48,12 +54,22 @@ export async function applyMinionTask(minionTask: MinionTask) {
     }
 
     let document = await minionTask.document();
+    let currentDocContent = document.getText();
 
-    minionTask.originalContent = document.getText();
+    if (minionTask.contentAfterApply === currentDocContent) {
+      
+      minionTask.executionStage = APPLIED_STAGE_NAME;
+      getEditorManager().showErrorMessage(`Already applied.`);
+      minionTask.onChanged(true);
+
+      return;
+    }
+
+    minionTask.originalContent = currentDocContent;
 
     let preprocessedContent = minionTask.originalContent;
 
-    let modifiedContent = applyModificationProcedure(
+    let modifiedContent = await applyModificationProcedure(
       preprocessedContent,
       minionTask.modificationProcedure,
       document.languageId,
@@ -61,22 +77,24 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
     console.log(`modifiedContent: "${modifiedContent}"`);
 
-    await applyWorkspaceEdit(async (edit) => {
+    await getEditorManager().applyWorkspaceEdit(async (edit) => {
       edit.replace(
         convertUri(document.uri),
-        new vscode.Range(
-          new vscode.Position(0, 0),
-          new vscode.Position(document.lineAt(document.lineCount - 1).lineNumber, document.lineAt(document.lineCount - 1).text.length)
-        ),
+        {
+          start: { line: 0, character: 0},
+          end: { line: document.lineCount - 1, character: document.lineAt(document.lineCount - 1).text.length}
+        },
         modifiedContent
       );
     });
 
+    minionTask.executionStage = APPLIED_STAGE_NAME;
     minionTask.contentAfterApply = document.getText();
+    minionTask.progress = 1;
     minionTask.appendToLog(`Applied changes for user review.\n\n`);
     minionTask.onChanged(true);
 
-    vscode.window.showInformationMessage(`Modification applied successfully.`);
+    getEditorManager().showInformationMessage(`Modification applied successfully.`);
   } catch (error) {
     console.log(`Failed to apply modification: ${String(error)}`);
     applyFallback(minionTask);

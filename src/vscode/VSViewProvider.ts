@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { MessageToVSCode, MessageToVSCodeType, MessageToWebView, MessageToWebViewType } from "../Messages";
 import { getMissingOpenAIModels, setOpenAIApiKey } from "../openai";
-import { findNewPositionForOldSelection } from "../utils/findNewPositionForOldSelection";
+import { findNewPositionForOldSelection } from "./utils/findNewPositionForOldSelection";
 import { convertSelection, convertUri } from "./vscodeUtils";
 import { getAnalyticsManager } from "../managers/AnalyticsManager";
 import { getCommandHistoryManager } from "../managers/CommandHistoryManager";
@@ -209,17 +209,8 @@ export class VSViewProvider implements vscode.WebviewViewProvider, ViewProvider 
         vscode.commands.executeCommand("workbench.action.openSettings", "10minions.apiKey");
         break;
       }
-      case MessageToVSCodeType.SuggestionCancel: {
-        getCommandHistoryManager().cancelSuggestion();
-        break;
-      }
       case MessageToVSCodeType.SuggestionGet: {
-        const input = data.input || "";
-        const activeEditor = vscode.window.activeTextEditor;
-        const code = (activeEditor?.selection.isEmpty ? activeEditor?.document.getText() : activeEditor?.document.getText(activeEditor?.selection)) || "";
-
-        getCommandHistoryManager().getCommandSuggestionGPT(input, code, activeEditor?.document.languageId || "");
-
+        getCommandHistoryManager().sendCommandSuggestions(data.input);
         break;
       }
       case MessageToVSCodeType.CloseExecution: {

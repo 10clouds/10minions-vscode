@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
+import { BRAND_COLOR, blendWithForeground } from "./utils/blendColors";
 
 export function GoButton({ onClick, justClickedGo }: { onClick?: () => void; justClickedGo: boolean }) {
   return (

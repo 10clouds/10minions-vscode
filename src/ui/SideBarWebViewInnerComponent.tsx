@@ -35,20 +35,15 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>([]);
   const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(undefined);
   const [missingApiModels, setMissingApiModels] = React.useState<string[] | undefined>(undefined);
-  const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+  const [suggestions, setSuggestions] = React.useState<string[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = React.useState(0);
   const [justClickedGo, markJustClickedGo] = useTemporaryFlag();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
-  const [isSuggestionLoading, setIsSuggestionLoading] = React.useState(false);
 
   const [selectedCode, setSelectedCode] = React.useState("");
   const [suggestionInputBase, setSuggestionInputBase] = React.useState<string | undefined>(undefined);
-  const [suggestionCodeBase, setSuggestionCodeBase] = React.useState<string | undefined>(undefined);
   const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
-  const [immediatelySuggest, setImmediatelySuggest] = React.useState(false);
-  const [acceptedSuggestion, setAcceptedSuggestion] = React.useState<string | undefined>(undefined);
   const prevIsTextAreaFocused = usePrevious(isTextAreaFocused);
-
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
     const randomIndex = Math.floor(Math.random() * ALL_MINION_ICONS_OUTLINE.length);
@@ -56,8 +51,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }, []);
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
-
-
 
   function handleClearAndFocus() {
     setUserInputPrompt("");
@@ -71,32 +64,28 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 
   function handleSuggestionClick(command: string) {
     setUserInputPrompt(command);
-    setSelectedSuggestion("");
-    setAcceptedSuggestion(command);
+    setSuggestions([]);
   }
 
   function handleSubmitCommand() {
     postMessageToVsCode({
       type: MessageToVSCodeType.NewMinionTask,
-      value: userInputPrompt || selectedSuggestion,
+      value: userInputPrompt || suggestions[suggestionIndex],
     });
     markJustClickedGo();
     setUserInputPrompt("");
-    setSelectedSuggestion("");
-    setSuggestionCodeBase(undefined);
+    setSuggestions([]);
     setSuggestionInputBase(undefined);
   }
 
   React.useEffect(() => {
-    
-    
     const eventHandler = (event: any) => {
       const message: MessageToWebView = event.data;
       handleMessage(message);
 
       function handleMessage(message: MessageToWebView) {
         console.log("CMD (webview)", message.type);
-    
+
         switch (message.type) {
           case MessageToWebViewType.ClearAndFocusOnInput:
             handleClearAndFocus();
@@ -113,20 +102,11 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
           case MessageToWebViewType.UpdateSidebarVisibility:
             setIsSidebarVisible(message.value);
             break;
-          case MessageToWebViewType.SuggestionLoading:
-            setIsSuggestionLoading(true);
-            break;
-          case MessageToWebViewType.Suggestion:
-            if (message.forCode === selectedCode && message.forInput === userInputPrompt) {
-              setSelectedSuggestion(message.suggestion);
+          case MessageToWebViewType.Suggestions:
+            if (message.forInput === userInputPrompt) {
+              setSuggestions(message.suggestions);
+              setSuggestionIndex(0);
             }
-            break;
-          case MessageToWebViewType.SuggestionError:
-            setSelectedSuggestion("");
-            setIsSuggestionLoading(false);
-            break;
-          case MessageToWebViewType.SuggestionLoadedOrCanceled:
-            setIsSuggestionLoading(false);
             break;
           case MessageToWebViewType.ChosenCodeUpdated:
             setSelectedCode(message.code);
@@ -145,59 +125,20 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }, [selectedCode, userInputPrompt]);
 
   React.useEffect(() => {
-    console.log(`isTextAreaFocused: ${isTextAreaFocused} prevIsTextAreaFocused: ${prevIsTextAreaFocused}`);
-    if (!prevIsTextAreaFocused && isTextAreaFocused) {
-      setImmediatelySuggest(true);
-    }
-  }, [prevIsTextAreaFocused, isTextAreaFocused]);
-
-  React.useEffect(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    if (isSuggestionLoading && (userInputPrompt !== suggestionInputBase || selectedCode !== suggestionCodeBase)) {
+    if (suggestionInputBase !== userInputPrompt) {
+      setSuggestions([]);
+      setSuggestionInputBase(userInputPrompt);
       postMessageToVsCode({
-        type: MessageToVSCodeType.SuggestionCancel
+        type: MessageToVSCodeType.SuggestionGet,
+        input: userInputPrompt,
       });
-      setIsSuggestionLoading(false);
     }
-
-    console.log(
-      `DUPA suggestionInputBase: ${suggestionInputBase}, userInputPrompt: ${userInputPrompt}, suggestionCodeBase: ${suggestionCodeBase}, selectedCode: ${selectedCode}, isSidebarVisible: ${isSidebarVisible}, prevIsTextAreaFocused: ${prevIsTextAreaFocused}, isTextAreaFocused: ${isTextAreaFocused} immediatellySuggest: ${immediatelySuggest} acceptedSuggestion: ${acceptedSuggestion}`
-    );
-
-    if (
-      isSidebarVisible &&
-      (isTextAreaFocused || !isSuggestionLoading) &&
-      !(suggestionInputBase === userInputPrompt && suggestionCodeBase === selectedCode) &&
-      acceptedSuggestion !== userInputPrompt
-    ) {
-      setSelectedSuggestion("");
-
-      if (immediatelySuggest) {
-        setSuggestionInputBase(userInputPrompt);
-        setSuggestionCodeBase(selectedCode);
-        postMessageToVsCode({
-          type: MessageToVSCodeType.SuggestionGet,
-          input: userInputPrompt,
-        });
-        setImmediatelySuggest(false);
-      } else {
-        timeoutRef.current = setTimeout(() => {
-          setImmediatelySuggest(true);
-        }, isTextAreaFocused ? 2500 : 10000);
-      }
-
-      
-    }
-  }, [userInputPrompt, selectedCode, suggestionInputBase, suggestionCodeBase, isSidebarVisible, isTextAreaFocused, immediatelySuggest, acceptedSuggestion]);
+  }, [userInputPrompt, suggestionInputBase]);
 
   return (
     <div className="w-full">
       <div className="p-4 mb-16">
         <Header RobotIcon1={RobotIcon1} RobotIcon2={RobotIcon2} />
-
 
         {apiKeySet === false && <MissingApiKeyInfoMessage />}
         {apiKeySet === true && !!missingApiModels?.length && <MissingApiKeyInfoMessage missingModels={missingApiModels} />}
@@ -237,7 +178,6 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     value={userInputPrompt}
                     onChange={(e) => {
                       setUserInputPrompt(e.target.value);
-                      setAcceptedSuggestion(undefined);
                     }}
                     onFocus={() => {
                       setIsTextAreaFocused(true);
@@ -247,9 +187,9 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     }}
                     onKeyDown={(e) => {
                       // Check for Tab key and if the selectedSuggestion is valid
-                      if (e.key === "Tab" && selectedSuggestion.length > 0) {
+                      if (e.key === "Tab" && suggestions[suggestionIndex] && suggestions[suggestionIndex].length > 0) {
                         e.preventDefault(); // Prevent default tab behavior
-                        handleSuggestionClick(selectedSuggestion);
+                        handleSuggestionClick(suggestions[suggestionIndex]);
                       }
                       // Check for Enter key and if the Shift key is NOT pressed
                       else if (e.key === "Enter" && !e.shiftKey) {
@@ -283,31 +223,44 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                         <br />
                       </>
                     )}
-                    {userInputPrompt !== "" && selectedSuggestion && isTextAreaFocused && (
+                    {userInputPrompt !== "" && suggestions.length > 0 && isTextAreaFocused && (
                       <span style={{ opacity: 0.5 }}>
                         Suggestion:
                         <br />
                       </span>
                     )}
                     {
-                      <CSSTransition
-                        in={selectedSuggestion !== ""}
-                        timeout={1200}
-                        classNames="fade"
-                        unmountOnExit
-                      >
-                        <span>{selectedSuggestion}</span>
+                      <CSSTransition in={suggestions.length !== 0} timeout={1200} classNames="fade" unmountOnExit>
+                        <span>{suggestions[suggestionIndex]}</span>
                       </CSSTransition>
                     }
-                    {isSuggestionLoading && (
-                      <span style={{ opacity: 0.25 }}>
-                        <span className="ellipsis-dot ellipsis-dot-1">.</span>
-                        <span className="ellipsis-dot ellipsis-dot-2">.</span>
-                        <span className="ellipsis-dot ellipsis-dot-3">.</span>
+                    <br />
+                    {suggestions.length > 0 && (
+                      <span style={{ opacity: 0.5 }}>
+                        Press Tab to accept suggestion{" "}
+                        <button
+                          className="cursor-pointer pointer-events-auto"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSuggestionIndex((suggestionIndex + suggestions.length - 1) % suggestions.length);
+                            textAreaRef.current!.focus();
+                          }}
+                        >
+                          {"< "}
+                        </button>
+                        {suggestionIndex + 1 + " / " + suggestions.length}
+                        <button
+                          className="cursor-pointer pointer-events-auto"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSuggestionIndex((suggestionIndex + 1) % suggestions.length);
+                            textAreaRef.current!.focus();
+                          }}
+                        >
+                          {" >"}
+                        </button>
                       </span>
                     )}
-                    <br />
-                    {selectedSuggestion && isTextAreaFocused && <span style={{ opacity: 0.5 }}>Press Tab to accept suggestion</span>}
                   </div>
                 </div>
                 <GoButton onClick={handleSubmitCommand} justClickedGo={justClickedGo} />
@@ -339,4 +292,3 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
 const container = document.getElementById("root");
 const root = createRoot(container!);
 root.render(<SideBarWebViewInnerComponent />);
-

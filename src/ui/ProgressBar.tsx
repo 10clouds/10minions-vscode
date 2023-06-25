@@ -1,6 +1,6 @@
 import * as React from "react";
 import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
-import { blendWithForeground, getBaseColor, getOpacity } from "../utils/blendColors";
+import { blendWithForeground, getBaseColor, getOpacity } from "./utils/blendColors";
 import { useMemo } from "react";
 
 export function ProgressBar({ execution }: { execution: MinionTaskUIInfo }) {

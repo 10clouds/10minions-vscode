@@ -24,7 +24,13 @@ export type EditorDocument = {
   };
 };
 
+export interface WorkspaceEdit {
+  replace(uri: EditorUri, range: EditorRange, newText: string): void;
+  insert(uri: EditorUri, position: EditorPosition, newText: string): void;
+}
+
 export interface EditorManager {
+  applyWorkspaceEdit(fillEdit: (edit: WorkspaceEdit) => Promise<void>): unknown;
   showInformationMessage(message: string): unknown;
   openTextDocument(uri: EditorUri): Promise<EditorDocument>;
   showErrorMessage(message: string): void;

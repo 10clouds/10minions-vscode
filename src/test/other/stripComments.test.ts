@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { stripAllComments } from "../../utils/stripAllComments";
+import { stripAllComments } from "../../strategies/utils/stripAllComments";
 
 suite("Strip All Comments Test Suite", () => {
   test("No comments in the Code", () => {

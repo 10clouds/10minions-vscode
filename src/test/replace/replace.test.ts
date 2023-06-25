@@ -3,7 +3,7 @@ import * as assert from "assert";
 import { readFileSync } from "fs";
 import * as path from 'path';
 import * as glob from 'glob';
-import { fuzzyReplaceText } from '../../utils/fuzzyReplaceText';
+import { fuzzyReplaceText } from '../../strategies/utils/fuzzyReplaceText';
 
 suite("Replace Test Suite", () => {
   test("Basic test case: Exact match found", () => {

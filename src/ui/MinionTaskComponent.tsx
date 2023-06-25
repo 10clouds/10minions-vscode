@@ -1,9 +1,9 @@
 import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import * as React from "react";
 import { forwardRef } from "react";
-import { blendWithForeground, getBaseColor } from "../utils/blendColors";
+import { blendWithForeground, getBaseColor } from "./utils/blendColors";
 import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
-import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
 import { ProgressBar } from "./ProgressBar";
 import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
 import { MessageToVSCodeType } from "../Messages";
@@ -216,14 +216,14 @@ export const MinionTaskComponent = forwardRef(
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped ? "busy-robot" : ""} ${
+              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped || minionTask.executionStage === APPLYING_STAGE_NAME ? "busy-robot" : ""} ${
                 minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""
               } ${minionTask.isError ? "error-robot" : ""}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
             >
-              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped ? "busy-robot-extra" : ""}`} />
+              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped || minionTask.executionStage === APPLYING_STAGE_NAME ? "busy-robot-extra" : ""}`} />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
               <span className="truncate">{minionTask.shortName}</span>

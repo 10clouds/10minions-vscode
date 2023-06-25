@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { extractExecutionIdFromUri } from "../utils/extractExecutionIdFromUri";
+import { extractExecutionIdFromUri } from "./utils/extractExecutionIdFromUri";
 import { getMinionTasksManager } from "../managers/MinionTasksManager";
 import { OriginalContentProvider, setOriginalContentProvider } from "../managers/OriginalContentProvider";
 

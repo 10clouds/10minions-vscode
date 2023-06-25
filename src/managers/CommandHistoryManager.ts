@@ -1,7 +1,6 @@
 export interface CommandHistoryManager {
-  cancelSuggestion(): void;
   updateCommandHistory(prompt: string): Promise<void>;
-  getCommandSuggestionGPT(input: string, code: string, languageId: string): void;
+  sendCommandSuggestions(input: string): void;
 }
 
 let globalManager: CommandHistoryManager;

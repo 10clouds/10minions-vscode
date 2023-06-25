@@ -1,5 +1,5 @@
-import { DEBUG_PROMPTS } from "../const";
-import { GptMode, countTokens, ensureIRunThisInRange, gptExecute } from "../openai";
+import { DEBUG_PROMPTS } from "../../const";
+import { GptMode, countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
 
 
 export const AVAILABE_COMMANDS = [

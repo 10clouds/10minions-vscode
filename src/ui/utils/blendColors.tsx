@@ -1,4 +1,4 @@
-import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME, APPLIED_STAGE_NAME } from "../ui/MinionTaskUIInfo";
+import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME, APPLIED_STAGE_NAME, APPLYING_STAGE_NAME } from "../MinionTaskUIInfo";
 
 export const BRAND_COLOR = "#5e20e5";
 export const ERROR_COLOR = "#D8595A";
@@ -77,6 +77,10 @@ export function getBaseColor(execution: MinionTaskUIInfo) {
 
     if (execution.executionStage === CANCELED_STAGE_NAME) {
       return "--vscode-sideBar-background";
+    }
+
+    if (execution.executionStage === APPLYING_STAGE_NAME) {
+      return blendWithForeground(SUCCESS_COLOR, 0.5);
     }
 
     if (execution.executionStage === APPLIED_STAGE_NAME) {

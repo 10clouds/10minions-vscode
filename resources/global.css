@@ -132,22 +132,6 @@ body {
   }
 }
 
-.ellipsis-dot {
-  animation: ellipsis 1.5s infinite;
-}
-
-.ellipsis-dot-1 {
-  animation-delay: 0s;
-}
-
-.ellipsis-dot-2 {
-  animation-delay: 0.3s;
-}
-
-.ellipsis-dot-3 {
-  animation-delay: 0.6s;
-}
-
 .fade-enter {
   opacity: 0;
 }

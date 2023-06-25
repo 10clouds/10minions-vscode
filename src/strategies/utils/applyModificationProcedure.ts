@@ -114,7 +114,7 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
   },
 ];
 
-export function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
+export async function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
   let currentCode = originalCode;
   let lines = modificationProcedure.split("\n");
   let inCommand: CommandSegment | undefined;
@@ -141,22 +141,20 @@ export function applyModificationProcedure(originalCode: string, modificationPro
     }
   }
 
-  for (let line of lines) {
+  for await (let line of lines) {
+    await new Promise(resolve => setTimeout(resolve, 1));
+  
     let possibiltiies: CommandSegment[] = inCommand ? inCommand.followedBy || [] : COMMAND_STRUCTURE;
     let possibleNextCommands = possibiltiies.filter((command) => line.startsWith(command.name));
-
+  
     if (possibleNextCommands.length === 0) {
       if (inCommand) {
-
-        //If we have out of order command?
         let outOfOrderNewCommands = COMMAND_STRUCTURE.filter((command) => line.startsWith(command.name));
-
+  
         if (outOfOrderNewCommands.length > 0) {
           let outOfOrderNewCommand = outOfOrderNewCommands.sort((a, b) => a.name.length - b.name.length)[0];
-
-          //close the current command
           let findEnd = inCommand.followedBy?.find((followedBy) => followedBy.name.startsWith("END_") && followedBy.execute);
-
+  
           if (findEnd) {
             currentCode = findEnd.execute!(currentCode, languageId, params);
             inCommand = undefined;
@@ -164,15 +162,15 @@ export function applyModificationProcedure(originalCode: string, modificationPro
           } else {
             throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
           }
-
+  
           newCommand(outOfOrderNewCommand, line);
         } else {
           params[inCommand.name] += (params[inCommand.name] ? "\n" : "") + line;
         }
+        continue;
       }
-      continue;
     }
-
+  
     newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
   }
 

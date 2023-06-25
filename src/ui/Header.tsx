@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BRAND_COLOR, blendWithForeground } from "../utils/blendColors";
+import { BRAND_COLOR, blendWithForeground } from "./utils/blendColors";
 
 export function Header({ RobotIcon1, RobotIcon2 }: { RobotIcon1: React.ElementType; RobotIcon2: React.ElementType; }) {
   return (

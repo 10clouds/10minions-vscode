@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import { convertUri } from "./vscodeUtils";
 import { EditorDocument, EditorManager, EditorUri, setEditorManager } from "../managers/EditorManager";
+import AsyncLock = require("async-lock");
+
+export const editorLock = new AsyncLock();
 
 export class VSEditorManager implements EditorManager {
 
@@ -25,4 +28,20 @@ export class VSEditorManager implements EditorManager {
   showInformationMessage(message: string): void {
     vscode.window.showInformationMessage(message);
   }
+
+  async applyWorkspaceEdit(
+    edit: (edit: vscode.WorkspaceEdit) => Promise<void>
+  ) {
+    await editorLock.acquire("streamLock", async () => {
+      const workspaceEdit = new vscode.WorkspaceEdit();
+      await edit(workspaceEdit);
+  
+      try {
+        await vscode.workspace.applyEdit(workspaceEdit);
+      } catch (reason) {
+        console.error("REASON", reason);
+      }
+    });
+  }
+  
 }

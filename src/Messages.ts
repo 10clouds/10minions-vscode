@@ -8,10 +8,7 @@ export enum MessageToWebViewType {
   ApiKeyMissingModels,
   TokenCount,
   ChosenCodeUpdated,
-  Suggestion,
-  SuggestionError,
-  SuggestionLoading,
-  SuggestionLoadedOrCanceled,
+  Suggestions,
 }
 
 export enum MessageToVSCodeType {
@@ -22,7 +19,6 @@ export enum MessageToVSCodeType {
   ReRunExecution,
   StopExecution,
   SuggestionGet,
-  SuggestionCancel,
   CloseExecution,
   ReadyForMessages,
   ApplyAndReviewTask,
@@ -39,10 +35,7 @@ export type MessageToWebView =
   | { type: MessageToWebViewType.ApiKeyMissingModels; models: string[] }
   | { type: MessageToWebViewType.TokenCount; value: number }
   | { type: MessageToWebViewType.ChosenCodeUpdated; code: string }
-  | { type: MessageToWebViewType.Suggestion; suggestion: string, forCode: string, forInput : string }
-  | { type: MessageToWebViewType.SuggestionError; error: string }
-  | { type: MessageToWebViewType.SuggestionLoading; }
-  | { type: MessageToWebViewType.SuggestionLoadedOrCanceled; };
+  | { type: MessageToWebViewType.Suggestions; suggestions: string[], forInput : string }
 
 export type MessageToVSCode =
   | { type: MessageToVSCodeType.NewMinionTask; value?: string }
@@ -51,8 +44,7 @@ export type MessageToVSCode =
   | { type: MessageToVSCodeType.ShowDiff; minionTaskId: string }
   | { type: MessageToVSCodeType.ReRunExecution; minionTaskId: string; newUserQuery?: string }
   | { type: MessageToVSCodeType.StopExecution; minionTaskId: string }
-  | { type: MessageToVSCodeType.SuggestionGet; input?: string }
-  | { type: MessageToVSCodeType.SuggestionCancel }
+  | { type: MessageToVSCodeType.SuggestionGet; input: string }
   | { type: MessageToVSCodeType.CloseExecution; minionTaskId: string }
   | { type: MessageToVSCodeType.ReadyForMessages }
   | { type: MessageToVSCodeType.EditApiKey }

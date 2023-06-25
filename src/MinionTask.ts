@@ -4,7 +4,7 @@ import { getLogProvider } from "./managers/LogProvider";
 import { getOriginalContentProvider } from "./managers/OriginalContentProvider";
 import { gptExecute } from "./openai";
 import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from "./strategies/strategies";
-import { APPLIED_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
+import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
 import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
 import { EditorDocument, EditorRange, EditorUri, getEditorManager } from "./managers/EditorManager";
 
@@ -34,6 +34,10 @@ export class MinionTask {
     }
 
     if (this.executionStage === CANCELED_STAGE_NAME) {
+      return false;
+    }
+
+    if (this.executionStage === APPLYING_STAGE_NAME) {
       return false;
     }
 

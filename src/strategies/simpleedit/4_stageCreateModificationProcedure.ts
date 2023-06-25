@@ -1,6 +1,6 @@
 import { MinionTask } from "../../MinionTask";
 import { DEBUG_RESPONSES } from "../../const";
-import { createModificationProcedure } from "../../utils/createModificationProcedure";
+import { createModificationProcedure } from "../utils/createModificationProcedure";
 
 export async function stageCreateModificationProcedure(this: MinionTask) {
   if (this.strategy === undefined) {
