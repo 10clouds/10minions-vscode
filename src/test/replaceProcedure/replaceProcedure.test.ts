@@ -12,14 +12,14 @@ suite("Replace Procedure Test Suite", () => {
   let testDirs = allPaths.filter((path) => fs.lstatSync(path).isDirectory());
 
   for (let testDir of testDirs) {
-    test(path.basename(testDir), () => {
+    test(path.basename(testDir), async () => {
       const currentCode = readFileSync(path.resolve(baseDir, testDir, "original.txt"), "utf8");
       const procedure = readFileSync(path.resolve(baseDir, testDir, "procedure.txt"), "utf8");
       const expectedOutput = readFileSync(path.resolve(baseDir, testDir, "result.txt"), "utf8");
   
       let modifiedContent;
       try {
-        modifiedContent = applyModificationProcedure(
+        modifiedContent = await applyModificationProcedure(
           currentCode,
           procedure,
           "typescript",

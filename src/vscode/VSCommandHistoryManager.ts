@@ -18,8 +18,7 @@ const BASE_COMMANDS = [
   { command: "Add error handling to this" },
   { command: "Implement this functionality" },
   { command: "Migrate this to a different library" },
-  { command: "Refactor this to use design pattern X" },
-  { command: "Integrate this with external service X" },
+  { command: "Rewrite this to use following library: ..." },
 ];
 
 export class VSCommandHistoryManager implements CommandHistoryManager {
@@ -85,7 +84,7 @@ export class VSCommandHistoryManager implements CommandHistoryManager {
   scoredItemsCommandHistory = scoredItemsCommandHistory.slice(0, 7);
   
   // Restrict the base commands to 2 items
-  scoredItemsBaseCommands = scoredItemsBaseCommands.slice(0, 3);
+  scoredItemsBaseCommands = scoredItemsBaseCommands.slice(0, 30);
 
   // Combine and return the two lists
   return [...scoredItemsCommandHistory, ...scoredItemsBaseCommands].map((item) => item.command);

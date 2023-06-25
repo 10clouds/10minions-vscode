@@ -1,3 +1,4 @@
+
 export type EditorPosition = {
   readonly line: number;
   readonly character: number;
@@ -24,9 +25,15 @@ export type EditorDocument = {
   };
 };
 
+export type EditorTextEdit = {
+
+}
+
 export interface WorkspaceEdit {
   replace(uri: EditorUri, range: EditorRange, newText: string): void;
   insert(uri: EditorUri, position: EditorPosition, newText: string): void;
+
+  entries(): [EditorUri, EditorTextEdit[]][];
 }
 
 export interface EditorManager {

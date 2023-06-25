@@ -15,9 +15,9 @@ suite("Create procedure test suite", () => {
   let allPaths = glob.sync(path.resolve(baseDir, '*'));
   let testDirs = allPaths.filter((path) => fs.lstatSync(path).isDirectory());
 
-  setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "openAIKey.json"), "utf8")).openAIKey);
+  setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "..", "openAIKey.json"), "utf8")).openAIKey);
 
-  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "serviceAccount.json"), "utf8")));
+  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "..", "serviceAccount.json"), "utf8")));
   //const openAiCacheManager = new OpenAICacheManager();
 
   const analyticsManager = new AnalyticsManager(
@@ -39,7 +39,7 @@ suite("Create procedure test suite", () => {
 
       fs.writeFileSync(path.resolve(baseDir, testDir, "procedure.txt"), procedure);
 
-      let modifiedContent = applyModificationProcedure(
+      let modifiedContent = await applyModificationProcedure(
         currentCode,
         procedure,
         "typescript",

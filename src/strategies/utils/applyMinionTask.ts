@@ -2,7 +2,6 @@ import { MinionTask } from "../../MinionTask";
 import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, FINISHED_STAGE_NAME } from "../../ui/MinionTaskUIInfo";
 import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { applyModificationProcedure } from "./applyModificationProcedure";
-import { convertUri } from "../../vscode/vscodeUtils";
 import { getEditorManager } from "../../managers/EditorManager";
 
 export async function applyFallback(minionTask: MinionTask) {
@@ -27,7 +26,7 @@ ${minionTask.modificationDescription}
   minionTask.onChanged(true);
 
   await getEditorManager().applyWorkspaceEdit(async (edit) => {
-    edit.insert(convertUri(minionTask.documentURI), { line: 0, character: 0 }, decomposedString + "\n");
+    edit.insert(minionTask.documentURI, { line: 0, character: 0 }, decomposedString + "\n");
   });
 
   minionTask.executionStage = APPLIED_STAGE_NAME;
@@ -76,11 +75,9 @@ export async function applyMinionTask(minionTask: MinionTask) {
       document.languageId,
     );
 
-    console.log(`modifiedContent: "${modifiedContent}"`);
-
     await getEditorManager().applyWorkspaceEdit(async (edit) => {
       edit.replace(
-        convertUri(document.uri),
+        document.uri,
         {
           start: { line: 0, character: 0},
           end: { line: document.lineCount - 1, character: document.lineAt(document.lineCount - 1).text.length}
@@ -98,7 +95,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
     getEditorManager().showInformationMessage(`Modification applied successfully.`);
   } catch (error) {
     console.log(`Failed to apply modification: ${String(error)}`);
-    applyFallback(minionTask);
+    await applyFallback(minionTask);
   }
 }
 

@@ -171,7 +171,9 @@ export async function applyModificationProcedure(originalCode: string, modificat
       }
     }
   
-    newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
+    if (possibleNextCommands.length > 0) {
+      newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
+    }
   }
 
   if (inCommand) {
