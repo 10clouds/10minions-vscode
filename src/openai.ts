@@ -119,8 +119,6 @@ async function processOpenAIResponseStream({
 
         chunkBuffer = newChunkBuffer;
 
-        console.log(parsedLines);
-
         for (let parsedLine of parsedLines) {
           if (parsedLine.error) {
             throw new Error(parsedLine.error.message);

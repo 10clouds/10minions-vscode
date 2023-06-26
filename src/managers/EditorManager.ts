@@ -27,7 +27,7 @@ export type EditorDocument = {
 
 export type EditorTextEdit = {
 
-}
+};
 
 export interface WorkspaceEdit {
   replace(uri: EditorUri, range: EditorRange, newText: string): void;
@@ -46,7 +46,12 @@ export interface EditorManager {
 
 let globalEditorManger: EditorManager | undefined = undefined;
 
-export function setEditorManager(editorManager: EditorManager) {
+export function setEditorManager(editorManager: EditorManager | undefined) {
+  if (editorManager === undefined) {
+    globalEditorManger = undefined;
+    return;
+  }
+  
   if (globalEditorManger) {
     throw new Error(`EditorManager is already set.`);
   }

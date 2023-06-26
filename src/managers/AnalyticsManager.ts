@@ -34,7 +34,6 @@ export class AnalyticsManager {
 
     this.reportEvent("extensionActivated");
 
-    setAnalyticsManager(this);
   }
 
   private commonAnalyticsData(): { installationId: string; vsCodeVersion: string; pluginVersion: string; timestamp: Date } {
@@ -129,15 +128,24 @@ export class AnalyticsManager {
 }
 
 
-let globalManager: AnalyticsManager;
+let globalManager: AnalyticsManager | undefined = undefined;
 
-export function setAnalyticsManager(manager: AnalyticsManager) {
+export function setAnalyticsManager(manager: AnalyticsManager | undefined) {
+  if (manager === undefined) {
+    globalManager = undefined;
+    return;
+  }
+
   if (globalManager) {
     throw new Error(`AnalyticsManager is already set.`);
   }
+
   globalManager = manager;
 }
 
 export function getAnalyticsManager(): AnalyticsManager {
+  if (!globalManager) {
+    throw new Error(`AnalyticsManager is not set.`);
+  }
   return globalManager;
 }

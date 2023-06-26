@@ -4,7 +4,12 @@ export interface OriginalContentProvider {
 
 let globalOriginalContentProvider: OriginalContentProvider | undefined = undefined;
 
-export function setOriginalContentProvider(originalContentProvider: OriginalContentProvider) {
+export function setOriginalContentProvider(originalContentProvider: OriginalContentProvider | undefined) {
+  if (originalContentProvider === undefined) {
+    globalOriginalContentProvider = undefined;
+    return;
+  }
+
   if (globalOriginalContentProvider) {
     throw new Error(`OriginalContentProvider is already set.`);
   }

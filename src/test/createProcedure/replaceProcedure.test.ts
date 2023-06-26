@@ -3,11 +3,9 @@ import * as fs from 'fs';
 import { readFileSync } from "fs";
 import * as glob from 'glob';
 import * as path from 'path';
-import { createModificationProcedure } from "../../strategies/utils/createModificationProcedure";
+import { setupCLISystemsForTest } from "../../CLI/setupCLISystems";
 import { applyModificationProcedure } from "../../strategies/utils/applyModificationProcedure";
-import { setOpenAIApiKey } from "../../openai";
-import { AnalyticsManager } from "../../managers/AnalyticsManager";
-import { OpenAICacheManager } from "../../managers/OpenAICacheManager";
+import { createModificationProcedure } from "../../strategies/utils/createModificationProcedure";
 
 suite("Create procedure test suite", () => {
   const baseDir = path.resolve(__dirname);
@@ -15,17 +13,7 @@ suite("Create procedure test suite", () => {
   let allPaths = glob.sync(path.resolve(baseDir, '*'));
   let testDirs = allPaths.filter((path) => fs.lstatSync(path).isDirectory());
 
-  setOpenAIApiKey(JSON.parse(readFileSync(path.resolve(baseDir, "..", "openAIKey.json"), "utf8")).openAIKey);
-
-  const openAiCacheManager = new OpenAICacheManager(JSON.parse(readFileSync(path.resolve(baseDir, "..", "serviceAccount.json"), "utf8")));
-  //const openAiCacheManager = new OpenAICacheManager();
-
-  const analyticsManager = new AnalyticsManager(
-    "localTests-installationId",
-    "VsCodeStub",
-  );
-  analyticsManager.setSendDiagnosticsData(true);
-
+  setupCLISystemsForTest();
 
   for (let testDir of testDirs) {
     test(testDir, async () => {

@@ -78,8 +78,6 @@ Choose strategy for the task.
 
   this.totalCost += cost;
 
-  console.log("Strategy: ", result);
-
   this.appendToLog("\n\n");
 
   //find classification in text

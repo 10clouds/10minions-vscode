@@ -5,7 +5,12 @@ export interface LogProvider {
 
 let globalLogProvider: LogProvider | undefined = undefined;
 
-export function setLogProvider(logProvider: LogProvider) {
+export function setLogProvider(logProvider: LogProvider | undefined) {
+  if (logProvider === undefined) {
+    globalLogProvider = undefined;
+    return;
+  }
+
   if (globalLogProvider) {
     throw new Error(`LogProvider is already set.`);
   }

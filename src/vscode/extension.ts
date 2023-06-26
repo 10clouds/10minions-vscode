@@ -1,15 +1,16 @@
 import * as vscode from "vscode";
-import { VSCodeActionProvider } from "./VSCodeActionProvider";
-import { VSViewProvider } from "./VSViewProvider";
-import { initPlayingSounds, setCompletionSoundsEnabled } from "../utils/playSound";
-import { VSOriginalContentProvider } from "./VSOriginalContentProvider";
-import { VSLogProvider } from "./VSLogProvider";
-import { AnalyticsManager, getAnalyticsManager } from "../managers/AnalyticsManager";
-import { VSCommandHistoryManager } from "./VSCommandHistoryManager";
-import { VSMinionTasksManager } from "./VSMinionTasksManager";
-import { VSEditorManager } from "./VSEditorManager";
+import { AnalyticsManager, getAnalyticsManager, setAnalyticsManager } from "../managers/AnalyticsManager";
+import { SimpleOpenAICacheManager } from "../managers/SimpleOpenAICacheManager";
 import { getViewProvider } from "../managers/ViewProvider";
-import { OpenAICacheManager } from "../managers/OpenAICacheManager";
+import { initPlayingSounds, setCompletionSoundsEnabled } from "../utils/playSound";
+import { VSCodeActionProvider } from "./VSCodeActionProvider";
+import { VSCommandHistoryManager } from "./VSCommandHistoryManager";
+import { VSEditorManager } from "./VSEditorManager";
+import { VSLogProvider } from "./VSLogProvider";
+import { VSMinionTasksManager } from "./VSMinionTasksManager";
+import { VSOriginalContentProvider } from "./VSOriginalContentProvider";
+import { VSViewProvider } from "./VSViewProvider";
+import { setOpenAICacheManager } from "../managers/OpenAICacheManager";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("10Minions is now active");
@@ -20,10 +21,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.globalState.get<string>("10minions.installationId") || "",
     vscode.version,
   );
-
   analyticsManager.setSendDiagnosticsData(!!vscode.workspace.getConfiguration("10minions").get("sendDiagnosticsData"));
+  setAnalyticsManager(analyticsManager);
 
-  const openAiCacheManager = new OpenAICacheManager();
+  const openAiCacheManager = new SimpleOpenAICacheManager();
+  setOpenAICacheManager(openAiCacheManager);
+
   const originalContentProvider = new VSOriginalContentProvider(context);
   const logProvider = new VSLogProvider(context);
   const viewProvider = new VSViewProvider(context);

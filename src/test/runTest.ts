@@ -1,8 +1,12 @@
 import * as path from "path";
 import Mocha from "mocha";
 import glob from "glob";
+import { initCLISystems } from "../CLI/setupCLISystems";
 
 export function run(): Promise<void> {
+
+  initCLISystems();
+  
   // Create the mocha test
   const mocha = new Mocha({
     ui: "tdd",
