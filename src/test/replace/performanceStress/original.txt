@@ -1,0 +1,654 @@
+
+
+Running tests...
+
+
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+// background info
+// All functions are pure
+// checkInput has only one parameter
+// req,res - node-like request and response
+// getInputValues returns an array
+// getCheckboxValues returns object like {a: boolean, b: boolean}
+
+// Code submitted for review
+function checkForm(req, res) {
+  //use descriptive variable names for better readability and understanding
+  const { a: checkboxValueA, b: checkboxValueB } = getCheckboxValues(req);
+  
+  //use javascript array some() method for better performance and readability
+  const showMessage = getInputValues(req).some((x) => (checkboxValueA || checkboxValueB) && checkInput(x))
+  
+  res.send({ showMessage });
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid javascript code.
+Test: The a and b variables have been renamed
+Comment: Yes, the resulting code renames the variables a and b to checkboxValueA and checkboxValueB
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code has replaced the for loop with something similar to (a || b) && getInputValues(req).some(checkInput)
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code passes the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+// background info
+// All functions are pure
+// checkInput has only one parameter
+// req,res - node-like request and response
+// getInputValues returns an array
+// getCheckboxValues returns object like {a: boolean, b: boolean}
+
+// Code submitted for review
+function checkForm(req, res) {
+    // Renaming the variables 'a' and 'b' to describe their role in business perspective.
+    const checkboxValues = getCheckboxValues(req);
+    const firstCheckbox = checkboxValues.firstCheckbox;
+    const secondCheckbox = checkboxValues.secondCheckbox; 
+    let showMessage = false;
+  
+    // Simplified the condition
+    // showMessage is set to true if either 'firstCheckbox' OR 'secondCheckbox' is true
+    // AND 'checkInput' returns true for atleast one input value
+    for (let x of getInputValues(req)) {
+      if ((firstCheckbox || secondCheckbox) && checkInput(x)) {
+        showMessage = true;
+        break; //if showMessage is once set true, we can break the loop
+      }
+    }
+    res.send({ showMessage });
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: Yes, the resulting code renames the variables 'a' and 'b' to 'firstCheckbox' and 'secondCheckbox' respectively.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code passes the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+// background info
+// All functions are pure
+// checkInput has only one parameter
+// req,res - node-like request and response
+// getInputValues returns an array
+// getCheckboxValues returns object like {a: boolean, b: boolean}
+
+// Code submitted for review
+function checkForm(req, res) {
+    const checkboxValues = getCheckboxValues(req);
+    const isTermsAccepted = checkboxValues.a;
+    const isSubscribed = checkboxValues.b;
+    let showMessage = false;
+
+    for (let inputValue of getInputValues(req)) {
+        if ((isTermsAccepted || isSubscribed) && checkInput(inputValue)) {
+            showMessage = true;
+            break;
+        }
+    }
+
+    res.send({ showMessage });
+}
+Test: The code is valid javascript code
+Comment: The resulting code is valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: The resulting code passes the test because the variables a and b have been renamed to isTermsAccepted and isSubscribed, respectively.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code passes the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+// background info
+// All functions are pure
+// checkInput has only one parameter
+// req,res - node-like request and response
+// getInputValues returns an array
+// getCheckboxValues returns object like {a: boolean, b: boolean}
+
+// Code submitted for review
+/**
+ * This function verifies the form data and decides if a message needs to be shown to the user.
+ * The decision is based on the states of two checkboxes and the verification of input values by checkInput() function.
+ * 
+ * @param {object} req - The request object, assumed to be similar to a NodeJS request.
+ * @param {object} res - The response object, assumed to be similar to a NodeJS response.
+ */
+function checkForm(req, res) {
+ 
+    // cache checkbox values to avoid multiple function calls
+    const checkboxValues = getCheckboxValues(req);
+    // renamed 'a' to 'checkboxAState' for more clarity
+    const checkboxAState = checkboxValues.a;
+    // renamed 'b' to 'checkboxBState' for more clarity
+    const checkboxBState = checkboxValues.b;
+    let showMessage = false;
+  
+    // loop over input values
+    for (let inputValue of getInputValues(req)) {
+        // condition simplified and detail comments added
+        // showMessage is set to true only if at least one checkbox is checked and the input value passes checkInput
+        if ((checkboxAState || checkboxBState) && checkInput(inputValue)) {
+            showMessage = true;
+        }
+    }
+  
+    // send the result to the client
+    res.send({ showMessage });
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid Javascript code.
+Test: The a and b variables have been renamed
+Comment: Yes, the resulting code passes the test as the variables 'a' and 'b' have been renamed to 'checkboxAState' and 'checkboxBState' respectively.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: The resulting code passes the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not pass the test.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not pass the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+// background info
+// All functions are pure
+// checkInput has only one parameter
+// req,res - node-like request and response
+// getInputValues returns an array
+// getCheckboxValues returns object like {a: boolean, b: boolean}
+
+// Code submitted for review
+/**  
+ * checkForm function - verifies if the user should receive a message based on form input
+ * @param {Object} req - Express server Request object
+ * @param {Object} res - Express server Response object
+ */
+function checkForm(req, res) {
+    // Getting the checkbox values only once to reduce code duplication
+    const checkboxes = getCheckboxValues(req);
+    const isCheckboxASelected = checkboxes.a;
+    const isCheckboxBSelected = checkboxes.b;
+  
+    // Utilizing a flag to show the message
+    let showMessage = false;
+  
+    // Iterating over the user's form input 
+    for (let userInput of getInputValues(req)) {
+        // In order for showMessage to be set to true, either Checkbox A or Checkbox B needs to be selected and the user's input should pass the checkInput function.
+        if ((isCheckboxASelected || isCheckboxBSelected) && checkInput(userInput)) {
+            showMessage = true;
+        }
+    }
+  
+    // Sending a response with the showMessage flag
+    res.send({ showMessage });
+}
+Test: The code is valid javascript code
+Comment: The resulting code appears to be valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: Yes, the resulting code renames the variables a and b to isCheckboxASelected and isCheckboxBSelected respectively.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code passes the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
+import { setOpenAICacheManager } from './OpenAICacheManager';
+
+export class ConsumingOpenAICacheManager {
+  private firestore: admin.firestore.Firestore | undefined;
+  // Step 1: Introduce a new private array to store the cache
+  private cache: string[];
+
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+      // Step 2: Populate the cache with Firestore data when an instance of the class is created
+      this.cache = this.firestore.collection('openAICalls').get().then(snapshot => {
+        let cache: string[] = [];
+        if (!snapshot.empty) {
+          snapshot.forEach((doc) => {
+            if (typeof doc.data().responseData === "string") {
+              cache.push(doc.data().responseData as string);
+            }
+          });
+        }
+        return cache;
+      });
+    } else {
+      this.firestore = undefined;
+    }
+
+    setOpenAICacheManager(this);
+  }
+
+  // Step 3: Rewrite the getCachedResult method
+  public async getCachedResult(requestData: object): Promise<string | undefined> {
+    // No need to access Firestore here, consume the cache instead
+    if (this.cache.length === 0) {
+      // Step 4: If cache is empty, signify that we ran out of previous results
+      return undefined;
+    } else {
+      const randomIndex = Math.floor(Math.random() * this.cache.length);
+      return this.cache[randomIndex];
+    }
+  }
+}
+Test: The code is valid javascript code
+Comment: The resulting code is valid JavaScript code
+Test: The a and b variables have been renamed
+Comment: The resulting code does not pass the test. The 'a' and 'b' variables have not been renamed.
+Test failed: The a and b variables have been renamed
+Comment: The resulting code does not pass the test. The 'a' and 'b' variables have not been renamed.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: The resulting code does not pass the test.
+Test failed: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: The resulting code does not pass the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a checkForm function, so it does not meet the criteria.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a checkForm function, so it does not meet the criteria.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
+import { setOpenAICacheManager } from './OpenAICacheManager';
+
+export class ConsumingOpenAICacheManager {
+  private firestore: admin.firestore.Firestore | undefined;
+  private cachedResults: string[] = [];  // A new variable to store the cached results
+  private isCacheReady: boolean = false;  // A flag to track whether we've already fetched from Firestore once or not
+
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+      this.loadCache();  // Populate the cache as soon as Firestore is setup
+    } else {
+      this.firestore = undefined;
+    }
+
+    setOpenAICacheManager(this);
+  }
+
+  // A new async function to load cached data from Firestore and store it in the `cachedResults` array
+  private async loadCache(): Promise<void> {
+    if (this.firestore && !this.isCacheReady) {
+      const snapshot = await this.firestore.collection('openAICalls').get();
+
+      snapshot.forEach((doc) => {
+        if (typeof doc.data().responseData === "string") {
+          this.cachedResults.push(doc.data().responseData as string);
+        }
+      });
+
+      this.isCacheReady = true;  // Set the flag to true to prevent re-fetching of the cache
+    }
+  }
+
+  public async getCachedResult(requestData: object): Promise<string | undefined> {
+    if (!this.fireStore || !this.isCacheReady || this.cachedResults.length === 0) {
+      return undefined;
+    }
+
+    const requestDataHash = getAnalyticsManager().getRequestHash(requestData);
+
+    const index = this.cachedResults.findIndex(result => result === requestDataHash);
+    if (index !== -1) {
+      const cachedResult = this.cachedResults[index];
+      this.cachedResults.splice(index, 1);  // Remove the used result from cached results
+      return cachedResult;
+    }
+    return undefined;
+  }
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: The resulting code does not have any variables named 'a' or 'b', so it passes the test.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: The resulting code does not pass the test.
+Test failed: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: The resulting code does not pass the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a function called checkForm, so it does not pass the test.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a function called checkForm, so it does not pass the test.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
+import { setOpenAICacheManager } from './OpenAICacheManager';
+
+export class ConsumingOpenAICacheManager {
+  private firestore: admin.firestore.Firestore | undefined;
+  private cacheData: string[] | undefined; // Introduced cacheData variable 
+
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+    } else {
+      this.firestore = undefined;
+    }
+    setOpenAICacheManager(this);
+  }
+
+  public async getCachedResult(requestData: object): Promise<string | undefined> {
+    if (!this.firestore) {
+      return undefined;
+    }
+
+    const requestDataHash = getAnalyticsManager().getRequestHash(requestData);
+
+    // If cacheData is empty fetch data from firestore and store it in cacheData
+    if(!this.cacheData || this.cacheData.length === 0) {
+      const snapshot = await this.firestore.collection('openAICalls').where('requestDataHash', '==', requestDataHash).get();
+
+      if (snapshot.empty) {
+        return undefined;
+      }
+      this.cacheData = [];
+
+      snapshot.forEach((doc) => {
+        if (typeof doc.data().responseData === "string") {
+          this.cacheData.push(doc.data().responseData as string);
+        }
+      });
+    }
+
+    // Return the last cache result and remove it from array
+    if(this.cacheData.length > 0) {
+      return this.cacheData.pop();
+    } else {
+      return undefined;
+    }
+  }
+}
+Test: The code is valid javascript code
+Comment: The resulting code passes the test. It is valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: No, the resulting code does not pass the test. The original code did not have variables named 'a' and 'b', so the renaming of these variables does not apply.
+Test failed: The a and b variables have been renamed
+Comment: No, the resulting code does not pass the test. The original code did not have variables named 'a' and 'b', so the renaming of these variables does not apply.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not pass the test because there is no mention of the checkForm function in the code.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not pass the test because there is no mention of the checkForm function in the code.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
+import { setOpenAICacheManager } from './OpenAICacheManager';
+
+export class ConsumingOpenAICacheManager {
+  private firestore: admin.firestore.Firestore | undefined;
+  
+  // Define a new Cache results Map
+  private cacheResults: Map<string,string[]> = new Map();
+  
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+    } else {
+      this.firestore = undefined;
+    }
+
+    setOpenAICacheManager(this);
+  }
+
+  // Method to Populate the cache
+  private async populateCache() {
+    if (!this.firestore) {
+      return;
+    }
+
+    const snapshot = await this.firestore.collection('openAICalls').get();
+
+    snapshot.forEach((doc) => {
+      if (typeof doc.data().responseData === "string") {
+        const requestDataHash = doc.data().requestDataHash;
+        if(this.cacheResults.has(requestDataHash)) {
+          this.cacheResults.get(requestDataHash)!.push(doc.data().responseData);
+        } else {
+          this.cacheResults.set(requestDataHash, [doc.data().responseData]);
+        }
+      }
+    });
+  }
+
+  public async getCachedResult(requestData: object): Promise<string | undefined> {
+    const requestDataHash = getAnalyticsManager().getRequestHash(requestData);
+
+    // Check if result exists in cache
+    if(this.cacheResults.has(requestDataHash)) {
+      const results = this.cacheResults.get(requestDataHash)!;
+      if(results.length > 0) {
+        const randomIndex = Math.floor(Math.random() * results.length);
+        return results.splice(randomIndex, 1)[0]; // Use .splice() to also remove the used response from cache
+      } else { 
+        this.cacheResults.delete(requestDataHash); // If no results left for this requestDataHash, remove it from the cache
+      }
+    }
+    return undefined;
+  }
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid javascript code.
+Test: The a and b variables have been renamed
+Comment: The resulting code does not rename any variables
+Test failed: The a and b variables have been renamed
+Comment: The resulting code does not rename any variables
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test.
+Test: The checkForm function exists and always returns type boolean
+Comment: The checkForm function does not exist in the code provided.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The checkForm function does not exist in the code provided.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+File contents
+import * as admin from 'firebase-admin';
+import { getAnalyticsManager } from './AnalyticsManager';
+import { setOpenAICacheManager } from './OpenAICacheManager';
+
+export class ConsumingOpenAICacheManager {
+  private firestore: admin.firestore.Firestore | undefined;
+
+  // This cache will store the responses we have fetched from Firestore
+  // This is to prevent frequent Firestore requests if we have a cache HIT for a given request
+  private cache: string[] = [];
+
+  constructor(serviceAccount?: admin.ServiceAccount) {
+    if (serviceAccount) {
+
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      this.firestore = admin.firestore();
+    } else {
+      this.firestore = undefined;
+    }
+
+    setOpenAICacheManager(this);
+  }
+
+  public async getCachedResult(requestData: object): Promise<string | undefined> {
+    if (!this.firestore) {
+      return undefined;
+    }
+
+    const requestDataHash = getAnalyticsManager().getRequestHash(requestData);
+
+    // Instead of directly querying Firestore, first check if the cache is not empty
+    if (this.cache.length > 0) {
+      // Remove first element from cache and return it as a result
+      return this.cache.shift(); 
+    }
+    
+    // If the cache is empty, then query Firestore
+    const snapshot = await this.firestore.collection('openAICalls').where('requestDataHash', '==', requestDataHash).get();
+
+    if (snapshot.empty) {
+      return undefined;
+    }
+
+    // Instead of randomly picking a response, fetch all the responses and store them in cache
+    snapshot.forEach((doc) => {
+      if (typeof doc.data().responseData === "string") {
+        // We are directly adding into the cache
+        this.cache.push(doc.data().responseData as string);
+      }
+    });
+
+    // Now that we have fetched all responses and stored in cache,
+    // we can serve from the cache by removing the first element and returning it
+    return this.cache.shift();
+  }
+}
+Test: The code is valid javascript code
+Comment: Yes, the resulting code is valid JavaScript code.
+Test: The a and b variables have been renamed
+Comment: No, the resulting code does not pass the test. The variables 'a' and 'b' have not been renamed.
+Test failed: The a and b variables have been renamed
+Comment: No, the resulting code does not pass the test. The variables 'a' and 'b' have not been renamed.
+Test: The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)
+Comment: Yes, the resulting code passes the test
+Test: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a function named checkForm, so it does not pass the test.
+Test failed: The checkForm function exists and always returns type boolean
+Comment: The resulting code does not have a function named checkForm, so it does not pass the test.

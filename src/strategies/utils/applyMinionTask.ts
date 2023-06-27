@@ -4,6 +4,9 @@ import { decomposeMarkdownString } from "./decomposeMarkdownString";
 import { applyModificationProcedure } from "./applyModificationProcedure";
 import { getEditorManager } from "../../managers/EditorManager";
 
+export const LOG_PLAIN_COMMENT_MARKER = `\nPLAIN COMMENT FALLBACK\n`;
+export const LOG_NO_FALLBACK_MARKER = `Applied changes for user review.\n\n`;
+
 async function applyFallback(minionTask: MinionTask) {
   const document = await minionTask.document();
   const language = document.languageId || "javascript";
@@ -17,7 +20,7 @@ ${minionTask.modificationDescription}
     language
   ).join("\n");
 
-  minionTask.appendToLog(`\nPLAIN COMMENT FALLBACK\n`);
+  minionTask.appendToLog(LOG_PLAIN_COMMENT_MARKER);
 
   minionTask.originalContent = document.getText();
 
@@ -84,16 +87,8 @@ export async function applyMinionTask(minionTask: MinionTask) {
         modifiedContent
       );
     });
-
-    minionTask.executionStage = APPLIED_STAGE_NAME;
-    minionTask.contentAfterApply = document.getText();
-    minionTask.progress = 1;
-    minionTask.appendToLog(`Applied changes for user review.\n\n`);
-    minionTask.onChanged(true);
-
-    getEditorManager().showInformationMessage(`Modification applied successfully.`);
   } catch (error) {
-    console.log(`Failed to apply modification: ${String(error)}`);
+    //console.log(`Failed to apply modification: ${String(error)}`);
 
     await applyFallback(minionTask);
 
@@ -102,7 +97,16 @@ export async function applyMinionTask(minionTask: MinionTask) {
     minionTask.progress = 1;
     minionTask.appendToLog(`Applied modification as plain top comments\n\n`);
     minionTask.onChanged(true);
+    return;
   } finally {
     clearInterval(interval);
   }
+
+  minionTask.executionStage = APPLIED_STAGE_NAME;
+  minionTask.contentAfterApply = document.getText();
+  minionTask.progress = 1;
+  minionTask.appendToLog(LOG_NO_FALLBACK_MARKER);
+  minionTask.onChanged(true);
+
+  getEditorManager().showInformationMessage(`Modification applied successfully.`);
 }

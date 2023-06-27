@@ -1,102 +1,55 @@
-import fs from "fs";
+
+
 import * as glob from "glob";
-import { Validator } from "jsonschema"; // Imported the jsonschema library
 import path from "path";
-import * as ts from "typescript";
+import fs from "fs";
 import { initCLISystems, setupCLISystemsForTest } from "../CLI/setupCLISystems";
 import { MinionTask } from "../MinionTask";
 import { getEditorManager } from "../managers/EditorManager";
+import { applyMinionTask } from "../strategies/utils/applyMinionTask";
 import { GptMode, gptExecute } from "../openai";
-import { LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER, LOG_NO_FALLBACK_MARKER as LOG_NORMAL_MODIFICATION_MARKER, applyMinionTask } from "../strategies/utils/applyMinionTask";
-
-export type TestDefinition =
-  | { type: "gptAssert"; mode: GptMode; assertion: string }
-  | { type: "simpleStringFind"; stringToFind: string }
-  | { type: "functionReturnTypeCheck"; functionName: string; expectedType: string };
-
-const gptAssertSchema = {
-  properties: {
-    type: { type: "string", pattern: "gptAssert" },
-    mode: { type: "string" },
-    assertion: { type: "string" },
-  },
-  required: ["type", "mode", "assertion"],
-};
-
-const simpleStringFindSchema = {
-  properties: {
-    type: { type: "string", pattern: "simpleStringFind" },
-    stringToFind: { type: "string" },
-  },
-  required: ["type", "stringToFind"],
-};
-
-const functionReturnTypeCheckSchema = {
-  properties: {
-    type: { type: "string", pattern: "functionReturnTypeCheck" },
-    functionName: { type: "string" },
-    expectedType: { type: "string" },
-  },
-  required: ["type", "functionName", "expectedType"],
-};
-
-const TestDefinitionSchema = {
-  id: "/TestDefinition",
-  oneOf: [gptAssertSchema, simpleStringFindSchema, functionReturnTypeCheckSchema],
-};
+import * as ts from 'typescript';
 
 async function checkFunctionReturnType({ code, functionName }: { code: string; functionName: string }): Promise<string> {
   try {
     // Create and compile program
-    // Create an in-memory source file
-    const sourceFile = ts.createSourceFile("temp.ts", code, ts.ScriptTarget.ES2015, true);
-
-    // Create an in-memory compiler host
-    const compilerHost: ts.CompilerHost = {
-      ...ts.createCompilerHost({}),
-      getSourceFile: (fileName, languageVersion) => fileName === 'temp.ts' ? sourceFile : undefined,
-      readFile: (fileName) => fileName === 'temp.ts' ? code : undefined,
-    };
-
-    // Create and compile program with the in-memory compiler host
-    const program = ts.createProgram(["temp.ts"], {}, compilerHost);
+    const sourceFile = ts.createSourceFile('temp.ts', code, ts.ScriptTarget.ES2015, true);
+    const program = ts.createProgram(['temp.ts'], {});
     const checker = program.getTypeChecker();
 
     // Helper function to search the AST nodes for a function declaration
     function findFunctionDeclaration(node: ts.Node, functionName: string): ts.FunctionDeclaration | undefined {
-      
       if (ts.isFunctionDeclaration(node) && node.name && node.name.text === functionName) {
         return node;
       }
 
       let functionDecl: ts.FunctionDeclaration | undefined;
       ts.forEachChild(node, (childNode) => {
-        if (functionDecl) return;
+        if(functionDecl) return; 
         functionDecl = findFunctionDeclaration(childNode, functionName);
       });
-
+      
       return functionDecl;
     }
- 
+
     // Find function declaration
     const funcDecl = findFunctionDeclaration(sourceFile, functionName);
 
-
-    if (!funcDecl?.name) {
+    if (!funcDecl || !funcDecl.name) {
       throw new Error(`Function '${functionName}' not found in code.`);
     }
 
-    const funcSym = checker.getSymbolAtLocation(funcDecl?.name);
+    const funcSym = checker.getSymbolAtLocation(funcDecl.name);
 
-    if (!funcSym || !funcSym.valueDeclaration) {
-      throw new Error(`Symbol not found for function '${functionName}'. Ensure the function exists and is correctly spelled.`);
-    }
+  // Add undefined check for funcSym before using it
+  if (!funcSym) {
+    throw new Error(`Symbol not found for function '${functionName}'.`);
+  }
 
-    const typeOfFuncSym = checker.getTypeOfSymbolAtLocation(funcSym, funcSym.valueDeclaration);
+  const typeOfFuncSym = checker.getTypeOfSymbolAtLocation(funcSym, funcSym.valueDeclaration);
+  const returnType = checker.getReturnTypeOfSignature(typeOfFuncSym.getCallSignatures()[0]);
 
-    const returnType = checker.getReturnTypeOfSignature(typeOfFuncSym.getCallSignatures()[0]);
-
-    return checker.typeToString(returnType);
+  return checker.typeToString(returnType);
   } catch (error) {
     logToFile(`Error during return type check: ${error instanceof Error ? error.message : error}`);
 
@@ -104,26 +57,35 @@ async function checkFunctionReturnType({ code, functionName }: { code: string; f
   }
 }
 
-const directoryPath = path.join(__dirname, "logs");
-// Added the Date object to get the current date and time and formatted it as per requirement (YYYY-MM-DD_HH-MM-SS).
-const current_date = new Date();
-const date_string = `${current_date.getFullYear()}-${("00" + (current_date.getMonth() + 1)).slice(-2)}-${("00" + current_date.getDate()).slice(-2)}_${("00" + current_date.getHours()).slice(-2)}-${("00" + current_date.getMinutes()).slice(-2)}-${("00" + current_date.getSeconds()).slice(-2)}`;
-
-// Concatenating date_string with the filename to include the current date and time in the filename.
-const logFilePath = path.join(directoryPath, `log_${date_string}.log`);
-
 function logToFile(logMessage: string) {
-  
+  const directoryPath = path.join(__dirname, "logs");
+  const filePath = path.join(directoryPath, `log.log`); // Hardcoded the filename here
+
   // Check if logs directory exist or not
   if (!fs.existsSync(directoryPath)) {
     fs.mkdirSync(directoryPath); // If logs directory does not exist, create it
   }
 
   // If the file does not exist, create it, else append to it. `writeFileSync` and `appendFileSync` both create the file if it doesn't exist.
-  if (!fs.existsSync(logFilePath)) {
-    fs.writeFileSync(logFilePath, logMessage + "\n");
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, logMessage + "\n");
   } else {
-    fs.appendFileSync(logFilePath, logMessage + "\n");
+    fs.appendFileSync(filePath, logMessage + "\n");
+  }
+}
+
+/**
+ * Deletes a log file if it exists.
+ * @param {string} logType - the type of the log file, default to 'log'
+ */
+function resetLogFile() {
+  const directoryPath = path.join(__dirname, "logs");
+  const filePath = path.join(directoryPath, `log.log`); // Hardcoded the filename here
+
+  // Check if the log file exists
+  if (fs.existsSync(filePath)) {
+    // If log file does exist, delete it
+    fs.unlinkSync(filePath);
   }
 }
 
@@ -164,21 +126,10 @@ async function gptAssert({
   };
 }
 
-async function runTest({ fileName, iterations = 10 }: { fileName: string; iterations?: number }) {
+export type TestDefinition = { type: "gptAssert"; mode: GptMode; assertion: string } | { type: "simpleStringFind"; stringToFind: string } | { type: "functionReturnTypeCheck"; functionName: string; expectedType: string  };
+
+async function runTest({ fileName, iterations = 5 }: { fileName: string; iterations?: number }) {
   let tests: TestDefinition[] = require(path.join(__dirname, "score", fileName + ".tests.json"));
-
-  // Create a validator instance
-  const validator = new Validator();
-
-  // Validate each test in the tests array against the TestDefinitionSchema
-  for (let test of tests) {
-    let validation = validator.validate(test, TestDefinitionSchema);
-
-    // If validation fails, throw error with details
-    if (!validation.valid) {
-      throw new Error(`Test validation failed for '${fileName}': ${validation.errors.join(", ")}`);
-    }
-  }
   let userQuery = fs.readFileSync(path.join(__dirname, "score", fileName + ".userQuery.txt"), "utf8");
 
   let statistics = {
@@ -186,12 +137,12 @@ async function runTest({ fileName, iterations = 10 }: { fileName: string; iterat
     passed: 0,
   };
 
-  logToFile(`Running test for '${fileName} (${iterations} iterations)'`);
+  console.log(`Running test for '${fileName}'`);
 
-  for (let i = 0; i < iterations; i++) { 
+  for (let i = 0; i < iterations; i++) {
     setupCLISystemsForTest();
 
-    logToFile(`Iteration ${i + 1} of ${iterations}`);
+    console.log(`Iteration ${i + 1} of ${iterations}`);
 
     const checkPath = path.join(__dirname, "score", fileName + ".selectedText.txt"); // Path to the selectedText file
     const selectedTextExists = fs.existsSync(checkPath); // Check if selectedText file exists
@@ -229,35 +180,18 @@ async function runTest({ fileName, iterations = 10 }: { fileName: string; iterat
     logToFile("File contents");
     logToFile(resultingCode);
 
-    statistics.total++;
-    let includesNormalModification = execution.logContent.includes(LOG_NORMAL_MODIFICATION_MARKER);
-    let includesFallbackComment = execution.logContent.includes(LOG_FALLBACK_COMMENT_MARKER);
-    
-    if (includesNormalModification && !includesFallbackComment) {
-      logToFile(`Test passed: No fallback`);
-      statistics.passed++;
-    } else {
-      if (includesNormalModification) {
-        logToFile(`Test failed: Includes both normal modification & fallback comment `);
-      } else if (!includesFallbackComment) {
-        logToFile(`Test failed: No modification (normal or fallback)`);
-      } else {
-        logToFile(`Test failed: Fallback comment applied`);
-      }
-    }
-
     for (let test of tests) {
       statistics.total++;
 
       if (test.type === "gptAssert") {
         let { passessTest, comment } = await gptAssert({ originalCode: execution.originalContent, resultingCode, assertion: test.assertion });
-        
+        logToFile(`Test: ${test.assertion}`);
+        logToFile(`Comment: ${comment}`);
+
         if (!passessTest) {
           logToFile(`Test failed: ${test.assertion}`);
           logToFile(`Comment: ${comment}`);
         } else {
-          logToFile(`Test passed: ${test.assertion}`);
-          logToFile(`Comment: ${comment}`);
           statistics.passed++;
         }
       } else if (test.type === "simpleStringFind") {
@@ -272,7 +206,7 @@ async function runTest({ fileName, iterations = 10 }: { fileName: string; iterat
       } else if (test.type === "functionReturnTypeCheck") {
         let returnType = await checkFunctionReturnType({ code: resultingCode, functionName: test.functionName });
         logToFile(`Return type of function ${test.functionName}: ${returnType}`);
-
+  
         if (returnType !== test.expectedType) {
           logToFile(`Test failed: The return type of function ${test.functionName} is not ${test.expectedType}`);
         } else {
@@ -283,14 +217,16 @@ async function runTest({ fileName, iterations = 10 }: { fileName: string; iterat
   }
 
   console.log(
-    `'${fileName}' score: ${(100 * statistics.passed/statistics.total).toFixed(0)}%`
+    `Test summary for '${fileName}' (over ${iterations} iterations)\n Total: ${statistics.total}\nPassed: ${statistics.passed}\nFailed: ${
+      statistics.total - statistics.passed
+    }`
   );
-  logToFile(`'${fileName}' score: ${(100 * statistics.passed/statistics.total).toFixed(0)}%`);
 }
 
 async function runScoring(): Promise<void> {
   console.log("Running tests...");
-  console.log(`Log file: ${logFilePath}`);
+
+  resetLogFile();
 
   logToFile("\n\nRunning tests...\n\n");
 
@@ -304,7 +240,6 @@ async function runScoring(): Promise<void> {
     await runTest({ fileName: baseName });
   }
 
-  console.log(`Log file: ${logFilePath}`);
   console.log("Done!");
 }
 

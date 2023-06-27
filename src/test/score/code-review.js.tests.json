@@ -1,10 +1,10 @@
 [
-    { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid javascript code" },
-    { "type": "gptAssert", "mode": "FAST", "assertion": "The a and b variables have been renamed" },
-    {
-      "type": "gptAssert",
-      "mode": "FAST",
-      "assertion": "The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)"
-    },
-    { "type": "functionReturnTypeCheck", "functionName": "checkForm", "expectedType": "void"}
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid javascript code" },
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The a and b variables have been renamed" },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)"
+  },
+  { "type": "functionReturnTypeCheck", "functionName": "checkForm", "expectedType": "void" }
 ]

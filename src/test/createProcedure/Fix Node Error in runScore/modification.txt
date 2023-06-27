@@ -1,0 +1,45 @@
+First, let's locate the error. It appears to be in this line of the `checkFunctionReturnType` function:
+
+```typescript
+const typeOfFuncSym = checker.getTypeOfSymbolAtLocation(funcSym, funcSym.valueDeclaration);
+```
+
+This error is coming from passing `funcSym.valueDeclaration` as a second argument to the `getTypeOfSymbolAtLocation`. The issue is that `funcSym.valueDeclaration` may be `undefined`, which is not a valid argument for `getTypeOfSymbolAtLocation`.
+
+To fix this error, we can add a check and throw an error if `funcSym.valueDeclaration` is undefined:
+
+```typescript
+if (!funcSym.valueDeclaration) {
+  throw new Error(`Value declaration not found for function '${functionName}'.`);
+}
+```
+
+Here is the new implementation of `checkFunctionReturnType`:
+
+```typescript
+async function checkFunctionReturnType({ code, functionName }: { code: string; functionName: string }): Promise<string> {
+  try {
+    // ...
+    const funcSym = checker.getSymbolAtLocation(funcDecl.name);
+  
+    if (!funcSym) {
+      throw new Error(`Symbol not found for function '${functionName}'.`);
+    }
+
+    // Check if valueDeclaration is defined before using it
+    if (!funcSym.valueDeclaration) {
+      throw new Error(`Value declaration not found for function '${functionName}'.`);
+    }
+
+    const typeOfFuncSym = checker.getTypeOfSymbolAtLocation(funcSym, funcSym.valueDeclaration);
+    const returnType = checker.getReturnTypeOfSignature(typeOfFuncSym.getCallSignatures()[0]);
+
+    return checker.typeToString(returnType);
+  } catch (error) {
+    logToFile(`Error during return type check: ${error instanceof Error ? error.message : error}`);
+    return "Error during return type check";
+  }
+}
+```
+
+These checks ensure that the properties we are using exist and are of the right type. This helps prevent runtime errors and makes our program more resilient.
