@@ -3,7 +3,7 @@ import { fuzzyFindText } from "../../strategies/utils/fuzzyReplaceText";
 import { EditorDocument, EditorRange } from "../../managers/EditorManager";
 
 export async function findNewPositionForOldSelection(selection: EditorRange, selectedText: string, document: EditorDocument) {
-  let { lineStartIndex, lineEndIndex, confidence } = fuzzyFindText({ currentCode: document.getText(), findText: selectedText });
+  let { lineStartIndex, lineEndIndex, confidence } = await fuzzyFindText({ currentCode: document.getText(), findText: selectedText });
 
   console.log(`confidence: ${confidence} ${lineStartIndex} ${lineEndIndex}`);
   if (confidence > 0.5) {
