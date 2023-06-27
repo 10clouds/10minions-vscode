@@ -80,7 +80,7 @@ export function getBaseColor(execution: MinionTaskUIInfo) {
     }
 
     if (execution.executionStage === APPLYING_STAGE_NAME) {
-      return blendWithForeground(SUCCESS_COLOR, 0.5);
+      return SUCCESS_COLOR;
     }
 
     if (execution.executionStage === APPLIED_STAGE_NAME) {
