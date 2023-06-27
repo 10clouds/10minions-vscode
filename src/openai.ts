@@ -310,7 +310,23 @@ export async function gptExecute({
 }
 
 /**
- * 
+ * Custom error class for token errors.
+ */
+class TokenError extends Error {
+  constructor(message?: string) {
+    super(message);
+
+    // Ensuring Error is properly extended
+    Object.setPrototypeOf(this, TokenError.prototype);
+    this.name = this.constructor.name;
+
+    // Capturing stack trace, excluding constructor call from it
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+/**
+ * Checks if the prompt can be handled by the model
  */
 export function ensureICanRunThis({ prompt, maxTokens, mode }: { prompt: string; maxTokens: number; mode: GptMode }) {
   const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
@@ -318,19 +334,13 @@ export function ensureICanRunThis({ prompt, maxTokens, mode }: { prompt: string;
 
   if (usedTokens > MODEL_DATA[model].maxTokens) {
     console.error(`Not enough tokens to perform the modification. absolute minimum: ${usedTokens} available: ${MODEL_DATA[model].maxTokens}`);
-    throw new Error(`Combination of file size, selection, and your command is too big for us to handle.`);
+    throw new TokenError(`Combination of file size, selection, and your command is too big for us to handle.`);
   }
 }
 
 /**
  * Checks if the given prompt can fit within a specified range of token lengths
  * for the specified AI model.
- *
- * @param prompt The input prompt for the AI model.
- * @param minTokens The minimum number of tokens that the prompt should fit within.
- * @param maxTokens The maximum number of tokens that the prompt should fit within.
- * @param model The AI model to be used.
- * @returns The number of used tokens if the prompt can fit within the specified range, false otherwise.
  */
 export function ensureIRunThisInRange({
   prompt,
@@ -353,7 +363,8 @@ export function ensureIRunThisInRange({
   const availableTokens = MODEL_DATA[model].maxTokens - usedTokens;
 
   if (availableTokens < minTokens) {
-    throw new Error(`Not enough tokens to perform the modification. absolute minimum: ${minTokens} available: ${availableTokens}`);
+    console.error(`Not enough tokens to perform the modification. absolute minimum: ${minTokens} available: ${availableTokens}`);
+    throw new TokenError(`Combination of file size, selection, and your command is too big for us to handle.`);
   }
 
   return Math.min(availableTokens, preferedTokens);

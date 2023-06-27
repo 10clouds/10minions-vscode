@@ -289,7 +289,7 @@ export class MinionTask {
           console.error("Error in execution", error);
         }
 
-        this.stopExecution(String(error));
+        this.stopExecution(error instanceof Error ? `Error: ${error.message}` : String(error));
       } finally {
         const executionTime = Date.now() - this.startTime;
         const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
