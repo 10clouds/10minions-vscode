@@ -11,7 +11,7 @@
     "issues": "https://github.com/10clouds/10Minions/issues",
     "discord": "https://discord.gg/your_invite_link"
   },
-  "version": "0.9.11-dev",
+  "version": "0.9.11",
   "engines": {
     "vscode": "^1.78.0",
     "node": ">=18.0.0"
