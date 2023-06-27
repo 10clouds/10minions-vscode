@@ -1,0 +1,5 @@
+// Getting the base name and splitting on the '.' character
+    // This will give us an array where the last 2 elements would be 'original' and 'txt' so remove them
+    // Join the remaining array into a string with '.' character to get the desired base name
+    let baseName = path.basename(fullName).split('.').slice(0, -2).join('.');
+    await runTest({ fileName: baseName });

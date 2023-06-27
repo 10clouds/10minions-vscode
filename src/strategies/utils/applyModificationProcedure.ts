@@ -5,7 +5,7 @@ type CommandSegment = {
   name: string;
   params?: string[];
   followedBy?: CommandSegment[];
-  execute?: (currentContent: string, languageId: string, params: { [key: string]: string }) => string;
+  execute?: (currentContent: string, languageId: string, params: { [key: string]: string }) => Promise<string>;
 };
 
 let COMMAND_STRUCTURE: CommandSegment[] = [
@@ -17,10 +17,10 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
         followedBy: [
           {
             name: "END_REPLACE",
-            execute: (currentContent, languageId, params) => {
+            execute: async (currentContent, languageId, params) => {
               let findText = params.REPLACE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
               let withText = params.WITH.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let replacementArray = fuzzyReplaceTextInner({ currentCode: currentContent, findText, withText });
+              let replacementArray = await fuzzyReplaceTextInner({ currentCode: currentContent, findText, withText });
               if (replacementArray === undefined || replacementArray.length !== 3) {
                 throw new Error(`Could not find:\n${findText}`);
               }
@@ -38,7 +38,7 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
     followedBy: [
       {
         name: "END_REPLACE_ALL",
-        execute: (currentContent, languageId, params) => {
+        execute: async (currentContent, languageId, params) => {
           return params.REPLACE_ALL.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
         },
       },
@@ -52,10 +52,10 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
         followedBy: [
           {
             name: "END_INSERT",
-            execute: (currentContent, languageId, params) => {
+            execute: async (currentContent, languageId, params) => {
               let beforeText = params.BEFORE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
               let insertText = params.INSERT.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let replacementArray = fuzzyReplaceTextInner({ currentCode: currentContent, findText: beforeText, withText: `${insertText}\n${beforeText}` });
+              let replacementArray = await fuzzyReplaceTextInner({ currentCode: currentContent, findText: beforeText, withText: `${insertText}\n${beforeText}` });
               if (replacementArray === undefined || replacementArray.length !== 3) {
                 throw new Error(`Could not find:\n${beforeText}`);
               }
@@ -73,7 +73,7 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
     followedBy: [
       {
         name: "END_MODIFY_OTHER",
-        execute: (currentContent, languageId, params) => {
+        execute: async (currentContent, languageId, params) => {
           return getCommentForLanguage(languageId, params.MODIFY_OTHER) + "\n" + currentContent;
         },
       },
@@ -86,7 +86,7 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
     followedBy: [
       {
         name: "END_RENAME",
-        execute: (currentContent, languageId, params) => {
+        execute: async (currentContent, languageId, params) => {
           let context = params.RENAME.trim();
 
           return currentContent;
@@ -120,7 +120,7 @@ export async function applyModificationProcedure(originalCode: string, modificat
   let inCommand: CommandSegment | undefined;
   let params: { [key: string]: string } = {};
 
-  function newCommand(command: CommandSegment, basedOnLine: string) {
+  async function newCommand(command: CommandSegment, basedOnLine: string) {
     inCommand = command;
 
     let lineWithoutCommand = basedOnLine.substring(inCommand.name.length).trim();
@@ -130,7 +130,7 @@ export async function applyModificationProcedure(originalCode: string, modificat
     }
 
     if (inCommand.execute) {
-      currentCode = inCommand.execute(currentCode, languageId, params);
+      currentCode = await inCommand.execute(currentCode, languageId, params);
     }
 
     if (!inCommand.followedBy || inCommand.followedBy.length === 0) {
@@ -156,14 +156,14 @@ export async function applyModificationProcedure(originalCode: string, modificat
           let findEnd = inCommand.followedBy?.find((followedBy) => followedBy.name.startsWith("END_") && followedBy.execute);
   
           if (findEnd) {
-            currentCode = findEnd.execute!(currentCode, languageId, params);
+            currentCode = await findEnd.execute!(currentCode, languageId, params);
             inCommand = undefined;
             params = {};
           } else {
             throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
           }
   
-          newCommand(outOfOrderNewCommand, line);
+          await newCommand(outOfOrderNewCommand, line);
         } else {
           params[inCommand.name] += (params[inCommand.name] ? "\n" : "") + line;
         }
@@ -172,7 +172,7 @@ export async function applyModificationProcedure(originalCode: string, modificat
     }
   
     if (possibleNextCommands.length > 0) {
-      newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
+      await newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
     }
   }
 

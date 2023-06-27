@@ -264,7 +264,7 @@ export const coreSimilarityFunction = (original: string[], replacement: string[]
   return similarity;
 };
 
-export function fuzzyFindText({
+export async function fuzzyFindText({
   currentCode,
   findText,
   similarityFunction = coreSimilarityFunction,
@@ -276,7 +276,7 @@ export function fuzzyFindText({
   similarityFunction?: (original: string[], replacement: string[]) => number;
   lineNumTolerance?: number;
   similarityThreshold?: number;
-}): { lineStartIndex: number; lineEndIndex: number; confidence: number } {
+}): Promise<{ lineStartIndex: number; lineEndIndex: number; confidence: number }> {
   const currentCodeLines = currentCode.split("\n");
   const findTextLines = findText.split("\n");
 
@@ -308,6 +308,8 @@ export function fuzzyFindText({
         
       }
     }
+
+    await new Promise(resolve => setTimeout(resolve, 1));
   }
 
   return {
@@ -317,7 +319,7 @@ export function fuzzyFindText({
   };
 }
 
-export function fuzzyReplaceTextInner({
+export async function fuzzyReplaceTextInner({
   currentCode,
   findText,
   withText,
@@ -331,7 +333,7 @@ export function fuzzyReplaceTextInner({
   similarityThreshold?: number;
   lineNumTolerance?: number;
 }) {
-  let { lineStartIndex: startIndex, lineEndIndex: endIndex, confidence } = fuzzyFindText({ currentCode, findText, similarityFunction, similarityThreshold });
+  let { lineStartIndex: startIndex, lineEndIndex: endIndex, confidence } = await fuzzyFindText({ currentCode, findText, similarityFunction, similarityThreshold });
 
   if (confidence >= similarityThreshold) {
     const currentCodeLines = currentCode.split("\n");
@@ -388,7 +390,7 @@ export function fuzzyReplaceTextInner({
   }
 }
 
-export function fuzzyReplaceText({
+export async function fuzzyReplaceText({
   currentCode,
   findText,
   withText,
@@ -402,11 +404,11 @@ export function fuzzyReplaceText({
   similarityThreshold?: number;
   lineNumTolerance?: number;
 }) {
-  return fuzzyReplaceTextInner({
+  return (await fuzzyReplaceTextInner({
     currentCode,
     findText,
     withText,
     similarityFunction,
     similarityThreshold,
-  })?.join("");
+  }))?.join("");
 }

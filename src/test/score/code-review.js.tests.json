@@ -6,5 +6,5 @@
       "mode": "FAST",
       "assertion": "The for loop has been replaced with something similar to: (a || b) && getInputValues(req).some(checkInput)"
     },
-    { "type": "gptAssert", "mode": "FAST", "assertion": "The checkForm function exists and always returns type boolean" }
+    { "type": "functionReturnTypeCheck", "functionName": "checkForm", "expectedType": "void"}
 ]
