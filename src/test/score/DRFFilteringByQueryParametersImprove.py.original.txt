@@ -1,3 +1,5 @@
+import json
+
 from django.db.models import Q
 
 from rest_framework.decorators import api_view
@@ -25,15 +27,19 @@ def get_products(request):
         products = products.filter(price__lte=filters['max_price'])
 
     if filters.get('brands'):
-        products = products.filter(brand__name__in=filters['brands'])
+        brands = filters['brands'].split(',')
+        products = products.filter(brand__name__in=brands)
 
     if filters.get('categories'):
-        products = products.filter(category__name__in=filters['categories'])
+        categories = filters['categories'].split(',')
+        products = products.filter(category__name__in=categories)
 
     if filters.get('attributes'):
-        for attribute, value_list in filters['attributes'].items():
-            products = products.filter(
-                attributes__key=attribute, attributes__value__in=value_list
-            )
+        attributes = json.loads(filters['attributes'])
+        
+        for attribute, value_list in attributes.items():
+            value_list = value_list.split(',')
+            
+            products = products.filter(attributes__key=attribute, attributes__value__in=value_list)
 
     return Response(ProductSerializer(products, many=True).data)
