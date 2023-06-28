@@ -1,8 +1,9 @@
 [
   { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid Python code" },
   { "type": "gptAssert", "mode": "FAST", "assertion": "The filtering calls are extracted as a separate function or functions (one for each filtered field)" },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "Error handling for attributes parsing is added and appropriate error Response is returned to the client" },
-  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Duplicated logic of filtering by brands and categories is replaced with a common function" },
-  { "type": "gptAssert", "mode": "QUALITY", "assertion": "The .pop() on request.GET is replaced with .get() to avoid KeyError or other solution to avoid KeyError on .pop() is used" },
-  { "type": "functionReturnTypeCheck", "functionName": "get_products", "expectedType": "Response" }
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Possible errors when parsing filtering values are caught, including attributes JSON parsing, and error Response is returned to the client with descriptive error message" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Duplicated logic of filtering by brands and categories is simplified" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "The possible KeyError on request.GET.pop('keyword') is handled with using .get() instead, providing default value or other solution to avoid KeyError" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Products filtering by keyword is done only if keyword value exists and is not empty" },
+  { "type": "gptAssert", "mode": "FAST", "assertion": "get_products function returns Response type on success" }
 ]
