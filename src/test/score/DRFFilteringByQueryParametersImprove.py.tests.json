@@ -1,0 +1,8 @@
+[
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid Python code" },
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The filtering calls are extracted as a separate function or functions (one for each filtered field)" },
+  { "type": "gptAssert", "mode": "FAST", "assertion": "Error handling for attributes parsing is added and appropriate error Response is returned to the client" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Duplicated logic of filtering by brands and categories is replaced with a common function" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "The .pop() on request.GET is replaced with .get() to avoid KeyError or other solution to avoid KeyError on .pop() is used" },
+  { "type": "functionReturnTypeCheck", "functionName": "get_products", "expectedType": "Response" }
+]
