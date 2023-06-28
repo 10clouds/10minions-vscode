@@ -14,6 +14,8 @@ export type TestDefinition =
   | { type: "simpleStringFind"; stringToFind: string }
   | { type: "functionReturnTypeCheck"; functionName: string; expectedType: string };
 
+const defaultIternationsNumber = 10;
+
 const gptAssertSchema = {
   properties: {
     type: { type: "string", pattern: "gptAssert" },
@@ -164,7 +166,7 @@ async function gptAssert({
   };
 }
 
-async function runTest({ fileName, iterations = 10 }: { fileName: string; iterations?: number }) {
+async function runTest({ fileName, iterations = defaultIternationsNumber }: { fileName: string; iterations?: number }) {
   let tests: TestDefinition[] = require(path.join(__dirname, "score", fileName + ".tests.json"));
 
   // Create a validator instance
