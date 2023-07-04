@@ -1,0 +1,118 @@
+import { env } from "@/src/env";
+import axios from "axios";
+import { collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { db } from "../../lib/firebase";
+import { summarizeVideo } from "./summarizeVideo";
+import { YoutubeTranscriptError } from "./YoutubeTranscriptError";
+const RE_YOUTUBE = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+/** * Retrieve video id from url or string * @param videoIdOrURL video url or video id */ export function retrieveVideoId(videoIdOrURL: string) {
+  if (videoIdOrURL.length === 11) {
+    return videoIdOrURL;
+  }
+  const matchId = videoIdOrURL.match(RE_YOUTUBE);
+  if (matchId && matchId.length) {
+    return matchId[1];
+  }
+  throw new YoutubeTranscriptError("Impossible to retrieve Youtube video ID.");
+}
+// VideoData type is a simplified way to refer to the format of video data
+export type VideoData = {
+  aiTitle?: string;
+  aiSummary?: string;
+  publishedAt?: Date;
+  dateAdded: Date;
+  id: string;
+  url: string;
+  title?: string;
+  description?: string;
+  transcript?: string;
+  thumbnail?: YoutubeThhumbnail;
+};
+type YoutubeThhumbnail = { url: string; width: number; height: number };
+type APIVideoDataSnippet = {
+  publishedAt: string;
+  channelId: string;
+  title: string;
+  description: string;
+  thumbnails: { default: YoutubeThhumbnail; medium: YoutubeThhumbnail; high: YoutubeThhumbnail; standard: YoutubeThhumbnail; maxres: YoutubeThhumbnail };
+  channelTitle: string;
+  tags: string[];
+};
+const getVideoData = async (videoId: string, apiKey: string) => {
+  const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`);
+  return response.data.items[0].snippet as APIVideoDataSnippet;
+};
+export async function progressVideos(videos: VideoData[], topic: string) {
+  for (let video of videos) {
+    console.log(video);
+    if (!video.transcript) {
+      let transcript;
+      try {
+        // Use axios to make a HTTP GET request to /api/fetchTranscript
+        const response = await axios.get(`/api/fetchTranscript?videoId=${video.id}`);
+        // Update transcript with the data received from the HTTP GET request
+        transcript = response.data.transcript;
+        video.transcript = transcript || "";
+        console.log("Transcript: ", video.transcript);
+        updateDoc(doc(db, "topics", topic, "videos", video.id), { transcript: video.transcript });
+      } catch (error) {
+        console.error(`Failed to fetch transcript for video: ${video.url}`);
+      }
+    }
+    if (video.transcript && !video.title) {
+      let data = await getVideoData(video.id, env.NEXT_PUBLIC_FIREBASE_API_KEY);
+      video.title = data.title;
+      video.description = data.description;
+      video.publishedAt = new Date(data.publishedAt);
+      video.thumbnail = data.thumbnails.default;
+      updateDoc(doc(db, "topics", topic, "videos", video.id), {
+        title: video.title,
+        description: video.description,
+        publishedAt: video.publishedAt,
+        thumbnail: video.thumbnail,
+      });
+    }
+    if (video.transcript && !video.aiSummary) {
+      let summary = await summarizeVideo(video);
+      video.aiSummary = summary;
+      updateDoc(doc(db, "topics", topic, "videos", video.id), { aiSummary: video.aiSummary });
+    }
+  }
+}
+export async function addVideo(topic: string, videoIdOrUrl: string, dateAdded = new Date()) {
+  let videoId = retrieveVideoId(videoIdOrUrl);
+  if (!videoId) {
+    throw new Error("Invalid video url");
+  }
+  // Fetch the document from Firestore
+  const videoDocSnap = await getDoc(doc(db, "topics", topic, "videos", videoId));
+  // Check if the document does not exist
+  if (!videoDocSnap.exists()) {
+    console.log(`Video ${videoId} does not exist, creating new document.`);
+    const newVideoDoc = await setDoc(doc(db, "topics", topic, "videos", videoId), { url: `https://www.youtube.com/watch?v=${videoId}`, dateAdded });
+    return newVideoDoc;
+  }
+}
+export async function removeVideo(topic: string, url: string) {
+  await deleteDoc(doc(db, "topics", topic, "videos", url));
+}
+export function useVideos(topic: string) {
+  // Use the new 'VideoData' type instead of repeating object
+  const [videos, setVideos] = useState<VideoData[]>([]);
+  useEffect(() => {
+    // Change in line of code to include orderBy
+    // Order the documents in 'videos' collection by 'dateAdded' field
+    const unsubscribe = onSnapshot(query(collection(db, "topics", topic, "videos"), orderBy("dateAdded", "desc")), (snapshot) => {
+      // Updating state whenever a change is detected
+      const videoData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+      videoData.forEach((video) => {
+        video.publishedAt = video.publishedAt?.toDate();
+      });
+      setVideos(videoData as VideoData[]);
+    });
+    // Clean up
+    return () => unsubscribe();
+  }, [topic]);
+  return { videos, addVideo: (url: string, dateAdded?: Date) => addVideo(topic, url, dateAdded), removeVideo: (url: string) => removeVideo(topic, url) };
+}
