@@ -136,7 +136,8 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
     "test": "tsx ./src/test/runTest.ts",
-    "score": "tsx ./src/test/runScore.ts"
+    "score": "tsx ./src/test/runScore.ts",
+    "prepareTest": "tsx ./src/test/prepareTestFiles.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.21.8",
