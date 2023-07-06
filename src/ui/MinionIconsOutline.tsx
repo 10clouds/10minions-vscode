@@ -1,9 +1,16 @@
-import * as React from "react";
+import * as React from 'react';
 
 type RobotIconProps = React.SVGProps<SVGSVGElement>;
 
 export const MinionIconOutline1 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -32,7 +39,14 @@ export const MinionIconOutline1 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline10 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -55,7 +69,14 @@ export const MinionIconOutline10 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline11 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -68,13 +89,30 @@ export const MinionIconOutline11 = ({ ...props }: RobotIconProps) => (
       d="M645.877 610.942C637.073 619.711 622.826 619.682 614.058 610.877C567.528 564.158 510.661 537.5 450 537.5C389.339 537.5 332.472 564.158 285.942 610.877C277.173 619.682 262.927 619.711 254.123 610.942C245.318 602.173 245.289 587.927 254.058 579.123C307.526 525.436 375.395 492.5 450 492.5C524.605 492.5 592.474 525.436 645.942 579.123C654.711 587.927 654.682 602.174 645.877 610.942Z"
       fill="currentColor"
     />
-    <path fillRule="evenodd" clipRule="evenodd" d="M255.785 361.078L404.878 404.799L392.215 447.981L243.122 404.259L255.785 361.078Z" fill="currentColor" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M658.878 404.259L509.786 447.98L497.123 404.799L646.215 361.077L658.878 404.259Z" fill="currentColor" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M255.785 361.078L404.878 404.799L392.215 447.981L243.122 404.259L255.785 361.078Z"
+      fill="currentColor"
+    />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M658.878 404.259L509.786 447.98L497.123 404.799L646.215 361.077L658.878 404.259Z"
+      fill="currentColor"
+    />
   </svg>
 );
 
 export const MinionIconOutline12 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -87,12 +125,24 @@ export const MinionIconOutline12 = ({ ...props }: RobotIconProps) => (
       d="M285.195 364.408L402.893 456.801C408.326 461.067 411.5 467.592 411.5 474.5C411.5 481.408 408.326 487.933 402.893 492.198L285.195 584.591L257.408 549.195L352.561 474.5L257.408 399.805L285.195 364.408Z"
       fill="currentColor"
     />
-    <path fillRule="evenodd" clipRule="evenodd" d="M493.5 452.5H686.5V497.5H493.5V452.5Z" fill="currentColor" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M493.5 452.5H686.5V497.5H493.5V452.5Z"
+      fill="currentColor"
+    />
   </svg>
 );
 
 export const MinionIconOutline2 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -111,12 +161,24 @@ export const MinionIconOutline2 = ({ ...props }: RobotIconProps) => (
       d="M232.5 457C232.5 411.437 269.437 374.5 315 374.5H319C364.563 374.5 401.5 411.437 401.5 457V477H356.5V457C356.5 436.289 339.711 419.5 319 419.5H315C294.289 419.5 277.5 436.289 277.5 457V477H232.5V457Z"
       fill="currentColor"
     />
-    <path fillRule="evenodd" clipRule="evenodd" d="M492.5 431.5L669.5 431.5L669.5 476.5L492.5 476.5L492.5 431.5Z" fill="currentColor" />
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M492.5 431.5L669.5 431.5L669.5 476.5L492.5 476.5L492.5 431.5Z"
+      fill="currentColor"
+    />
   </svg>
 );
 
 export const MinionIconOutline3 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -139,7 +201,14 @@ export const MinionIconOutline3 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline4 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -186,7 +255,14 @@ export const MinionIconOutline4 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline5 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -209,7 +285,14 @@ export const MinionIconOutline5 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline6 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -232,7 +315,14 @@ export const MinionIconOutline6 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline7 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -261,7 +351,14 @@ export const MinionIconOutline7 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline8 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -290,7 +387,14 @@ export const MinionIconOutline8 = ({ ...props }: RobotIconProps) => (
 );
 
 export const MinionIconOutline9 = ({ ...props }: RobotIconProps) => (
-  <svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+  <svg
+    width="900"
+    height="900"
+    viewBox="0 0 900 900"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"

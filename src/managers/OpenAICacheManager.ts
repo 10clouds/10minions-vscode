@@ -1,4 +1,3 @@
-
 export interface OpenAICacheManager {
   getCachedResult(requestData: object): Promise<string | undefined>;
 }

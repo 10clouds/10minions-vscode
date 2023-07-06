@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
-import { MessageToVSCode, MessageToWebView } from "../Messages";
+import * as vscode from 'vscode';
+import { MessageToVSCode, MessageToWebView } from '../Messages';
 
 export interface ViewProvider extends vscode.WebviewViewProvider {
   postMessageToWebView(message: MessageToWebView): void;

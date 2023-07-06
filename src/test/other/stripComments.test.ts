@@ -1,19 +1,19 @@
-import * as assert from "assert";
-import { stripAllComments } from "../../strategies/utils/stripAllComments";
+import * as assert from 'assert';
+import { stripAllComments } from '../../strategies/utils/stripAllComments';
 
-suite("Strip All Comments Test Suite", () => {
-  test("No comments in the Code", () => {
+suite('Strip All Comments Test Suite', () => {
+  test('No comments in the Code', () => {
     const code = `
       function example() {
         console.log("Hello, world!");
       }`;
     const expectedResult = `${code}`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("Code with line comments", () => {
+  test('Code with line comments', () => {
     const code = `
       // This is a (test function) example
       function example() {
@@ -24,11 +24,11 @@ suite("Strip All Comments Test Suite", () => {
         console.log("Hello, world!");
       }`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("Code with block comments", () => {
+  test('Code with block comments', () => {
     const code = `
         /* This is a (test function) example*/
         function example() {
@@ -40,11 +40,11 @@ suite("Strip All Comments Test Suite", () => {
           console.log("Hello, world!");
         }`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("Code with both line and block comments", () => {
+  test('Code with both line and block comments', () => {
     const code = `
       // This is a (test function) example
       function example() {
@@ -55,11 +55,11 @@ suite("Strip All Comments Test Suite", () => {
         console.log("Hello, world!");
       }`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("Python Code with comments", () => {
+  test('Python Code with comments', () => {
     const code = `
     # This is a single line comment
     ''' This is a 
@@ -73,11 +73,11 @@ suite("Strip All Comments Test Suite", () => {
       print("Hello, world!")
     `;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("TypeScript Code with multiline comments", () => {
+  test('TypeScript Code with multiline comments', () => {
     const code = `
     /* This is a line of the comment.
        This is another line of the comment.
@@ -91,11 +91,11 @@ suite("Strip All Comments Test Suite", () => {
       console.log("Hello, world!");
     }`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 
-  test("Golang Code with comments", () => {
+  test('Golang Code with comments', () => {
     const code = `
     // This is a single line comment
     func example() {
@@ -107,7 +107,7 @@ suite("Strip All Comments Test Suite", () => {
       fmt.Println("Hello, world!")
     }`;
 
-    const result = stripAllComments(code.split("\n")).join("\n");
+    const result = stripAllComments(code.split('\n')).join('\n');
     assert.deepStrictEqual(result, expectedResult);
   });
 });

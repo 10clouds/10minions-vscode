@@ -1,25 +1,41 @@
-import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import * as React from "react";
-import { forwardRef } from "react";
-import { blendWithForeground, getBaseColor } from "./utils/blendColors";
-import { ALL_MINION_ICONS_FILL } from "./MinionIconsFill";
-import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME, MinionTaskUIInfo } from "./MinionTaskUIInfo";
-import { ProgressBar } from "./ProgressBar";
-import { postMessageToVsCode } from "./SideBarWebViewInnerComponent";
-import { MessageToVSCodeType } from "../Messages";
-import { useUserQueryPreview } from "./useUserQueryPreview";
-import { OutlineButton } from "./OutlineButton";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/solid';
+import * as React from 'react';
+import { forwardRef } from 'react';
+import { blendWithForeground, getBaseColor } from './utils/blendColors';
+import { ALL_MINION_ICONS_FILL } from './MinionIconsFill';
+import {
+  APPLIED_STAGE_NAME,
+  APPLYING_STAGE_NAME,
+  CANCELED_STAGE_NAME,
+  FINISHED_STAGE_NAME,
+  MinionTaskUIInfo,
+} from './MinionTaskUIInfo';
+import { ProgressBar } from './ProgressBar';
+import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
+import { MessageToVSCodeType } from '../Messages';
+import { useUserQueryPreview } from './useUserQueryPreview';
+import { OutlineButton } from './OutlineButton';
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
-  target.style.height = "auto";
-  target.style.height = target.scrollHeight + "px";
+  target.style.height = 'auto';
+  target.style.height = target.scrollHeight + 'px';
 }
 
 // Constants
 export const MAX_PREVIEW_LENGTH = 100;
 
 export const MinionTaskComponent = forwardRef(
-  ({ minionTask, ...props }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>, ref: React.ForwardedRef<HTMLDivElement>) => {
+  (
+    {
+      minionTask,
+      ...props
+    }: { minionTask: MinionTaskUIInfo } & React.HTMLAttributes<HTMLDivElement>,
+    ref: React.ForwardedRef<HTMLDivElement>,
+  ) => {
     const { className, ...propsWithoutClassName } = props;
 
     const userQueryPreview = useUserQueryPreview(minionTask.userQuery);
@@ -27,7 +43,9 @@ export const MinionTaskComponent = forwardRef(
 
     // State variables for managing the input field state
     const [isInputOpen, setIsInputOpen] = React.useState(false);
-    const [updatedPrompt, setUpdatedPrompt] = React.useState(minionTask.userQuery);
+    const [updatedPrompt, setUpdatedPrompt] = React.useState(
+      minionTask.userQuery,
+    );
 
     React.useEffect(() => {
       if (!!minionTask.inlineMessage) {
@@ -41,7 +59,9 @@ export const MinionTaskComponent = forwardRef(
 
     React.useLayoutEffect(() => {
       if (isInputOpen) {
-        const textAreaElement = document.querySelector<HTMLTextAreaElement>(".execution textarea");
+        const textAreaElement = document.querySelector<HTMLTextAreaElement>(
+          '.execution textarea',
+        );
         if (textAreaElement) {
           adjustTextAreaHeight(textAreaElement);
         }
@@ -50,7 +70,7 @@ export const MinionTaskComponent = forwardRef(
 
     function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
       // Only call handleRun() when Enter key is pressed without Shift
-      if (event.key === "Enter" && !event.shiftKey) {
+      if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         setIsInputOpen(false);
 
@@ -75,7 +95,7 @@ export const MinionTaskComponent = forwardRef(
       }
     }
 
-    let RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
+    const RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
 
     const stopButton = (
       <OutlineButton
@@ -124,7 +144,11 @@ export const MinionTaskComponent = forwardRef(
       />
     );
 
-    const chevronButton = isExpanded ? <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" /> : <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />;
+    const chevronButton = isExpanded ? (
+      <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" />
+    ) : (
+      <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />
+    );
 
     const closeButton = (
       <XMarkIcon
@@ -199,9 +223,9 @@ export const MinionTaskComponent = forwardRef(
       <div
         ref={ref}
         style={{
-          backgroundColor: "var(--vscode-editor-background)",
-          color: "var(--vscode-editor-foreground)",
-          borderColor: "var(--vscode-focusBorder)",
+          backgroundColor: 'var(--vscode-editor-background)',
+          color: 'var(--vscode-editor-foreground)',
+          borderColor: 'var(--vscode-focusBorder)',
         }}
         key={minionTask.id}
         className={`execution mb-4 overflow-hidden rounded flex flex-col ${className}`}
@@ -210,20 +234,34 @@ export const MinionTaskComponent = forwardRef(
         <div className="pt-3">
           <div
             className="flex justify-between cursor-pointer pl-3 pr-3 "
-            title={!isExpanded ? "Click for more info" : "Click to hide"}
+            title={!isExpanded ? 'Click for more info' : 'Click to hide'}
             onClick={() => {
               setIsExpanded(!isExpanded);
             }}
           >
             <div
-              className={`w-6 h-6 mr-2 transition-color ${!minionTask.stopped || minionTask.executionStage === APPLYING_STAGE_NAME ? "busy-robot" : ""} ${
-                minionTask.executionStage === FINISHED_STAGE_NAME ? "motion-safe:animate-bounce" : ""
-              } ${minionTask.isError ? "error-robot" : ""}`}
+              className={`w-6 h-6 mr-2 transition-color ${
+                !minionTask.stopped ||
+                minionTask.executionStage === APPLYING_STAGE_NAME
+                  ? 'busy-robot'
+                  : ''
+              } ${
+                minionTask.executionStage === FINISHED_STAGE_NAME
+                  ? 'motion-safe:animate-bounce'
+                  : ''
+              } ${minionTask.isError ? 'error-robot' : ''}`}
               style={{
                 color: blendWithForeground(getBaseColor(minionTask)),
               }}
             >
-              <RobotIcon className={`w-6 h-6 inline-flex ${!minionTask.stopped || minionTask.executionStage === APPLYING_STAGE_NAME ? "busy-robot-extra" : ""}`} />
+              <RobotIcon
+                className={`w-6 h-6 inline-flex ${
+                  !minionTask.stopped ||
+                  minionTask.executionStage === APPLYING_STAGE_NAME
+                    ? 'busy-robot-extra'
+                    : ''
+                }`}
+              />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
               <span className="truncate">{minionTask.shortName}</span>
@@ -231,10 +269,12 @@ export const MinionTaskComponent = forwardRef(
             {minionTask.inlineMessage &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
               markAsReadButton}
-            {minionTask.modificationProcedure  &&
+            {minionTask.modificationProcedure &&
               minionTask.executionStage === FINISHED_STAGE_NAME &&
               applyButton}
-            {(minionTask.executionStage === CANCELED_STAGE_NAME || minionTask.isError) && retryButton}
+            {(minionTask.executionStage === CANCELED_STAGE_NAME ||
+              minionTask.isError) &&
+              retryButton}
 
             {!minionTask.stopped ? stopButton : <> </>}
             {chevronButton}
@@ -246,7 +286,13 @@ export const MinionTaskComponent = forwardRef(
           ) : (
             <>
               <div className="pl-3 pr-3 pb-3">
-                {minionTask.inlineMessage ? <pre style={{ whiteSpace: "pre-wrap" }}>{minionTask.inlineMessage}</pre> : <></>}
+                {minionTask.inlineMessage ? (
+                  <pre style={{ whiteSpace: 'pre-wrap' }}>
+                    {minionTask.inlineMessage}
+                  </pre>
+                ) : (
+                  <></>
+                )}
               </div>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 pb-3 pl-3 pr-3 overflow-auto">
                 <div className="mb-2">Log:</div>
@@ -265,14 +311,19 @@ export const MinionTaskComponent = forwardRef(
                       });
                     }}
                   >
-                    {minionTask.documentName} {minionTask.executionStage === APPLIED_STAGE_NAME && minionTask.modificationProcedure && diffButton}
+                    {minionTask.documentName}{' '}
+                    {minionTask.executionStage === APPLIED_STAGE_NAME &&
+                      minionTask.modificationProcedure &&
+                      diffButton}
                   </span>
                 </span>
 
                 <div className="mb-2">Status:</div>
 
                 <span className="mb-2">
-                  {minionTask.executionStage} {minionTask.executionStage === APPLIED_STAGE_NAME && reapplyModificationButton}
+                  {minionTask.executionStage}{' '}
+                  {minionTask.executionStage === APPLIED_STAGE_NAME &&
+                    reapplyModificationButton}
                 </span>
 
                 <div className="mb-2">Task:</div>
@@ -281,12 +332,12 @@ export const MinionTaskComponent = forwardRef(
                   {isInputOpen ? (
                     <textarea
                       style={{
-                        backgroundColor: "inherit",
-                        color: "inherit",
-                        border: "none",
-                        outline: "none",
-                        width: "100%", // Make it span the entire line
-                        resize: "none", // Disable the resizing of the textarea
+                        backgroundColor: 'inherit',
+                        color: 'inherit',
+                        border: 'none',
+                        outline: 'none',
+                        width: '100%', // Make it span the entire line
+                        resize: 'none', // Disable the resizing of the textarea
                         margin: 0,
                         padding: 0,
                       }}
@@ -298,16 +349,23 @@ export const MinionTaskComponent = forwardRef(
                         handleRun();
                       }}
                       autoFocus
-                      onInput={(event: React.FormEvent<HTMLTextAreaElement>) => {
-                        adjustTextAreaHeight(event.target as HTMLTextAreaElement);
+                      onInput={(
+                        event: React.FormEvent<HTMLTextAreaElement>,
+                      ) => {
+                        adjustTextAreaHeight(
+                          event.target as HTMLTextAreaElement,
+                        );
                       }}
                     />
                   ) : (
                     // Wrap the userQueryPreview inside a div with the same line-height as the textarea
                     // Apply required padding and margin in this div
                     <div>
-                      <span title="Edit task" onClick={() => setIsInputOpen(true)}>
-                        {userQueryPreview}{" "}
+                      <span
+                        title="Edit task"
+                        onClick={() => setIsInputOpen(true)}
+                      >
+                        {userQueryPreview}{' '}
                       </span>
                       {minionTask.stopped && retryButton}
                     </div>
@@ -325,10 +383,14 @@ export const MinionTaskComponent = forwardRef(
                       });
                     }}
                     style={{
-                      whiteSpace: "pre",
+                      whiteSpace: 'pre',
                     }}
                   >
-                    <pre>{minionTask.selectedText.includes("\n") ? minionTask.selectedText : minionTask.selectedText.trim()}</pre>
+                    <pre>
+                      {minionTask.selectedText.includes('\n')
+                        ? minionTask.selectedText
+                        : minionTask.selectedText.trim()}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -342,5 +404,5 @@ export const MinionTaskComponent = forwardRef(
         </div>
       </div>
     );
-  }
+  },
 );

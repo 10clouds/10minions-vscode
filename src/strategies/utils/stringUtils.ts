@@ -1,7 +1,13 @@
-export function commonStringEnd(commonIndent: string, lineIndent: string): string {
-  let commonEnd = "";
+export function commonStringEnd(
+  commonIndent: string,
+  lineIndent: string,
+): string {
+  let commonEnd = '';
   for (let i = 0; i < Math.min(commonIndent.length, lineIndent.length); i++) {
-    if (commonIndent[commonIndent.length - i - 1] === lineIndent[lineIndent.length - i - 1]) {
+    if (
+      commonIndent[commonIndent.length - i - 1] ===
+      lineIndent[lineIndent.length - i - 1]
+    ) {
       commonEnd = commonIndent[commonIndent.length - i - 1] + commonEnd;
     } else {
       break;
@@ -11,7 +17,7 @@ export function commonStringEnd(commonIndent: string, lineIndent: string): strin
 }
 
 export function commonStringStart(commonIndent: string, lineIndent: string) {
-  let commonStart = "";
+  let commonStart = '';
   for (let i = 0; i < Math.min(commonIndent.length, lineIndent.length); i++) {
     if (commonIndent[i] === lineIndent[i]) {
       commonStart += commonIndent[i];
@@ -27,7 +33,7 @@ export function commonStringStart(commonIndent: string, lineIndent: string) {
  */
 export function commonStringEndArray(indents: string[]) {
   let commonIndent = undefined;
-  for (let lineIndent of indents) {
+  for (const lineIndent of indents) {
     if (commonIndent === undefined) {
       commonIndent = lineIndent;
     } else {
@@ -44,7 +50,7 @@ export function removeEmptyLines(slice: string[]) {
 
 export function removeIndent(slice: string[], indent?: string) {
   if (indent === undefined) {
-    const indents = slice.map((line) => line.match(/(^\s*)/)?.[1] || "");
+    const indents = slice.map((line) => line.match(/(^\s*)/)?.[1] || '');
     indent = commonStringEndArray(indents);
   }
 
@@ -100,8 +106,8 @@ export function levenshteinDistance(a: string, b: string): number {
           matrix[i - 1][j - 1] + 1, // substitution
           Math.min(
             matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
-          )
+            matrix[i - 1][j] + 1, // deletion
+          ),
         );
       }
     }
@@ -111,7 +117,7 @@ export function levenshteinDistance(a: string, b: string): number {
 }
 
 export function levenshteinDistanceSimilarity(a: string, b: string): number {
-  let len = Math.max(a.length, b.length);
+  const len = Math.max(a.length, b.length);
   if (len === 0) {
     return 1;
   }
@@ -119,13 +125,13 @@ export function levenshteinDistanceSimilarity(a: string, b: string): number {
 }
 
 export function sorensenDiceCoefficient(first: string, second: string) {
-  first = first.replace(/\s+/g, "");
-  second = second.replace(/\s+/g, "");
+  first = first.replace(/\s+/g, '');
+  second = second.replace(/\s+/g, '');
 
   if (first === second) return 1; // identical or empty
   if (first.length < 2 || second.length < 2) return 0; // if either is a 0-letter or 1-letter string
 
-  let firstBigrams = new Map();
+  const firstBigrams = new Map();
   for (let i = 0; i < first.length - 1; i++) {
     const bigram = first.substring(i, i + 2);
     const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1;
@@ -158,7 +164,7 @@ export function equalsStringSimilarity(a: string, b: string): number {
     }
   }
 
-  let max = Math.max(a.length, b.length);
+  const max = Math.max(a.length, b.length);
 
   if (max === 0) {
     return 1;
@@ -167,7 +173,9 @@ export function equalsStringSimilarity(a: string, b: string): number {
   return matchingChars / max;
 }
 
-export function trimEmptyLinesAtTheBeginingAndEnd(textLines: string[]): string[] {
+export function trimEmptyLinesAtTheBeginingAndEnd(
+  textLines: string[],
+): string[] {
   let start = 0;
   let end = textLines.length - 1;
 
@@ -183,7 +191,9 @@ export function trimEmptyLinesAtTheBeginingAndEnd(textLines: string[]): string[]
 }
 
 export function longestCommonSubsequenceLength(s1: string, s2: string): number {
-  const dp = Array.from({ length: s1.length + 1 }, () => new Array(s2.length + 1).fill(0));
+  const dp = Array.from({ length: s1.length + 1 }, () =>
+    new Array(s2.length + 1).fill(0),
+  );
 
   for (let i = 1; i <= s1.length; i++) {
     for (let j = 1; j <= s2.length; j++) {
@@ -199,7 +209,7 @@ export function longestCommonSubsequenceLength(s1: string, s2: string): number {
 }
 
 export function normalizeWhiteSpace(s: string): string {
-  return s.trim().replace(/\s+/g, " ");
+  return s.trim().replace(/\s+/g, ' ');
 }
 
 export function codeStringSimilarity(a: string, b: string): number {

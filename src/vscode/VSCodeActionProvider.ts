@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 export class VSCodeActionProvider implements vscode.CodeActionProvider {
   public static readonly providedCodeActionKinds = [
@@ -7,28 +7,23 @@ export class VSCodeActionProvider implements vscode.CodeActionProvider {
 
   constructor(private context: vscode.ExtensionContext) {
     context.subscriptions.push(
-      vscode.languages.registerCodeActionsProvider(
-        { scheme: "file" },
-        this,
-        {
-          providedCodeActionKinds: VSCodeActionProvider.providedCodeActionKinds,
-        }
-      )
+      vscode.languages.registerCodeActionsProvider({ scheme: 'file' }, this, {
+        providedCodeActionKinds: VSCodeActionProvider.providedCodeActionKinds,
+      }),
     );
   }
 
-
   private createCommandCodeAction(
     diagnostic: vscode.Diagnostic,
-    uri: vscode.Uri
+    uri: vscode.Uri,
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
-      "Fix with 10Minions",
-      VSCodeActionProvider.providedCodeActionKinds[0]
+      'Fix with 10Minions',
+      VSCodeActionProvider.providedCodeActionKinds[0],
     );
     action.command = {
-      command: "10minions.fixError",
-      title: "Let AI fix this",
+      command: '10minions.fixError',
+      title: 'Let AI fix this',
       arguments: [uri, diagnostic],
     };
     action.diagnostics = [diagnostic];
@@ -39,11 +34,12 @@ export class VSCodeActionProvider implements vscode.CodeActionProvider {
     document: vscode.TextDocument,
     range: vscode.Range,
     context: vscode.CodeActionContext,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
   ): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
     return context.diagnostics
       .filter((diagnostic) => this.canFixDiagnostic(diagnostic))
-      .map((diagnostic) => this.createCommandCodeAction(diagnostic, document.uri)
+      .map((diagnostic) =>
+        this.createCommandCodeAction(diagnostic, document.uri),
       );
   }
 
