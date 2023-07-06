@@ -1,31 +1,48 @@
-import { getCommentForLanguage } from "./comments";
-import { fuzzyReplaceTextInner } from "./fuzzyReplaceText";
+import { getCommentForLanguage } from './comments';
+import { fuzzyReplaceTextInner } from './fuzzyReplaceText';
 
 type CommandSegment = {
   name: string;
   params?: string[];
   followedBy?: CommandSegment[];
-  execute?: (currentContent: string, languageId: string, params: { [key: string]: string }) => Promise<string>;
+  execute?: (
+    currentContent: string,
+    languageId: string,
+    params: { [key: string]: string },
+  ) => Promise<string>;
 };
 
-let COMMAND_STRUCTURE: CommandSegment[] = [
+const COMMAND_STRUCTURE: CommandSegment[] = [
   {
-    name: "REPLACE",
+    name: 'REPLACE',
     followedBy: [
       {
-        name: "WITH",
+        name: 'WITH',
         followedBy: [
           {
-            name: "END_REPLACE",
+            name: 'END_REPLACE',
             execute: async (currentContent, languageId, params) => {
-              let findText = params.REPLACE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let withText = params.WITH.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let replacementArray = await fuzzyReplaceTextInner({ currentCode: currentContent, findText, withText });
-              if (replacementArray === undefined || replacementArray.length !== 3) {
+              const findText = params.REPLACE.replace(
+                /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
+                '$1',
+              );
+              const withText = params.WITH.replace(
+                /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
+                '$1',
+              );
+              const replacementArray = await fuzzyReplaceTextInner({
+                currentCode: currentContent,
+                findText,
+                withText,
+              });
+              if (
+                replacementArray === undefined ||
+                replacementArray.length !== 3
+              ) {
                 throw new Error(`Could not find:\n${findText}`);
               }
 
-              return replacementArray.join("");
+              return replacementArray.join('');
             },
           },
         ],
@@ -34,33 +51,49 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
   },
 
   {
-    name: "REPLACE_ALL",
+    name: 'REPLACE_ALL',
     followedBy: [
       {
-        name: "END_REPLACE_ALL",
+        name: 'END_REPLACE_ALL',
         execute: async (currentContent, languageId, params) => {
-          return params.REPLACE_ALL.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
+          return params.REPLACE_ALL.replace(
+            /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
+            '$1',
+          );
         },
       },
     ],
   },
   {
-    name: "INSERT",
+    name: 'INSERT',
     followedBy: [
       {
-        name: "BEFORE",
+        name: 'BEFORE',
         followedBy: [
           {
-            name: "END_INSERT",
+            name: 'END_INSERT',
             execute: async (currentContent, languageId, params) => {
-              let beforeText = params.BEFORE.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let insertText = params.INSERT.replace(/^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s, "$1");
-              let replacementArray = await fuzzyReplaceTextInner({ currentCode: currentContent, findText: beforeText, withText: `${insertText}\n${beforeText}` });
-              if (replacementArray === undefined || replacementArray.length !== 3) {
+              const beforeText = params.BEFORE.replace(
+                /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
+                '$1',
+              );
+              const insertText = params.INSERT.replace(
+                /^(?:(?!```).)*```[^\n]*\n(.*?)\n```(?:(?!```).)*$/s,
+                '$1',
+              );
+              const replacementArray = await fuzzyReplaceTextInner({
+                currentCode: currentContent,
+                findText: beforeText,
+                withText: `${insertText}\n${beforeText}`,
+              });
+              if (
+                replacementArray === undefined ||
+                replacementArray.length !== 3
+              ) {
                 throw new Error(`Could not find:\n${beforeText}`);
               }
 
-              return replacementArray.join("");
+              return replacementArray.join('');
             },
           },
         ],
@@ -69,37 +102,41 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
   },
 
   {
-    name: "MODIFY_OTHER",
+    name: 'MODIFY_OTHER',
     followedBy: [
       {
-        name: "END_MODIFY_OTHER",
+        name: 'END_MODIFY_OTHER',
         execute: async (currentContent, languageId, params) => {
-          return getCommentForLanguage(languageId, params.MODIFY_OTHER) + "\n" + currentContent;
+          return (
+            getCommentForLanguage(languageId, params.MODIFY_OTHER) +
+            '\n' +
+            currentContent
+          );
         },
       },
     ],
   },
 
   {
-    name: "RENAME",
-    params: ["from", "to"],
+    name: 'RENAME',
+    params: ['from', 'to'],
     followedBy: [
       {
-        name: "END_RENAME",
+        name: 'END_RENAME',
         execute: async (currentContent, languageId, params) => {
-          let context = params.RENAME.trim();
+          const context = params.RENAME.trim();
 
           return currentContent;
 
           /*
-      
+
       TODO:
       const document = editor.document;
       const position = editor.selection.active;
- 
+
       const oldFunctionName = "oldFunction";
       const newFunctionName = "newFunction";
- 
+
       vscode.commands.executeCommand(
         "editor.action.rename",
         document.uri,
@@ -114,19 +151,25 @@ let COMMAND_STRUCTURE: CommandSegment[] = [
   },
 ];
 
-export async function applyModificationProcedure(originalCode: string, modificationProcedure: string, languageId: string) {
+export async function applyModificationProcedure(
+  originalCode: string,
+  modificationProcedure: string,
+  languageId: string,
+) {
   let currentCode = originalCode;
-  let lines = modificationProcedure.split("\n");
+  const lines = modificationProcedure.split('\n');
   let inCommand: CommandSegment | undefined;
   let params: { [key: string]: string } = {};
 
   async function newCommand(command: CommandSegment, basedOnLine: string) {
     inCommand = command;
 
-    let lineWithoutCommand = basedOnLine.substring(inCommand.name.length).trim();
-    let readParams = lineWithoutCommand.split(" ");
-    for (let paramName of inCommand.params || []) {
-      params[paramName] = readParams.shift() || "";
+    const lineWithoutCommand = basedOnLine
+      .substring(inCommand.name.length)
+      .trim();
+    const readParams = lineWithoutCommand.split(' ');
+    for (const paramName of inCommand.params || []) {
+      params[paramName] = readParams.shift() || '';
     }
 
     if (inCommand.execute) {
@@ -137,51 +180,77 @@ export async function applyModificationProcedure(originalCode: string, modificat
       inCommand = undefined;
       params = {};
     } else {
-      params[inCommand.name] = "";
+      params[inCommand.name] = '';
     }
   }
 
-  for await (let line of lines) {
-    await new Promise(resolve => setTimeout(resolve, 1));
-  
-    let possibiltiies: CommandSegment[] = inCommand ? inCommand.followedBy || [] : COMMAND_STRUCTURE;
-    let possibleNextCommands = possibiltiies.filter((command) => line.startsWith(command.name));
-  
+  for await (const line of lines) {
+    await new Promise((resolve) => setTimeout(resolve, 1));
+
+    const possibiltiies: CommandSegment[] = inCommand
+      ? inCommand.followedBy || []
+      : COMMAND_STRUCTURE;
+    const possibleNextCommands = possibiltiies.filter((command) =>
+      line.startsWith(command.name),
+    );
+
     if (possibleNextCommands.length === 0) {
       if (inCommand) {
-        let outOfOrderNewCommands = COMMAND_STRUCTURE.filter((command) => line.startsWith(command.name));
-  
+        const outOfOrderNewCommands = COMMAND_STRUCTURE.filter((command) =>
+          line.startsWith(command.name),
+        );
+
         if (outOfOrderNewCommands.length > 0) {
-          let outOfOrderNewCommand = outOfOrderNewCommands.sort((a, b) => a.name.length - b.name.length)[0];
-          let findEnd = inCommand.followedBy?.find((followedBy) => followedBy.name.startsWith("END_") && followedBy.execute);
-  
+          const outOfOrderNewCommand = outOfOrderNewCommands.sort(
+            (a, b) => a.name.length - b.name.length,
+          )[0];
+          const findEnd = inCommand.followedBy?.find(
+            (followedBy) =>
+              followedBy.name.startsWith('END_') && followedBy.execute,
+          );
+
           if (findEnd) {
-            currentCode = await findEnd.execute!(currentCode, languageId, params);
+            currentCode = await findEnd.execute!(
+              currentCode,
+              languageId,
+              params,
+            );
             inCommand = undefined;
             params = {};
           } else {
-            throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
+            throw new Error(
+              `Missing any of: ${(inCommand.followedBy || [])
+                .map((c) => c.name)
+                .join(', ')}`,
+            );
           }
-  
+
           await newCommand(outOfOrderNewCommand, line);
         } else {
-          params[inCommand.name] += (params[inCommand.name] ? "\n" : "") + line;
+          params[inCommand.name] += (params[inCommand.name] ? '\n' : '') + line;
         }
         continue;
       }
     }
-  
+
     if (possibleNextCommands.length > 0) {
-      await newCommand(possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0], line);
+      await newCommand(
+        possibleNextCommands.sort((a, b) => a.name.length - b.name.length)[0],
+        line,
+      );
     }
   }
 
   if (inCommand) {
-    throw new Error(`Missing any of: ${(inCommand.followedBy || []).map((c) => c.name).join(", ")}`);
+    throw new Error(
+      `Missing any of: ${(inCommand.followedBy || [])
+        .map((c) => c.name)
+        .join(', ')}`,
+    );
   }
 
   if (originalCode === currentCode) {
-    throw new Error("No procedure");
+    throw new Error('No procedure');
   }
 
   return currentCode;

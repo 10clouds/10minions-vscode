@@ -1,14 +1,21 @@
-import * as vscode from "vscode";
-import { extractExecutionIdFromUri } from "./utils/extractExecutionIdFromUri";
-import { getMinionTasksManager } from "../managers/MinionTasksManager";
-import { LogProvider, setLogProvider } from "../managers/LogProvider";
+import * as vscode from 'vscode';
+import { extractExecutionIdFromUri } from './utils/extractExecutionIdFromUri';
+import { getMinionTasksManager } from '../managers/MinionTasksManager';
+import { LogProvider, setLogProvider } from '../managers/LogProvider';
 
-export class VSLogProvider implements vscode.TextDocumentContentProvider, LogProvider {
+export class VSLogProvider
+  implements vscode.TextDocumentContentProvider, LogProvider
+{
   // Create an EventEmitter to handle document updates
   private _onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
 
   constructor(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("10minions-log", this));
+    context.subscriptions.push(
+      vscode.workspace.registerTextDocumentContentProvider(
+        '10minions-log',
+        this,
+      ),
+    );
 
     setLogProvider(this);
   }
@@ -27,6 +34,6 @@ export class VSLogProvider implements vscode.TextDocumentContentProvider, LogPro
     const textKey = extractExecutionIdFromUri(uri);
     const execution = getMinionTasksManager().getExecutionById(textKey);
     const logContent = execution?.logContent;
-    return logContent || "";
+    return logContent || '';
   }
 }

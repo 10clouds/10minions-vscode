@@ -1,17 +1,24 @@
-import { encode as encodeGPT35 } from "gpt-tokenizer/cjs/model/gpt-3.5-turbo";
-import { encode as encodeGPT4 } from "gpt-tokenizer/cjs/model/gpt-4";
-import { Schema } from "jsonschema";
-import fetch, { Response } from "node-fetch";
-import { DEBUG_RESPONSES } from "./const";
-import { getAnalyticsManager } from "./managers/AnalyticsManager";
-import { CANCELED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
-import AsyncLock = require("async-lock");
-import { getOpenAICacheManager } from "./managers/OpenAICacheManager";
+import { encode as encodeGPT35 } from 'gpt-tokenizer/cjs/model/gpt-3.5-turbo';
+import { encode as encodeGPT4 } from 'gpt-tokenizer/cjs/model/gpt-4';
+import { Schema } from 'jsonschema';
+import fetch, { Response } from 'node-fetch';
+import { DEBUG_RESPONSES } from './const';
+import { getAnalyticsManager } from './managers/AnalyticsManager';
+import { CANCELED_STAGE_NAME } from './ui/MinionTaskUIInfo';
+import AsyncLock = require('async-lock');
+import { getOpenAICacheManager } from './managers/OpenAICacheManager';
 
-export type GptMode = "FAST" | "QUALITY";
-export type AVAILABLE_MODELS = "gpt-4-0613" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-16k-0613"; // | "gpt-4-32k-0613"
-export type OutputType = "string" | FunctionDef;
-export type FunctionParams = { type: "object", properties: {[key: string]: Schema}, required: string[] };
+export type GptMode = 'FAST' | 'QUALITY';
+export type AVAILABLE_MODELS =
+  | 'gpt-4-0613'
+  | 'gpt-3.5-turbo-0613'
+  | 'gpt-3.5-turbo-16k-0613'; // | "gpt-4-32k-0613"
+export type OutputType = 'string' | FunctionDef;
+export type FunctionParams = {
+  type: 'object';
+  properties: { [key: string]: Schema };
+  required: string[];
+};
 
 export type FunctionDef = {
   name: string;
@@ -29,13 +36,28 @@ export type ModelData = {
 };
 
 export const MODEL_DATA: ModelData = {
-  "gpt-4-0613": { maxTokens: 8192, encode: encodeGPT4, inputCostPer1K: 0.03, outputCostPer1K: 0.06 },
+  'gpt-4-0613': {
+    maxTokens: 8192,
+    encode: encodeGPT4,
+    inputCostPer1K: 0.03,
+    outputCostPer1K: 0.06,
+  },
   //"gpt-4-32k-0613": { maxTokens: 32768, encode: encodeGPT4, inputCostPer1K: 0.06, outputCostPer1K: 0.12 },
-  "gpt-3.5-turbo-0613": { maxTokens: 4096, encode: encodeGPT35, inputCostPer1K: 0.0015, outputCostPer1K: 0.002 },
-  "gpt-3.5-turbo-16k-0613": { maxTokens: 16384, encode: encodeGPT35, inputCostPer1K: 0.003, outputCostPer1K: 0.004 },
+  'gpt-3.5-turbo-0613': {
+    maxTokens: 4096,
+    encode: encodeGPT35,
+    inputCostPer1K: 0.0015,
+    outputCostPer1K: 0.002,
+  },
+  'gpt-3.5-turbo-16k-0613': {
+    maxTokens: 16384,
+    encode: encodeGPT35,
+    inputCostPer1K: 0.003,
+    outputCostPer1K: 0.004,
+  },
 };
 
-let openAILock = new AsyncLock();
+const openAILock = new AsyncLock();
 let openAIApiKey: string | undefined;
 
 export function setOpenAIApiKey(apiKey: string) {
@@ -43,27 +65,26 @@ export function setOpenAIApiKey(apiKey: string) {
 }
 
 function extractParsedLines(chunkBuffer: string): [any[], string] {
-  let parsedLines: any[] = [];
+  const parsedLines: any[] = [];
 
-  while (chunkBuffer.includes("\n")) {
-
-    if (chunkBuffer.startsWith("\n")) {
+  while (chunkBuffer.includes('\n')) {
+    if (chunkBuffer.startsWith('\n')) {
       chunkBuffer = chunkBuffer.slice(1);
       continue;
     }
-    
-    if (chunkBuffer.startsWith("data: ")) {
-      let [line, ...rest] = chunkBuffer.split("\n");
-      chunkBuffer = rest.join("\n");
+
+    if (chunkBuffer.startsWith('data: ')) {
+      const [line, ...rest] = chunkBuffer.split('\n');
+      chunkBuffer = rest.join('\n');
 
       if (DEBUG_RESPONSES) {
         console.log(line);
       }
 
-      if (line === "data: [DONE]") continue;
+      if (line === 'data: [DONE]') continue;
 
-      let parsedLine = line.replace(/^data: /, "").trim();
-      if (parsedLine !== "") {
+      const parsedLine = line.replace(/^data: /, '').trim();
+      if (parsedLine !== '') {
         try {
           parsedLines.push(JSON.parse(parsedLine));
         } catch (e) {
@@ -72,7 +93,7 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
         }
       }
     } else {
-      let errorObject = JSON.parse(chunkBuffer);
+      const errorObject = JSON.parse(chunkBuffer);
 
       if (errorObject.error) {
         throw new Error(JSON.stringify(errorObject));
@@ -84,7 +105,6 @@ function extractParsedLines(chunkBuffer: string): [any[], string] {
 
   return [parsedLines, chunkBuffer];
 }
-
 
 /* The processOpenAIResponseStream function processes the response from the
  * API and extracts tokens from the response stream. */
@@ -100,12 +120,12 @@ async function processOpenAIResponseStream({
   controller: AbortController;
 }) {
   const stream = response.body!;
-  const decoder = new TextDecoder("utf-8");
-  let fullContent = "";
-  let chunkBuffer = "";
+  const decoder = new TextDecoder('utf-8');
+  let fullContent = '';
+  let chunkBuffer = '';
 
   return await new Promise<string>((resolve, reject) => {
-    stream.on("data", async (value) => {
+    stream.on('data', async (value) => {
       try {
         if (isCancelled() || controller.signal.aborted) {
           stream.removeAllListeners();
@@ -119,29 +139,34 @@ async function processOpenAIResponseStream({
 
         chunkBuffer = newChunkBuffer;
 
-        for (let parsedLine of parsedLines) {
+        for (const parsedLine of parsedLines) {
           if (parsedLine.error) {
             throw new Error(parsedLine.error.message);
           }
         }
 
         const tokens = parsedLines
-          .map((l) => l.choices[0].delta.content || l.choices[0].delta.function_call?.arguments || "")
+          .map(
+            (l) =>
+              l.choices[0].delta.content ||
+              l.choices[0].delta.function_call?.arguments ||
+              '',
+          )
           .filter((c) => c)
-          .join("");
+          .join('');
 
-        await openAILock.acquire("openAI", async () => {
+        await openAILock.acquire('openAI', async () => {
           await onChunk(tokens);
         });
 
         fullContent += tokens;
       } catch (e) {
-        console.error("Error processing response stream: ", e, value);
+        console.error('Error processing response stream: ', e, value);
         reject(e);
       }
     });
 
-    stream.on("end", () => {
+    stream.on('end', () => {
       if (isCancelled() || controller.signal.aborted) {
         stream.removeAllListeners();
         reject(CANCELED_STAGE_NAME);
@@ -150,39 +175,40 @@ async function processOpenAIResponseStream({
       resolve(fullContent);
     });
 
-    stream.on("error", (err) => {
-      console.error("Error: ", err);
+    stream.on('error', (err) => {
+      console.error('Error: ', err);
       reject(err);
     });
   });
 }
 
-/** 
- * Function to check the availability of all models in OpenAI. 
+/**
+ * Function to check the availability of all models in OpenAI.
  */
 export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
-  let missingModels: AVAILABLE_MODELS[] = Object.keys(MODEL_DATA) as AVAILABLE_MODELS[];
-  
+  const missingModels: AVAILABLE_MODELS[] = Object.keys(
+    MODEL_DATA,
+  ) as AVAILABLE_MODELS[];
+
   try {
-    let response = await fetch("https://api.openai.com/v1/models", {
+    const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAIApiKey}`
-      }
+        Authorization: `Bearer ${openAIApiKey}`,
+      },
     });
 
-    const responseData = await response.json() as any;
+    const responseData = (await response.json()) as any;
 
-    if(!responseData || !responseData.data){
-      console.error("No data received from OpenAI models API.");
+    if (!responseData || !responseData.data) {
+      console.error('No data received from OpenAI models API.');
       return missingModels;
     }
 
     const availableModels = responseData.data.map((model: any) => model.id);
 
     return missingModels.filter((model) => !availableModels.includes(model));
-
   } catch (error) {
     console.error(`Error occurred while checking models: ${error}`);
     return missingModels;
@@ -190,15 +216,15 @@ export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
 }
 
 /**
- * 
+ *
  */
 export function countTokens(text: string, mode: GptMode) {
-  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
+  const model = mode === 'FAST' ? 'gpt-3.5-turbo-16k-0613' : 'gpt-4-0613';
   return MODEL_DATA[model].encode(text).length;
 }
 
 /**
- * 
+ *
  */
 export async function gptExecute({
   fullPrompt,
@@ -219,15 +245,15 @@ export async function gptExecute({
   controller?: AbortController;
   outputType: OutputType;
 }) {
-  let model: AVAILABLE_MODELS = "gpt-4-0613";
+  let model: AVAILABLE_MODELS = 'gpt-4-0613';
 
-  if (mode === "FAST") {
-    model = "gpt-3.5-turbo-16k-0613";
+  if (mode === 'FAST') {
+    model = 'gpt-3.5-turbo-16k-0613';
 
-    let usedTokens = MODEL_DATA[model].encode(fullPrompt).length + maxTokens;
+    const usedTokens = MODEL_DATA[model].encode(fullPrompt).length + maxTokens;
 
-    if (usedTokens < MODEL_DATA["gpt-3.5-turbo-0613"].maxTokens) {
-      model = "gpt-3.5-turbo-0613";
+    if (usedTokens < MODEL_DATA['gpt-3.5-turbo-0613'].maxTokens) {
+      model = 'gpt-3.5-turbo-0613';
     }
   }
 
@@ -236,69 +262,88 @@ export async function gptExecute({
   const signal = controller.signal;
 
   if (!openAIApiKey) {
-    throw new Error("OpenAI API key not found. Please set it in the settings.");
+    throw new Error('OpenAI API key not found. Please set it in the settings.');
   }
 
   //console.log("Querying OpenAI");
 
-  let requestData = {
+  const requestData = {
     model,
     messages: [
       {
-        role: "user",
+        role: 'user',
         content: fullPrompt,
       },
     ],
     max_tokens: maxTokens,
     temperature,
     stream: true,
-    ...outputType === "string" ? {} : {function_call: { name: outputType.name }, functions: [outputType]},
+    ...(outputType === 'string'
+      ? {}
+      : { function_call: { name: outputType.name }, functions: [outputType] }),
   };
-  
+
   if (DEBUG_RESPONSES) {
     console.log(requestData);
   }
 
-  let cachedResult = await getOpenAICacheManager().getCachedResult(requestData);
+  const cachedResult = await getOpenAICacheManager().getCachedResult(
+    requestData,
+  );
 
-  if (cachedResult && typeof cachedResult === "string") {
+  if (cachedResult && typeof cachedResult === 'string') {
     await onChunk(cachedResult);
     return {
       result: cachedResult,
       cost: 0,
     };
   }
-  
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      let response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openAIApiKey}`,
+      const response = await fetch(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${openAIApiKey}`,
+          },
+          body: JSON.stringify(requestData),
+          signal,
         },
-        body: JSON.stringify(requestData),
-        signal,
-      });
+      );
 
-      const result = await processOpenAIResponseStream({ response, onChunk, isCancelled, controller });
+      const result = await processOpenAIResponseStream({
+        response,
+        onChunk,
+        isCancelled,
+        controller,
+      });
 
       getAnalyticsManager().reportOpenAICall(requestData, result);
 
-      const inputTokens = countTokens(JSON.stringify(requestData.messages), mode) + (outputType === "string" ? 0 : countTokens(JSON.stringify(requestData.functions), mode));
+      const inputTokens =
+        countTokens(JSON.stringify(requestData.messages), mode) +
+        (outputType === 'string'
+          ? 0
+          : countTokens(JSON.stringify(requestData.functions), mode));
       const outputTokens = requestData.max_tokens; //TODO: Is the actuall dolar cost on the OpenAI side is based max_tokens or actual tokens returned?
       const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
-      const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
+      const outputCost =
+        (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
       const totalCost = inputCost + outputCost;
-      
+
       return {
         result: result,
-        cost: totalCost, 
+        cost: totalCost,
       };
     } catch (error) {
       console.error(`Error on attempt ${attempt}: ${error}`);
 
-      getAnalyticsManager().reportOpenAICall(requestData, { error: String(error) });
+      getAnalyticsManager().reportOpenAICall(requestData, {
+        error: String(error),
+      });
 
       if (attempt === 3) {
         throw error;
@@ -306,7 +351,7 @@ export async function gptExecute({
     }
   }
 
-  throw new Error("Assertion: Should never get here");
+  throw new Error('Assertion: Should never get here');
 }
 
 /**
@@ -328,13 +373,25 @@ class TokenError extends Error {
 /**
  * Checks if the prompt can be handled by the model
  */
-export function ensureICanRunThis({ prompt, maxTokens, mode }: { prompt: string; maxTokens: number; mode: GptMode }) {
-  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
-  let usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
+export function ensureICanRunThis({
+  prompt,
+  maxTokens,
+  mode,
+}: {
+  prompt: string;
+  maxTokens: number;
+  mode: GptMode;
+}) {
+  const model = mode === 'FAST' ? 'gpt-3.5-turbo-16k-0613' : 'gpt-4-0613';
+  const usedTokens = MODEL_DATA[model].encode(prompt).length + maxTokens;
 
   if (usedTokens > MODEL_DATA[model].maxTokens) {
-    console.error(`Not enough tokens to perform the modification. absolute minimum: ${usedTokens} available: ${MODEL_DATA[model].maxTokens}`);
-    throw new TokenError(`Combination of file size, selection, and your command is too big for us to handle.`);
+    console.error(
+      `Not enough tokens to perform the modification. absolute minimum: ${usedTokens} available: ${MODEL_DATA[model].maxTokens}`,
+    );
+    throw new TokenError(
+      `Combination of file size, selection, and your command is too big for us to handle.`,
+    );
   }
 }
 
@@ -358,13 +415,19 @@ export function ensureIRunThisInRange({
   minTokens = Math.ceil(minTokens);
   preferedTokens = Math.ceil(preferedTokens);
 
-  const model = mode === "FAST" ? "gpt-3.5-turbo-16k-0613" : "gpt-4-0613";
-  const usedTokens = MODEL_DATA[model].encode(prompt).length + EXTRA_BUFFER_FOR_ENCODING_OVERHEAD;
+  const model = mode === 'FAST' ? 'gpt-3.5-turbo-16k-0613' : 'gpt-4-0613';
+  const usedTokens =
+    MODEL_DATA[model].encode(prompt).length +
+    EXTRA_BUFFER_FOR_ENCODING_OVERHEAD;
   const availableTokens = MODEL_DATA[model].maxTokens - usedTokens;
 
   if (availableTokens < minTokens) {
-    console.error(`Not enough tokens to perform the modification. absolute minimum: ${minTokens} available: ${availableTokens}`);
-    throw new TokenError(`Combination of file size, selection, and your command is too big for us to handle.`);
+    console.error(
+      `Not enough tokens to perform the modification. absolute minimum: ${minTokens} available: ${availableTokens}`,
+    );
+    throw new TokenError(
+      `Combination of file size, selection, and your command is too big for us to handle.`,
+    );
   }
 
   return Math.min(availableTokens, preferedTokens);

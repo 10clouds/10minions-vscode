@@ -1,30 +1,42 @@
-import { CANCELED_STAGE_NAME, MinionTaskUIInfo, FINISHED_STAGE_NAME, APPLIED_STAGE_NAME, APPLYING_STAGE_NAME } from "../MinionTaskUIInfo";
+import {
+  CANCELED_STAGE_NAME,
+  MinionTaskUIInfo,
+  FINISHED_STAGE_NAME,
+  APPLIED_STAGE_NAME,
+  APPLYING_STAGE_NAME,
+} from '../MinionTaskUIInfo';
 
-export const BRAND_COLOR = "#5e20e5";
-export const ERROR_COLOR = "#D8595A";
-export const SUCCESS_COLOR = "#2AB678";
+export const BRAND_COLOR = '#5e20e5';
+export const ERROR_COLOR = '#D8595A';
+export const SUCCESS_COLOR = '#2AB678';
 
 export function convertToHex(...colors: string[]): string {
-  for (let color of colors) {
-    if (color.indexOf("#") === 0) {
+  for (const color of colors) {
+    if (color.indexOf('#') === 0) {
       return color;
     }
 
-    let computed = getComputedStyle(document.documentElement).getPropertyValue(color).trim();
-    if (computed.indexOf("#") === 0) {
+    const computed = getComputedStyle(document.documentElement)
+      .getPropertyValue(color)
+      .trim();
+    if (computed.indexOf('#') === 0) {
       return computed;
     }
   }
 
-  throw new Error("Could not convert color to HEX");
+  throw new Error('Could not convert color to HEX');
 }
 
 /**
  * Blends two colors based on a blend ratio. Converts the input colors to HEX if they are not already in HEX format.
  */
-export function blendColors(color1: string, colorFallback: string[], blendRatio: number = 0.25) {
+export function blendColors(
+  color1: string,
+  colorFallback: string[],
+  blendRatio = 0.25,
+) {
   color1 = convertToHex(color1);
-  let color2 = convertToHex(...colorFallback);
+  const color2 = convertToHex(...colorFallback);
 
   const r1 = parseInt(color1.substring(1, 3), 16);
   const g1 = parseInt(color1.substring(3, 5), 16);
@@ -38,22 +50,24 @@ export function blendColors(color1: string, colorFallback: string[], blendRatio:
   const g = Math.round(g1 * blendRatio + g2 * (1 - blendRatio));
   const b = Math.round(b1 * blendRatio + b2 * (1 - blendRatio));
 
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  return `#${r.toString(16).padStart(2, '0')}${g
+    .toString(16)
+    .padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-export function blendWithBackground(color: string, blendRatio: number = 0.75) {
+export function blendWithBackground(color: string, blendRatio = 0.75) {
   return blendColors(
     color,
-    ["--vscode-sideBar-background", "--vscode-editor-background", "#000000"],
-    blendRatio
+    ['--vscode-sideBar-background', '--vscode-editor-background', '#000000'],
+    blendRatio,
   );
 }
 
-export function blendWithForeground(color: string, blendRatio: number = 0.75) {
+export function blendWithForeground(color: string, blendRatio = 0.75) {
   return blendColors(
     color,
-    ["--vscode-sideBar-foreground", "--vscode-editor-foreground", "#FFFFFF"],
-    blendRatio
+    ['--vscode-sideBar-foreground', '--vscode-editor-foreground', '#FFFFFF'],
+    blendRatio,
   );
 }
 
@@ -76,7 +90,7 @@ export function getBaseColor(execution: MinionTaskUIInfo) {
     }
 
     if (execution.executionStage === CANCELED_STAGE_NAME) {
-      return "--vscode-sideBar-background";
+      return '--vscode-sideBar-background';
     }
 
     if (execution.executionStage === APPLYING_STAGE_NAME) {
@@ -92,4 +106,3 @@ export function getBaseColor(execution: MinionTaskUIInfo) {
     return BRAND_COLOR;
   }
 }
-

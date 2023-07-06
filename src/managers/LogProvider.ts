@@ -1,4 +1,3 @@
-
 export interface LogProvider {
   reportChange(uri: string): void;
 }

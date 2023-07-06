@@ -1,6 +1,10 @@
-import { DEBUG_PROMPTS } from "../../const";
-import { GptMode, countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
-
+import { DEBUG_PROMPTS } from '../../const';
+import {
+  GptMode,
+  countTokens,
+  ensureIRunThisInRange,
+  gptExecute,
+} from '../../openai';
 
 export const AVAILABE_COMMANDS = [
   `
@@ -23,7 +27,7 @@ Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
 * You MUST use all 3 parts of the command: REPLACE, WITH and END_REPLACE.
 `.trim(),
 
-`
+  `
 # Syntax and description of a INSERT command
 
 Use this to insert new code after a given piece of code. Start it with the following line:
@@ -43,27 +47,26 @@ Follow this rules when using INSERT / BEFORE / END_INSERT command sequence:
 * You MUST use all 3 parts of the command: INSERT, BEFORE and END_INSERT.
 `.trim(),
 
-
   /*`
-  
+
   # REPLACE_ALL / END_REPLACE_ALL
-  
+
   Use this command if most of the file is modified. When you are ready to output the final consolidated result, start it with the following line:
-  
+
   REPLACE_ALL
-  
+
   Followed by the lines of a full consolidated final, production ready, code, described in REQUESTED MODIFICATION when applied to ORIGINAL CODE. Followed by the following line:
-  
+
   END_REPLACE_ALL
-  
+
   Follow this rules when using REPLACE / WITH / END_REPLACE command sequence:
   * All lines and whitespace in the text you are replacing matter, try to keep the newlines and indentation the same so proper match can be found.
   * Keep in mind that all lines after WITH, and until next REPLACE, will be used, even the empty ones. So any output after final WITH will be part of the final replacement.
   * Do not invent your own commands, use only the ones described above.
   * After REPLACEments the code should be final, production ready, as described in REQUESTED MODIFICATION.
-  
+
   `.trim()
-  
+
   ,
   */
   `
@@ -77,7 +80,7 @@ Followed by the lines of instructions on what to modify and how. Followed by the
 
 END_MODIFY_OTHER
 
-`.trim()
+`.trim(),
 ];
 
 export const OUTPUT_FORMAT = `
@@ -89,7 +92,7 @@ Star your answer with the overview of what you are going to do, and then, follow
 * After all INSERTS and REPLACEmeents the code should be final, production ready, as described in REQUESTED MODIFICATION.
 
 ## Available commands are:
-${AVAILABE_COMMANDS.join("\n\n")}
+${AVAILABE_COMMANDS.join('\n\n')}
 
 `.trim();
 
@@ -97,32 +100,32 @@ export async function createModificationProcedure(
   refCode: string,
   modification: string,
   onChunk: (chunk: string) => Promise<void>,
-  isCancelled: () => boolean
+  isCancelled: () => boolean,
 ) {
   //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
   modification = modification.replace(
     /^(====+)([^=]+)(====+)$/gm,
     (match, p1, p2, p3) => {
       return `#${p2}`;
-    }
+    },
   );
 
-  let promptWithContext = createPrompt(refCode, modification);
+  const promptWithContext = createPrompt(refCode, modification);
 
   //console.log("Prompt with context:");
   //console.log(promptWithContext);
 
-  let tokensModification = countTokens(modification, "QUALITY") + 50;
-  let luxiouriosTokens = tokensModification * 1.5;
-  let absoluteMinimumTokens = tokensModification;
+  const tokensModification = countTokens(modification, 'QUALITY') + 50;
+  const luxiouriosTokens = tokensModification * 1.5;
+  const absoluteMinimumTokens = tokensModification;
 
   if (DEBUG_PROMPTS) {
-    onChunk("<<<< PROMPT >>>>\n\n");
-    onChunk(promptWithContext + "\n\n");
-    onChunk("<<<< EXECUTION >>>>\n\n");
+    onChunk('<<<< PROMPT >>>>\n\n');
+    onChunk(promptWithContext + '\n\n');
+    onChunk('<<<< EXECUTION >>>>\n\n');
   }
 
-  let mode: GptMode = "QUALITY";
+  const mode: GptMode = 'QUALITY';
 
   return await gptExecute({
     fullPrompt: promptWithContext,
@@ -136,7 +139,7 @@ export async function createModificationProcedure(
     temperature: 0,
     isCancelled,
     mode,
-    outputType: "string",
+    outputType: 'string',
   });
 }
 function createPrompt(refCode: string, modification: string) {

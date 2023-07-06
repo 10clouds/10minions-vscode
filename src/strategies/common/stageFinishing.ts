@@ -1,9 +1,11 @@
-import { playNotificationSound } from "../../utils/playSound";
-import { MinionTask } from "../../MinionTask";
-import { getEditorManager } from "../../managers/EditorManager";
+import { playNotificationSound } from '../../utils/playSound';
+import { MinionTask } from '../../MinionTask';
+import { getEditorManager } from '../../managers/EditorManager';
 
 export async function stageFinishing(this: MinionTask) {
-  getEditorManager().showInformationMessage(`${this.shortName} is ready to be applied!`);
+  getEditorManager().showInformationMessage(
+    `${this.shortName} is ready to be applied!`,
+  );
 
   this.appendSectionToLog(this.executionStage);
 

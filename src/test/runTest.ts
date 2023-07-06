@@ -1,15 +1,14 @@
-import * as path from "path";
-import Mocha from "mocha";
-import glob from "glob";
-import { initCLISystems } from "../CLI/setupCLISystems";
+import * as path from 'path';
+import Mocha from 'mocha';
+import glob from 'glob';
+import { initCLISystems } from '../CLI/setupCLISystems';
 
 export function run(): Promise<void> {
-
   initCLISystems();
-  
+
   // Create the mocha test
   const mocha = new Mocha({
-    ui: "tdd",
+    ui: 'tdd',
     color: true,
     timeout: 600000,
     //diff: true,
@@ -20,7 +19,7 @@ export function run(): Promise<void> {
   const testsRoot = path.resolve(__dirname);
 
   return new Promise((c, e) => {
-    glob("**/**.test.ts", { cwd: testsRoot }, (err: any, files: string[]) => {
+    glob('**/**.test.ts', { cwd: testsRoot }, (err: any, files: string[]) => {
       if (err) {
         return e(err);
       }

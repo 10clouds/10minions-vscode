@@ -1,6 +1,10 @@
-import fs from "fs";
-import path from "path";
-import { EditorDocument, EditorRange, EditorUri, getEditorManager } from "../managers/EditorManager";
+import fs from 'fs';
+import path from 'path';
+import {
+  EditorDocument,
+  EditorRange,
+  EditorUri,
+} from '../managers/EditorManager';
 
 export class CLIEditorDocument implements EditorDocument {
   readonly languageId: string;
@@ -15,8 +19,8 @@ export class CLIEditorDocument implements EditorDocument {
     const fileName = uri.fsPath;
 
     // Reading file contents synchronously for simplicity. Consider using async I/O in production code
-    const fileContent = fs.readFileSync(fileName, "utf8");
-    this._textLines = fileContent.split("\n");
+    const fileContent = fs.readFileSync(fileName, 'utf8');
+    this._textLines = fileContent.split('\n');
     this.lineCount = this._textLines.length;
 
     // Derive languageId from file extension. This is simplistic and might not always be correct.
@@ -30,7 +34,11 @@ export class CLIEditorDocument implements EditorDocument {
 
   getText(range?: EditorRange): string {
     // Return joined text from _textLines array within given range or whole text if range is not provided
-    return (range ? this._textLines.slice(range.start.line, range.end.line) : this._textLines).join("\n");
+    return (
+      range
+        ? this._textLines.slice(range.start.line, range.end.line)
+        : this._textLines
+    ).join('\n');
   }
 
   lineAt(line: number): {
@@ -48,18 +56,27 @@ export class CLIEditorDocument implements EditorDocument {
     };
   }
 
-  insert(start: { line: number; character: number; }, text: string) {
+  insert(start: { line: number; character: number }, text: string) {
     // First, get the existing text for the line
     const existingText = this.lineAt(start.line).text;
 
     // Insert the new text at the character position
-    const newText = existingText.slice(0, start.character) + text + existingText.slice(start.character);
+    const newText =
+      existingText.slice(0, start.character) +
+      text +
+      existingText.slice(start.character);
 
     // Update the line with the new text
     this._textLines[start.line] = newText;
   }
 
-  replace(range: { start: { line: number; character: number; }; end: { line: number; character: number; }; }, text: string) {
+  replace(
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    },
+    text: string,
+  ) {
     // Here we need to replace the text from start to end within the range
     const startLineNumber = range.start.line;
     const endLineNumber = range.end.line;
@@ -79,7 +96,10 @@ export class CLIEditorDocument implements EditorDocument {
       // Update start, end lines and remove lines between them
       this._textLines[startLineNumber] = newTextStart;
       this._textLines[endLineNumber] = newTextEnd;
-      this._textLines.splice(startLineNumber + 1, endLineNumber - startLineNumber);
+      this._textLines.splice(
+        startLineNumber + 1,
+        endLineNumber - startLineNumber,
+      );
     }
   }
 }
