@@ -16,7 +16,7 @@ Keep an eye on this section for release updates and changelogs.
 - Showing estimated API usage costs in logs
 - gpt-3.5-turbo-16k support now is internalised and minions choose when to use it.
 - Improved and simplified setup
-- Misc improvemeents
+- Misc improvements
 
 ## [0.9.8]
 - Copy adjustments
