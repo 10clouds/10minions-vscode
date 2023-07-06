@@ -1,0 +1,5 @@
+[
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid javascript code" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "Import is placed with other imports" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "'selection: {endLine: 86, endCharacter: 77, startLine: 86, startCharacter: 0}` has been replaced with code that convert the date to readable date eg. '3 hours ago" }
+]
