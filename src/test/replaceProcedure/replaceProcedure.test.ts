@@ -33,8 +33,10 @@ suite('Replace Procedure Test Suite', () => {
           procedure,
           'typescript',
         );
-      } catch (e: any) {
-        modifiedContent = e.toString();
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          modifiedContent = e.toString();
+        }
       }
 
       assert.strictEqual(modifiedContent, expectedOutput);

@@ -2,6 +2,8 @@ import * as admin from 'firebase-admin';
 import { readFileSync } from 'fs';
 import path from 'path';
 import fs from 'fs';
+import { input, select, confirm } from '@inquirer/prompts';
+import chalk from 'chalk';
 
 interface TestRequiredData {
   selectedText: string;
@@ -20,6 +22,11 @@ enum TestType {
 
 type TestLanguages = 'typescript' | 'javascript';
 
+const TestLanguagesExtensions: Record<TestLanguages, string> = {
+  javascript: 'js',
+  typescript: 'ts',
+};
+
 interface TestConfig {
   id: string;
   testName: string;
@@ -27,14 +34,6 @@ interface TestConfig {
   withSelectedText: boolean;
   language: TestLanguages;
 }
-
-const config: TestConfig = {
-  id: '', // pass id of minionTask from firestore
-  testName: '', // name your test
-  testType: TestType.REPLACE_PROCEDURE,
-  withSelectedText: false, // if you want to include selectedText in your score test files set this to true
-  language: 'typescript', // set language that is used in your test
-};
 
 const baseDir = path.resolve(__dirname);
 const serviceAccount = JSON.parse(
@@ -49,42 +48,25 @@ const CREATE_PROCEDURE_TEST_FILE_PATH = 'createProcedure';
 const SCORE_TEST_FILE_PATH = 'score';
 
 const getTestFilePath = (testType: TestType) => {
-  let directoryName = '';
-  switch (testType) {
-    case TestType.SCORE:
-      directoryName = SCORE_TEST_FILE_PATH;
-      break;
-    case TestType.REPLACE_PROCEDURE:
-      directoryName = REPLACE_PROCEDURE_TEST_FILE_PATH;
-      break;
-    case TestType.CREATE_PROCEDURE:
-      directoryName = CREATE_PROCEDURE_TEST_FILE_PATH;
-      break;
-    default:
-      break;
-  }
-
-  return directoryName;
+  return {
+    [TestType.SCORE]: SCORE_TEST_FILE_PATH,
+    [TestType.REPLACE_PROCEDURE]: REPLACE_PROCEDURE_TEST_FILE_PATH,
+    [TestType.CREATE_PROCEDURE]: CREATE_PROCEDURE_TEST_FILE_PATH,
+  }[testType];
 };
 
-const getLanguageFileExtension = () =>
-  config.language === 'typescript' ? 'ts' : 'js';
-
-function createTestsDirectory(testType: TestType) {
+function createTestsDirectory(testType: TestType, testName: string): string {
   const directoryName = getTestFilePath(testType);
   const directoryPath = path.resolve(__dirname, directoryName);
-  const { testName } = config;
   const testDirPath = `${directoryPath}/${testName}`;
 
   if (!fs.existsSync(testDirPath)) {
     fs.mkdirSync(testDirPath);
-    return testDirPath;
   }
+  return testDirPath;
 }
 
-function createTestFile(content: string, fileName: string, testType: TestType) {
-  const directoryName = getTestFilePath(testType);
-  const testFilePath = `${directoryName}/${fileName}`;
+function createTestFile(content: string, fileName: string) {
   const directoryPath = path.resolve(__dirname, fileName);
 
   if (!fs.existsSync(directoryPath)) {
@@ -92,130 +74,148 @@ function createTestFile(content: string, fileName: string, testType: TestType) {
   }
 }
 
-const SCORE_TEST_INITIAL_CONTENT = `[
-    { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid ${config.language} code" }
-  ]`;
+const createScoreTestFiles = async (
+  testData: TestRequiredData,
+  config: TestConfig,
+): Promise<void> => {
+  const { selectedText, originalContent, userQuery } = testData;
+  const languageFileExtension = TestLanguagesExtensions[config.language];
 
-const createScoreTestFiles = async (testData: TestRequiredData) => {
-  const { selectedText, finalContent, originalContent, userQuery } = testData;
-  const { testName, withSelectedText } = config;
-  const languageFileExtension = getLanguageFileExtension();
-  const testFileNamePrefix = `${testName}.${languageFileExtension}.`;
+  const testFileNamePrefix = `${SCORE_TEST_FILE_PATH}/${config.testName}.${languageFileExtension}.`;
 
-  if (withSelectedText) {
-    createTestFile(
-      selectedText,
-      `${testFileNamePrefix}selectedText.txt`,
-      TestType.SCORE,
-    );
+  if (config.withSelectedText) {
+    createTestFile(selectedText, `${testFileNamePrefix}selectedText.txt`);
   }
+  createTestFile(originalContent, `${testFileNamePrefix}original.txt`);
+  createTestFile(userQuery, `${testFileNamePrefix}userQuery.txt`);
   createTestFile(
-    originalContent,
-    `${testFileNamePrefix}original.txt`,
-    TestType.SCORE,
-  );
-  createTestFile(
-    userQuery,
-    `${testFileNamePrefix}userQuery.txt`,
-    TestType.SCORE,
-  );
-  createTestFile(
-    SCORE_TEST_INITIAL_CONTENT,
+    `[
+         { "type": "gptAssert", "mode": "FAST", "assertion": "The code is a valid ${config.language} code" }
+      ]`,
     `${testFileNamePrefix}tests.json`,
-    TestType.SCORE,
   );
 };
 
 const createProcedureTestFiles = async (
   testData: TestRequiredData,
-  testType: TestType,
+  config: TestConfig,
 ) => {
   const {
     finalContent,
     originalContent,
-    userQuery,
     modificationDescription,
     modificationProcedure,
   } = testData;
-  const testDirPath = createTestsDirectory(testType);
+  const testDirPath = createTestsDirectory(config.testType, config.testName);
   const testFileNamePrefix = `${testDirPath}/`;
 
-  if (testType === TestType.CREATE_PROCEDURE) {
+  if (config.testType === TestType.CREATE_PROCEDURE) {
     createTestFile(
       modificationDescription,
       `${testFileNamePrefix}modification.txt`,
-      testType,
     );
   }
 
-  createTestFile(
-    originalContent,
-    `${testFileNamePrefix}original.txt`,
-    testType,
-  );
-  createTestFile(
-    modificationProcedure,
-    `${testFileNamePrefix}procedure.txt`,
-    testType,
-  );
-  createTestFile(finalContent, `${testFileNamePrefix}result.txt`, testType);
+  createTestFile(originalContent, `${testFileNamePrefix}original.txt`);
+  createTestFile(modificationProcedure, `${testFileNamePrefix}procedure.txt`);
+  createTestFile(finalContent, `${testFileNamePrefix}result.txt`);
 };
 
-const createTestFiles = (testData: TestRequiredData, testType: TestType) => {
-  switch (testType) {
-    case TestType.SCORE:
-      createScoreTestFiles(testData);
-      break;
-    case TestType.REPLACE_PROCEDURE:
-      createProcedureTestFiles(testData, TestType.REPLACE_PROCEDURE);
-      break;
-    case TestType.CREATE_PROCEDURE:
-      createProcedureTestFiles(testData, TestType.CREATE_PROCEDURE);
-      break;
-    default:
-      break;
+const createTestFiles = async (
+  testData: TestRequiredData,
+  config: TestConfig,
+): Promise<void> => {
+  const createFunction = {
+    [TestType.SCORE]: createScoreTestFiles.bind(this, testData, config),
+    [TestType.REPLACE_PROCEDURE]: createProcedureTestFiles.bind(
+      this,
+      testData,
+      config,
+    ),
+    [TestType.CREATE_PROCEDURE]: createProcedureTestFiles.bind(
+      this,
+      testData,
+      config,
+    ),
+  }[config.testType];
+  createFunction && (await createFunction());
+};
+
+const collectBaseTestData = async (): Promise<
+  Omit<TestConfig, 'withSelectedText' | 'language'>
+> => {
+  const testId = await input({
+    message: 'Enter Firestore test ID ( 20 characters a-zA-Z0-9 )',
+    validate: (value) => /^[a-zA-Z0-9]{20}$/g.test(value),
+  });
+  const testName = await input({
+    message: 'Enter test name',
+    validate: (value) => value.length > 10,
+  });
+  const testType = await select({
+    message: 'Enter test type (replaceProcedure, createProcedure, score)',
+    choices: [
+      {
+        name: 'replaceProcedure',
+        value: TestType.REPLACE_PROCEDURE,
+      },
+      {
+        name: 'createProcedure',
+        value: TestType.CREATE_PROCEDURE,
+      },
+      {
+        name: 'score',
+        value: TestType.SCORE,
+      },
+    ],
+  });
+
+  console.log(`
+Test config summary:
+Firestore document ID: ${chalk.green(testId)}
+Test name: ${chalk.green(testName)}
+Test type: ${chalk.green(testType)}
+`);
+
+  const confirmResult = await confirm({ message: 'Continue?' });
+
+  if (!confirmResult) {
+    console.log(`${chalk.red('Aborted, please start again.')}`);
+    return process.exit(0);
   }
+
+  return {
+    id: testId,
+    testName,
+    testType,
+  };
 };
 
 const prepareTestFiles = async () => {
-  const { id, testType, testName } = config;
-  if (!id || !testType || !testName) {
-    console.error('Incorrect test config - check your config');
-    return;
-  }
+  const testConfigBase = await collectBaseTestData();
 
   try {
     const minionTaskSnapshot = await admin
       .firestore()
       .collection('minionTasks')
       .where('id', '==', '001279e4-8635-4d25-b9cd-8c3937693581')
+      .limit(1)
       .get();
 
-    let testData: TestRequiredData = {} as TestRequiredData;
-
+    // it will always return 1 document since we've added the limit above, and
+    // to proper functionality the document ID should be used not the ID from the collection doc itself
     minionTaskSnapshot.forEach((doc) => {
-      const {
-        selectedText,
-        finalContent,
-        originalContent,
-        userQuery,
-        modificationDescription,
-        modificationProcedure,
-      } = doc.data();
-      testData = {
-        selectedText,
-        finalContent,
-        originalContent,
-        userQuery,
-        modificationDescription,
-        modificationProcedure,
-      };
+      createTestFiles(doc.data() as TestRequiredData, {
+        ...testConfigBase,
+        withSelectedText: true,
+        language: 'typescript',
+      });
     });
 
-    createTestFiles(testData, testType);
+    // createTestFiles(testData, testType);
   } catch (error) {
     console.error(error);
   }
 };
 
-prepareTestFiles();
+prepareTestFiles().catch((error) => console.error(error));

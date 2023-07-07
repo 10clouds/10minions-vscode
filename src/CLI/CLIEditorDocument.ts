@@ -10,7 +10,7 @@ export class CLIEditorDocument implements EditorDocument {
   readonly languageId: string;
   readonly lineCount: number;
   readonly uri: EditorUri;
-  private _textLines: any[] = []; // This will store our text lines.
+  private _textLines: string[] = []; // This will store our text lines.
   private _numberLines: number[] = []; // This will store our line numbers.
 
   constructor(uri: EditorUri) {
