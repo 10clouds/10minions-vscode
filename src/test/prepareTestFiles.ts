@@ -32,7 +32,7 @@ const config: TestConfig = {
   id: '', // pass id of minionTask from firestore
   testName: '', // name your test
   testType: TestType.REPLACE_PROCEDURE,
-  withSelectedText: false, // if you want include selectedText in your score test files set this to true
+  withSelectedText: false, // if you want to include selectedText in your score test files set this to true
   language: 'typescript', // set language that is used in your test
 };
 
@@ -67,7 +67,7 @@ const getTestFilePath = (testType: TestType) => {
   return directoryName;
 };
 
-const getLanguegeFileExtension = () =>
+const getLanguageFileExtension = () =>
   config.language === 'typescript' ? 'ts' : 'js';
 
 function createTestsDirectory(testType: TestType) {
@@ -99,7 +99,7 @@ const SCORE_TEST_INITIAL_CONTENT = `[
 const createScoreTestFiles = async (testData: TestRequiredData) => {
   const { selectedText, finalContent, originalContent, userQuery } = testData;
   const { testName, withSelectedText } = config;
-  const languageFileExtension = getLanguegeFileExtension();
+  const languageFileExtension = getLanguageFileExtension();
   const testFileNamePrefix = `${testName}.${languageFileExtension}.`;
 
   if (withSelectedText) {

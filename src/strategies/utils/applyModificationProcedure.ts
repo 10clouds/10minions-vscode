@@ -187,10 +187,10 @@ export async function applyModificationProcedure(
   for await (const line of lines) {
     await new Promise((resolve) => setTimeout(resolve, 1));
 
-    const possibiltiies: CommandSegment[] = inCommand
+    const possibilities: CommandSegment[] = inCommand
       ? inCommand.followedBy || []
       : COMMAND_STRUCTURE;
-    const possibleNextCommands = possibiltiies.filter((command) =>
+    const possibleNextCommands = possibilities.filter((command) =>
       line.startsWith(command.name),
     );
 

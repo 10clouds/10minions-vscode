@@ -31,15 +31,15 @@
     opacity: 1;
   }
   75% {
-    background-position: 0% 50%;
+    background-position: 0 50%;
     opacity: 1;
   }
   85% {
-    background-position: 0% 50%;
+    background-position: 0 50%;
     opacity: 0; /* Keep the wave invisible until it reappears */
   }
   100% {
-    background-position: 0% 50%;
+    background-position: 0 50%;
     opacity: 0;
   }
 }

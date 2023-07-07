@@ -277,7 +277,7 @@ async function runTest({
       const startIndex = userQuery.indexOf(readSelectedText);
       const endIndex = startIndex + readSelectedText.length;
 
-      // For simplicity we're considering flat characters indices in file
+      // For simplicity, we're considering flat characters indices in file
       // A more advanced implementation would consider \n character to split lines
       start = { line: startIndex, character: 0 };
       end = { line: endIndex, character: 0 };

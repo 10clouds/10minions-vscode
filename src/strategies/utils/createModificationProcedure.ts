@@ -6,7 +6,7 @@ import {
   gptExecute,
 } from '../../openai';
 
-export const AVAILABE_COMMANDS = [
+export const AVAILABLE_COMMANDS = [
   `
 # Syntax and description of a REPLACE command
 
@@ -92,7 +92,7 @@ Star your answer with the overview of what you are going to do, and then, follow
 * After all INSERTS and REPLACEmeents the code should be final, production ready, as described in REQUESTED MODIFICATION.
 
 ## Available commands are:
-${AVAILABE_COMMANDS.join('\n\n')}
+${AVAILABLE_COMMANDS.join('\n\n')}
 
 `.trim();
 
