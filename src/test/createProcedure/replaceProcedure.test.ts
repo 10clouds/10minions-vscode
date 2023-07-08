@@ -6,6 +6,7 @@ import * as path from 'path';
 import { setupCLISystemsForTest } from '../../CLI/setupCLISystems';
 import { applyModificationProcedure } from '../../strategies/utils/applyModificationProcedure';
 import { createModificationProcedure } from '../../strategies/utils/createModificationProcedure';
+import { ErrorResponse } from 'openai';
 
 suite('Create procedure test suite', () => {
   const baseDir = path.resolve(__dirname);
@@ -42,11 +43,17 @@ suite('Create procedure test suite', () => {
         procedure,
       );
 
-      const modifiedContent = await applyModificationProcedure(
-        currentCode,
-        procedure,
-        'typescript',
-      );
+      let modifiedContent;
+      try {
+        modifiedContent = await applyModificationProcedure(
+          currentCode,
+          procedure,
+          'typescript',
+        );
+      } catch (e) {
+        const error = e as Error;
+        modifiedContent = error.toString();
+      }
 
       assert.strictEqual(modifiedContent, expectedOutput);
     });
