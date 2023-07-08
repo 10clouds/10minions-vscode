@@ -1,0 +1,84 @@
+/*
+```sh
+Please make sure to install the Firebase library if it's not already added to your project. You can do this by running the following command in your terminal:
+
+npm install firebase
+```
+*/
+
+import { ConsoleWorkspace } from '@10clouds/aiconsole/client';
+import { InferGetServerSidePropsType } from 'next';
+
+import '@10clouds/aiconsole/styles.css';
+
+type Params = {
+  aiconsole: string[];
+};
+
+export const getServerSideProps = ({ params }: { params: Params }) => {
+  return {
+    props: {
+      slug: params.aiconsole,
+    },
+  };
+};
+
+import firebase from "firebase/app";
+import "firebase/auth";
+import { useEffect, useState } from "react";
+
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    // this object will contain your Firebase credentials obtained from the Firebase console,
+    apiKey: "...",
+    authDomain: "...",
+    projectId: "...",
+    storageBucket: "...",
+    messagingSenderId: "...",
+    appId: "...",
+    measurementId: "..."
+  });
+} else {
+  firebase.app(); // if already initialized, use that one
+}
+
+export default function Page({
+  slug,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+  const [user, setUser] = useState<firebase.User | null>(null);
+
+  // Firebase Google Auth Provider
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  // Function to handle sign in
+  const signIn = async () => {
+    try {
+      await firebase.auth().signInWithPopup(provider);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    // Keeping user signed in
+    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (!user) {
+    return (
+      <div>
+        <button onClick={signIn}>Sign In with Google</button>
+      </div>
+    );
+  }
+
+  return <ConsoleWorkspace slug={slug} />;
+}

@@ -1,0 +1,68 @@
+I will replace the incorrect import statements and their usage with the correct ones as described in the REQUESTED MODIFICATION section. The changes will be applied to the Firebase import statements and the Firebase authentication related code.
+
+REPLACE
+```javascript
+import firebase from "firebase/app";
+import "firebase/auth";
+```
+WITH
+```javascript
+import firebase from "firebase/app";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "firebase/auth";
+```
+END_REPLACE
+
+REPLACE
+```javascript
+const provider = new firebase.auth.GoogleAuthProvider();
+
+const signIn = async () => {
+  try {
+    await firebase.auth().signInWithPopup(provider);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+useEffect(() => {
+  const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      setUser(user);
+    } else {
+      setUser(null);
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
+```
+WITH
+```javascript
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
+
+const signIn = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUser(user);
+    } else {
+      setUser(null);
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
+```
+END_REPLACE
+
+MODIFY_OTHER
+Please ensure to update all other parts of your code where you're using the old method-form firebase calls, and switch into using these functions with the firebase instance passed as the first argument.
+END_MODIFY_OTHER
