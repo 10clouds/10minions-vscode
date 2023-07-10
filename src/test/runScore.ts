@@ -12,6 +12,7 @@ import {
   LOG_NO_FALLBACK_MARKER as LOG_NORMAL_MODIFICATION_MARKER,
   applyMinionTask,
 } from '../strategies/utils/applyMinionTask';
+import chalk from 'chalk';
 
 export type TestDefinition =
   | { type: 'gptAssert'; mode: GptMode; assertion: string }
@@ -374,18 +375,10 @@ async function runTest({
     }
   }
 
-  console.log(
-    `'${fileName}' score: ${(
-      (100 * statistics.passed) /
-      statistics.total
-    ).toFixed(0)}%`,
-  );
-  logToFile(
-    `'${fileName}' score: ${(
-      (100 * statistics.passed) /
-      statistics.total
-    ).toFixed(0)}%`,
-  );
+  const score = ((100 * statistics.passed) / statistics.total).toFixed();
+
+  console.log(`'${chalk.green(fileName)}' score: ${score}%`);
+  logToFile(`'${fileName}' score: ${score}%`);
 }
 
 async function runScoring(): Promise<void> {

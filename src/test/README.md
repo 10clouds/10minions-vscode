@@ -101,7 +101,7 @@ The score tests always return score measured in percents.\
 async function runTest({ fileName, iterations = 10 });
 ```
 
-Calculatin score:
+Calculating score:
 
 ```typescript
 const score = (iterations - failedTestsNumber) / iterations;
