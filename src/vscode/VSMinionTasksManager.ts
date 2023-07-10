@@ -39,9 +39,6 @@ export class VSMinionTasksManager implements MinionTasksManager {
     this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) =>
       deserializeMinionTask(data),
     );
-
-    const self = this;
-
     setMinionTasksManager(this);
   }
 

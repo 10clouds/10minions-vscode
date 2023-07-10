@@ -5,7 +5,7 @@ import fetch, { Response } from 'node-fetch';
 import { DEBUG_RESPONSES } from './const';
 import { getAnalyticsManager } from './managers/AnalyticsManager';
 import { CANCELED_STAGE_NAME } from './ui/MinionTaskUIInfo';
-import AsyncLock = require('async-lock');
+import AsyncLock from 'async-lock';
 import { getOpenAICacheManager } from './managers/OpenAICacheManager';
 
 export type GptMode = 'FAST' | 'QUALITY';

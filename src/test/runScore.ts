@@ -2,7 +2,7 @@ import fs from 'fs';
 import * as glob from 'glob';
 import { Validator } from 'jsonschema'; // Imported the jsonschema library
 import path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import { initCLISystems, setupCLISystemsForTest } from '../CLI/setupCLISystems';
 import { MinionTask } from '../MinionTask';
 import { getEditorManager } from '../managers/EditorManager';
@@ -12,6 +12,7 @@ import {
   LOG_NO_FALLBACK_MARKER as LOG_NORMAL_MODIFICATION_MARKER,
   applyMinionTask,
 } from '../strategies/utils/applyMinionTask';
+import chalk from 'chalk';
 
 export type TestDefinition =
   | { type: 'gptAssert'; mode: GptMode; assertion: string }
@@ -277,7 +278,7 @@ async function runTest({
       const startIndex = userQuery.indexOf(readSelectedText);
       const endIndex = startIndex + readSelectedText.length;
 
-      // For simplicity we're considering flat characters indices in file
+      // For simplicity, we're considering flat characters indices in file
       // A more advanced implementation would consider \n character to split lines
       start = { line: startIndex, character: 0 };
       end = { line: endIndex, character: 0 };
@@ -374,18 +375,10 @@ async function runTest({
     }
   }
 
-  console.log(
-    `'${fileName}' score: ${(
-      (100 * statistics.passed) /
-      statistics.total
-    ).toFixed(0)}%`,
-  );
-  logToFile(
-    `'${fileName}' score: ${(
-      (100 * statistics.passed) /
-      statistics.total
-    ).toFixed(0)}%`,
-  );
+  const score = ((100 * statistics.passed) / statistics.total).toFixed();
+
+  console.log(`'${chalk.green(fileName)}' score: ${score}%`);
+  logToFile(`'${fileName}' score: ${score}%`);
 }
 
 async function runScoring(): Promise<void> {
@@ -395,14 +388,19 @@ async function runScoring(): Promise<void> {
   logToFile('\n\nRunning tests...\n\n');
 
   initCLISystems();
+  // this probably will be parametrized in the future
+  const TEST_FILE_POSTFIX = '.original.txt';
 
   // Use glob to get all .original.txt file paths from the 'score' directory
-  const testFileNames = glob.sync('**/*.original.txt', {
-    cwd: path.join(__dirname, 'score'),
-  });
+  const testBaseNames = glob
+    .sync(`**/*${TEST_FILE_POSTFIX}`, {
+      cwd: path.join(__dirname, 'score'),
+    })
+    // Remove the '.original.txt' postfix from the file names
+    .map((fileName) => fileName.slice(0, -TEST_FILE_POSTFIX.length));
 
-  for (const fullName of testFileNames) {
-    const baseName = path.basename(fullName).replace('.original.txt', '');
+  for (const baseName of testBaseNames) {
+    // should run pseudo-concurrently to speed up the process and not waste time on waiting for the previous test to finish
     await runTest({ fileName: baseName });
   }
 
@@ -410,4 +408,7 @@ async function runScoring(): Promise<void> {
   console.log('Done!');
 }
 
-runScoring();
+runScoring().catch((e) => {
+  console.log(e);
+  process.exit(1);
+});
