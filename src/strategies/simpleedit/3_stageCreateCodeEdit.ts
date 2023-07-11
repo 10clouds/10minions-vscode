@@ -2,6 +2,7 @@ import { MinionTask } from '../../MinionTask';
 import { countTokens, ensureIRunThisInRange, gptExecute } from '../../openai';
 import { TASK_STRATEGY_ID } from '../strategies';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
+import { getFileInfo } from '../utils/getFileInfo';
 
 function createPrompt(
   classification: TASK_STRATEGY_ID,
@@ -12,6 +13,7 @@ function createPrompt(
   userQuery: string,
 ) {
   const settingsKeyword = 'TODO'; //vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
+  const { fileName } = getFileInfo();
 
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -64,6 +66,9 @@ ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
 ${userQuery}
+
+If the task is not clear or there is lack of details try to generate response base on file name.
+File name: ${fileName}
 
 Let's take it step by step.
 `.trim();

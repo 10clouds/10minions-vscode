@@ -1,6 +1,7 @@
 import { MinionTask } from '../../MinionTask';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
 import { countTokens, ensureIRunThisInRange, gptExecute } from '../../openai';
+import { getFileInfo } from '../utils/getFileInfo';
 
 function createPrompt(
   selectedText: string,
@@ -9,6 +10,8 @@ function createPrompt(
   selectionPosition: EditorPosition,
   userQuery: string,
 ) {
+  const { fileName } = getFileInfo();
+
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to tell him about something, the task is provided below in TASK section.
@@ -42,6 +45,9 @@ ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
 ${userQuery}
+
+If the task is not clear or there is lack of details try to generate response base on file name.
+File name: ${fileName}
 
 Let's take it step by step.
 `.trim();

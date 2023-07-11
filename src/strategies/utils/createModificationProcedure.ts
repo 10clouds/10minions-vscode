@@ -5,6 +5,7 @@ import {
   ensureIRunThisInRange,
   gptExecute,
 } from '../../openai';
+import { getFileInfo } from './getFileInfo';
 
 export const AVAILABLE_COMMANDS = [
   `
@@ -143,6 +144,8 @@ export async function createModificationProcedure(
   });
 }
 function createPrompt(refCode: string, modification: string) {
+  const { fileName } = getFileInfo();
+
   return `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
@@ -150,7 +153,8 @@ You are a higly intelligent AI file composer tool, you can take a piece of text 
 ${OUTPUT_FORMAT} 
 
 ==== THINGS TO TAKE INTO CONSIDERATION ====
-
+* If you are not sure what is the TASK or TASK details are not specified, try to generate response based on FILENAME: '${fileName}'.
+* ALWAYS use FILENAME as a hint when you answering the question.
 * You have been provided an exact modification (REQUESTED MODIFICATION section) that needs to be applied to the code (ORIGINAL CODE section).
 * Make sure to exactly match the structure of the original and exactly the intention of the modification.
 * You MUST ALWAYS expand all comments like "// ...", "/* remainig code */" or "// ...rest of the code remains the same..." to the exact code that they refer to. You are producting final production ready code, so you need complete code.
