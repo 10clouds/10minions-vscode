@@ -20,6 +20,23 @@ export type FunctionParams = {
   required: string[];
 };
 
+interface GPTExecuteRequestData {
+  function_call?:
+    | {
+        name: string;
+      }
+    | undefined;
+  functions?: FunctionDef[] | undefined;
+  model: AVAILABLE_MODELS;
+  messages: {
+    role: string;
+    content: string;
+  }[];
+  max_tokens: number;
+  temperature: number;
+  stream: boolean;
+}
+
 export type FunctionDef = {
   name: string;
   description: string;
@@ -223,6 +240,29 @@ export function countTokens(text: string, mode: GptMode) {
   return MODEL_DATA[model].encode(text).length;
 }
 
+const calculateCosts = (
+  model: AVAILABLE_MODELS,
+  outputType: OutputType,
+  requestData: GPTExecuteRequestData,
+  result: string,
+  mode: GptMode,
+) => {
+  const functionsTokens =
+    outputType === 'string'
+      ? 0
+      : countTokens(JSON.stringify(requestData.functions), mode);
+  const inputTokens =
+    countTokens(JSON.stringify(requestData.messages), mode) + functionsTokens;
+
+  const outputTokens = countTokens(result, mode);
+
+  const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
+  const outputCost = (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
+  const totalCost = inputCost + outputCost;
+
+  return totalCost;
+};
+
 /**
  *
  */
@@ -267,7 +307,7 @@ export async function gptExecute({
 
   //console.log("Querying OpenAI");
 
-  const requestData = {
+  const requestData: GPTExecuteRequestData = {
     model,
     messages: [
       {
@@ -322,21 +362,11 @@ export async function gptExecute({
       });
 
       getAnalyticsManager().reportOpenAICall(requestData, result);
-
-      const inputTokens =
-        countTokens(JSON.stringify(requestData.messages), mode) +
-        (outputType === 'string'
-          ? 0
-          : countTokens(JSON.stringify(requestData.functions), mode));
-      const outputTokens = requestData.max_tokens; //TODO: Is the actuall dolar cost on the OpenAI side is based max_tokens or actual tokens returned?
-      const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
-      const outputCost =
-        (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
-      const totalCost = inputCost + outputCost;
+      const cost = calculateCosts(model, outputType, requestData, result, mode);
 
       return {
-        result: result,
-        cost: totalCost,
+        result,
+        cost,
       };
     } catch (error) {
       console.error(`Error on attempt ${attempt}: ${error}`);
