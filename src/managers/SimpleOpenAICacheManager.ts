@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin';
 import { getAnalyticsManager } from './AnalyticsManager';
-import { setOpenAICacheManager } from './OpenAICacheManager';
 
 export class SimpleOpenAICacheManager {
   private firestore: admin.firestore.Firestore | undefined;

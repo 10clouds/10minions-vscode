@@ -239,7 +239,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     }, 500);
   }
 
-  async reRunExecution(minionTaskId: any, newUserQuery?: string) {
+  async reRunExecution(minionTaskId: string, newUserQuery?: string) {
     const oldExecutionMaybe = this.minionTasks.find(
       (e) => e.id === minionTaskId,
     );
@@ -327,7 +327,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     }
   }
 
-  stopExecution(minionTaskId: any) {
+  stopExecution(minionTaskId: string) {
     const execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {
@@ -337,7 +337,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     }
   }
 
-  async closeExecution(minionTaskId: any) {
+  async closeExecution(minionTaskId: string) {
     const execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {

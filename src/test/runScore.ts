@@ -78,7 +78,7 @@ async function checkFunctionReturnType({
     // Create an in-memory compiler host
     const compilerHost: ts.CompilerHost = {
       ...ts.createCompilerHost({}),
-      getSourceFile: (fileName, languageVersion) =>
+      getSourceFile: (fileName) =>
         fileName === 'temp.ts' ? sourceFile : undefined,
       readFile: (fileName) => (fileName === 'temp.ts' ? code : undefined),
     };
@@ -222,6 +222,8 @@ async function runTest({
   fileName: string;
   iterations?: number;
 }) {
+  //TODO: fix this linter error
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const tests: TestDefinition[] = require(path.join(
     __dirname,
     'score',
@@ -295,7 +297,7 @@ async function runTest({
 
       selectedText: readSelectedText,
       minionIndex: 0,
-      onChanged: async (important) => {},
+      onChanged: async () => {},
     });
     await execution.run();
     await applyMinionTask(execution);

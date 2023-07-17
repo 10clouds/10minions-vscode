@@ -2,8 +2,8 @@ import * as path from 'path';
 import { PathLike } from 'fs';
 import { exec } from 'child_process';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const execPromise = require('util').promisify(exec);
-
 /* AIX PLAY COMMAND */
 const aixPlayCommand = (filePath: PathLike, volume: number) =>
   `aplay \"${filePath}\" -v ${volume}`;

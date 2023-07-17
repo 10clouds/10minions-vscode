@@ -105,7 +105,8 @@ export async function createModificationProcedure(
   //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
   modification = modification.replace(
     /^(====+)([^=]+)(====+)$/gm,
-    (match, p1, p2, p3) => {
+
+    (match, p1, p2) => {
       return `#${p2}`;
     },
   );
