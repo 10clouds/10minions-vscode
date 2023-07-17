@@ -35,6 +35,31 @@ export type ModelData = {
   };
 };
 
+interface ModelsResponseData {
+  objest: string;
+  data: {
+    id: string;
+    object: string;
+    created: Date | number;
+    owned_by: string;
+    root: string;
+    permissions: {
+      allow_create_engine: boolean;
+      allow_fine_tuning: boolean;
+      allow_logprobs: boolean;
+      allow_sampling: boolean;
+      allow_search_indices: boolean;
+      allow_view: boolean;
+      created: Date | number;
+      group: string;
+      id: string;
+      is_blocking: boolean;
+      object: string;
+      organization: string;
+    }[];
+  }[];
+}
+
 export const MODEL_DATA: ModelData = {
   'gpt-4-0613': {
     maxTokens: 8192,
@@ -64,8 +89,30 @@ export function setOpenAIApiKey(apiKey: string) {
   openAIApiKey = apiKey;
 }
 
-function extractParsedLines(chunkBuffer: string): [any[], string] {
-  const parsedLines: any[] = [];
+interface ParsedLine {
+  id: string;
+  object: string;
+  created: Date | number;
+  model: string;
+  choices: {
+    index: number;
+    delta: {
+      role: string;
+      content: string | null;
+      function_call: {
+        name: string;
+        arguments: string;
+      };
+      finish_reason: string | null;
+    };
+  }[];
+  error: {
+    message: string;
+  };
+}
+
+function extractParsedLines(chunkBuffer: string): [ParsedLine[], string] {
+  const parsedLines: ParsedLine[] = [];
 
   while (chunkBuffer.includes('\n')) {
     if (chunkBuffer.startsWith('\n')) {
@@ -119,13 +166,13 @@ async function processOpenAIResponseStream({
   isCancelled: () => boolean;
   controller: AbortController;
 }) {
-  const stream = response.body!;
+  const stream = response?.body;
   const decoder = new TextDecoder('utf-8');
   let fullContent = '';
   let chunkBuffer = '';
 
   return await new Promise<string>((resolve, reject) => {
-    stream.on('data', async (value) => {
+    stream?.on('data', async (value) => {
       try {
         if (isCancelled() || controller.signal.aborted) {
           stream.removeAllListeners();
@@ -166,7 +213,7 @@ async function processOpenAIResponseStream({
       }
     });
 
-    stream.on('end', () => {
+    stream?.on('end', () => {
       if (isCancelled() || controller.signal.aborted) {
         stream.removeAllListeners();
         reject(CANCELED_STAGE_NAME);
@@ -175,7 +222,7 @@ async function processOpenAIResponseStream({
       resolve(fullContent);
     });
 
-    stream.on('error', (err) => {
+    stream?.on('error', (err) => {
       console.error('Error: ', err);
       reject(err);
     });
@@ -199,14 +246,14 @@ export async function getMissingOpenAIModels(): Promise<AVAILABLE_MODELS[]> {
       },
     });
 
-    const responseData = (await response.json()) as any;
-
+    // TODO: replace anu with type
+    const responseData = (await response.json()) as ModelsResponseData;
     if (!responseData || !responseData.data) {
       console.error('No data received from OpenAI models API.');
       return missingModels;
     }
 
-    const availableModels = responseData.data.map((model: any) => model.id);
+    const availableModels = responseData.data.map((model) => model.id);
 
     return missingModels.filter((model) => !availableModels.includes(model));
   } catch (error) {
@@ -228,7 +275,7 @@ export function countTokens(text: string, mode: GptMode) {
  */
 export async function gptExecute({
   fullPrompt,
-  onChunk = async (chunk: string) => {},
+  onChunk = async () => {},
   isCancelled = () => false,
   maxTokens = 2000,
   mode,

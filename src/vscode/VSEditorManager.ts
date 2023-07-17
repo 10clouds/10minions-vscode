@@ -11,7 +11,7 @@ import AsyncLock = require('async-lock');
 export const editorLock = new AsyncLock();
 
 export class VSEditorManager implements EditorManager {
-  constructor(context: vscode.ExtensionContext) {
+  constructor() {
     setEditorManager(this);
   }
 

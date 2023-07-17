@@ -97,7 +97,7 @@ export class MinionTask {
     finalContent = '',
     contentWhenDismissed = '',
     startTime,
-    onChanged = async (important: boolean) => {
+    onChanged = async () => {
       throw new Error('Should be implemented');
     },
     shortName = '',

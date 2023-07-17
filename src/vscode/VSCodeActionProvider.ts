@@ -34,16 +34,15 @@ export class VSCodeActionProvider implements vscode.CodeActionProvider {
     document: vscode.TextDocument,
     range: vscode.Range,
     context: vscode.CodeActionContext,
-    token: vscode.CancellationToken,
   ): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
     return context.diagnostics
-      .filter((diagnostic) => this.canFixDiagnostic(diagnostic))
+      .filter(() => this.canFixDiagnostic())
       .map((diagnostic) =>
         this.createCommandCodeAction(diagnostic, document.uri),
       );
   }
 
-  private canFixDiagnostic(diagnostic: vscode.Diagnostic): boolean {
+  private canFixDiagnostic(): boolean {
     return true;
   }
 }

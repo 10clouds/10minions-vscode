@@ -87,11 +87,7 @@ export class VSViewProvider
     };
   }
 
-  public resolveWebviewView(
-    webviewView: vscode.WebviewView,
-    context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken,
-  ) {
+  public resolveWebviewView(webviewView: vscode.WebviewView) {
     this._view = webviewView;
 
     // Add an event listener for visibility change
@@ -175,7 +171,6 @@ export class VSViewProvider
 
   async handleWebviewMessage(data: MessageToVSCode) {
     console.log('CMD', data);
-    const activeEditor = vscode.window.activeTextEditor;
 
     switch (data.type) {
       case MessageToVSCodeType.NewMinionTask: {

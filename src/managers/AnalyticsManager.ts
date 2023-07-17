@@ -109,16 +109,17 @@ export class AnalyticsManager {
       console.error(`Error updating minion task in Firestore: ${error}`);
     }
   }
-
-  public getRequestHash(requestData: any): string {
+  // TODO: replace unknown with generic type
+  public getRequestHash(requestData: unknown): string {
     const hash = crypto.createHash('sha256');
     hash.update(JSON.stringify(requestData));
     return hash.digest('hex');
   }
 
+  // TODO: replace unknown with generic type
   public async reportOpenAICall(
-    requestData: any,
-    responseData: any,
+    requestData: unknown,
+    responseData: unknown,
   ): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
     if (!this.sendDiagnosticsData) {
