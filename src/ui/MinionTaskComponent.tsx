@@ -21,8 +21,13 @@ import { useUserQueryPreview } from './useUserQueryPreview';
 import { OutlineButton } from './OutlineButton';
 
 function adjustTextAreaHeight(target: HTMLTextAreaElement) {
-  target.style.height = 'auto';
-  target.style.height = target.scrollHeight + 'px';
+  const parent = target.parentElement;
+  const textAreaHeight = target.scrollHeight;
+  if (textAreaHeight > 22 && parent) {
+    parent.style.maxHeight = `${textAreaHeight}px`;
+    target.style.height = `${textAreaHeight}px`;
+    target.style.marginTop = '-1px';
+  }
 }
 
 // Constants
@@ -328,18 +333,21 @@ export const MinionTaskComponent = forwardRef(
 
                 <div className="mb-2">Task:</div>
 
-                <div className="mb-2">
+                <div style={{ minHeight: '22px' }}>
                   {isInputOpen ? (
                     <textarea
                       style={{
                         backgroundColor: 'inherit',
                         color: 'inherit',
-                        border: 'none',
                         outline: 'none',
                         width: '100%', // Make it span the entire line
                         resize: 'none', // Disable the resizing of the textarea
                         margin: 0,
                         padding: 0,
+                        minHeight: '22px',
+                        lineHeight: '20.5px',
+                        height: '22px',
+                        border: 'none',
                       }}
                       value={updatedPrompt}
                       onChange={(event) => setUpdatedPrompt(event.target.value)}
@@ -347,6 +355,13 @@ export const MinionTaskComponent = forwardRef(
                       onBlur={() => {
                         setIsInputOpen(false);
                         handleRun();
+                      }}
+                      onFocus={(
+                        event: React.FormEvent<HTMLTextAreaElement>,
+                      ) => {
+                        adjustTextAreaHeight(
+                          event.target as HTMLTextAreaElement,
+                        );
                       }}
                       autoFocus
                       onInput={(
@@ -360,15 +375,18 @@ export const MinionTaskComponent = forwardRef(
                   ) : (
                     // Wrap the userQueryPreview inside a div with the same line-height as the textarea
                     // Apply required padding and margin in this div
-                    <div>
-                      <span
+
+                    <>
+                      <div
                         title="Edit task"
+                        style={{
+                          minHeight: '22px',
+                        }}
                         onClick={() => setIsInputOpen(true)}
                       >
-                        {userQueryPreview}{' '}
-                      </span>
-                      {minionTask.stopped && retryButton}
-                    </div>
+                        {userQueryPreview} {minionTask.stopped && retryButton}
+                      </div>
+                    </>
                   )}
                 </div>
 
