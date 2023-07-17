@@ -55,7 +55,6 @@ export async function stageCreateAnswer(this: MinionTask) {
   this.modificationDescription = '';
 
   const document = await this.document();
-  const classification = this.strategy;
   const userQuery = this.userQuery;
   const selectedText = this.selectedText;
   const fullFileContents = this.originalContent;
