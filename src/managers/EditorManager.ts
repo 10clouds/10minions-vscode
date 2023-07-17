@@ -24,7 +24,7 @@ export type EditorDocument = {
   };
 };
 
-export type EditorTextEdit = {};
+export type EditorTextEdit = unknown;
 
 export interface WorkspaceEdit {
   replace(uri: EditorUri, range: EditorRange, newText: string): void;
