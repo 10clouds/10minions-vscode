@@ -19,13 +19,14 @@ export class VSCodeActionProvider implements vscode.CodeActionProvider {
   ): vscode.CodeAction {
     const action = new vscode.CodeAction(
       'Fix with 10Minions',
-      VSCodeActionProvider.providedCodeActionKinds[0],
+      vscode.CodeActionKind.QuickFix,
     );
     action.command = {
       command: '10minions.fixError',
       title: 'Let AI fix this',
       arguments: [uri, diagnostic],
     };
+    action.isPreferred = false;
     action.diagnostics = [diagnostic];
     return action;
   }
@@ -36,13 +37,13 @@ export class VSCodeActionProvider implements vscode.CodeActionProvider {
     context: vscode.CodeActionContext,
   ): vscode.ProviderResult<(vscode.Command | vscode.CodeAction)[]> {
     return context.diagnostics
-      .filter(() => this.canFixDiagnostic())
+      .filter(
+        (diagnostic) =>
+          diagnostic.severity === vscode.DiagnosticSeverity.Error ||
+          diagnostic.severity === vscode.DiagnosticSeverity.Warning,
+      )
       .map((diagnostic) =>
         this.createCommandCodeAction(diagnostic, document.uri),
       );
-  }
-
-  private canFixDiagnostic(): boolean {
-    return true;
   }
 }
