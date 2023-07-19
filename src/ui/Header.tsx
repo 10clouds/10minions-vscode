@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
 
 export function Header({
@@ -9,7 +9,7 @@ export function Header({
   RobotIcon2: React.ElementType;
 }) {
   return (
-    <React.Fragment>
+    <>
       <h1 className="text-4xl font-bold text-center mb-2 text-primary">
         <div className="flex items-center justify-center">
           <RobotIcon1
@@ -33,6 +33,6 @@ export function Header({
         </span>
         <br /> <span style={{ opacity: 0.7 }}>Coding</span> Buddies
       </h3>
-    </React.Fragment>
+    </>
   );
 }

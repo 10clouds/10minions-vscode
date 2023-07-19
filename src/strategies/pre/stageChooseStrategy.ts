@@ -1,6 +1,7 @@
 import { MinionTask } from '../../MinionTask';
 import { DEBUG_PROMPTS, DEBUG_RESPONSES } from '../../const';
-import { ensureICanRunThis, gptExecute } from '../../openai';
+import { gptExecute } from '../../openai';
+import { ensureICanRunThis } from '../../utils/ensureIcanRunThis';
 import { PRE_STAGES, TASK_STRATEGIES } from '../strategies';
 
 export async function stageChooseStrategy(this: MinionTask) {

@@ -1,7 +1,9 @@
 import { MinionTask } from '../../MinionTask';
-import { countTokens, ensureIRunThisInRange, gptExecute } from '../../openai';
+import { gptExecute } from '../../openai';
 import { TASK_STRATEGY_ID } from '../strategies';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
+import { countTokens } from '../../utils/countTokens';
 
 function createPrompt(
   classification: TASK_STRATEGY_ID,

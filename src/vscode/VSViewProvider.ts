@@ -5,13 +5,14 @@ import {
   MessageToWebView,
   MessageToWebViewType,
 } from '../Messages';
-import { getMissingOpenAIModels, setOpenAIApiKey } from '../openai';
+import { setOpenAIApiKey } from '../openai';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
 import { getAnalyticsManager } from '../managers/AnalyticsManager';
 import { getCommandHistoryManager } from '../managers/CommandHistoryManager';
 import { getMinionTasksManager } from '../managers/MinionTasksManager';
 import { ViewProvider, setViewProvider } from '../managers/ViewProvider';
+import { getMissingOpenAIModels } from '../utils/getMissingOpenAIModels';
 
 export class VSViewProvider
   implements vscode.WebviewViewProvider, ViewProvider
@@ -54,9 +55,9 @@ export class VSViewProvider
   }
 
   private async updateApiKeyAndModels() {
-    setOpenAIApiKey(
-      vscode.workspace.getConfiguration('10minions').get('apiKey') || '',
-    );
+    const apiKey: string =
+      vscode.workspace.getConfiguration('10minions').get('apiKey') || '';
+    setOpenAIApiKey(apiKey);
     this.postMessageToWebView({
       type: MessageToWebViewType.ApiKeySet,
       value: !!vscode.workspace.getConfiguration('10minions').get('apiKey'),
@@ -64,7 +65,7 @@ export class VSViewProvider
 
     this.postMessageToWebView({
       type: MessageToWebViewType.ApiKeyMissingModels,
-      models: await getMissingOpenAIModels(),
+      models: await getMissingOpenAIModels(apiKey),
     });
   }
 
