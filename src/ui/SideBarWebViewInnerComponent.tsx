@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, KeyboardEvent, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   MessageToVSCode,
@@ -23,39 +23,38 @@ export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
 
-export const SideBarWebViewInnerComponent: React.FC = () => {
-  const [userInputPrompt, setUserInputPrompt] = React.useState('');
-  const [executionList, setExecutionList] = React.useState<MinionTaskUIInfo[]>(
-    [],
+const [RobotIcon1, RobotIcon2] = () => {
+  const randomIndex = Math.floor(
+    Math.random() * ALL_MINION_ICONS_OUTLINE.length,
   );
-  const [apiKeySet, setApiKeySet] = React.useState<true | false | undefined>(
+
+  return [
+    ALL_MINION_ICONS_OUTLINE[randomIndex],
+    ALL_MINION_ICONS_OUTLINE[
+      (randomIndex + 1) % ALL_MINION_ICONS_OUTLINE.length
+    ],
+  ];
+};
+
+export const SideBarWebViewInnerComponent = () => {
+  const [userInputPrompt, setUserInputPrompt] = useState('');
+  const [executionList, setExecutionList] = useState<MinionTaskUIInfo[]>([]);
+  const [apiKeySet, setApiKeySet] = useState<true | false | undefined>(
     undefined,
   );
-  const [missingApiModels, setMissingApiModels] = React.useState<
+  const [missingApiModels, setMissingApiModels] = useState<
     string[] | undefined
   >(undefined);
-  const [suggestions, setSuggestions] = React.useState<string[]>([]);
-  const [suggestionIndex, setSuggestionIndex] = React.useState(0);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [justClickedGo, markJustClickedGo] = useTemporaryFlag();
-  const [isSidebarVisible, setIsSidebarVisible] = React.useState(true);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
-  const [selectedCode, setSelectedCode] = React.useState('');
-  const [suggestionInputBase, setSuggestionInputBase] = React.useState<
+  const [selectedCode, setSelectedCode] = useState('');
+  const [suggestionInputBase, setSuggestionInputBase] = useState<
     string | undefined
   >(undefined);
-  const [isTextAreaFocused, setIsTextAreaFocused] = React.useState(false);
-
-  const [RobotIcon1, RobotIcon2] = React.useMemo(() => {
-    const randomIndex = Math.floor(
-      Math.random() * ALL_MINION_ICONS_OUTLINE.length,
-    );
-    return [
-      ALL_MINION_ICONS_OUTLINE[randomIndex],
-      ALL_MINION_ICONS_OUTLINE[
-        (randomIndex + 1) % ALL_MINION_ICONS_OUTLINE.length
-      ],
-    ];
-  }, []);
+  const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -85,53 +84,53 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     setSuggestionInputBase(undefined);
   }
 
-  function handlePreviousSuggestion(e?: React.MouseEvent<HTMLButtonElement>) {
+  function handlePreviousSuggestion() {
     setSuggestionIndex(
       (suggestionIndex + suggestions.length - 1) % suggestions.length,
     );
   }
 
-  function handleNextSuggestion(e?: React.MouseEvent<HTMLButtonElement>) {
+  function handleNextSuggestion() {
     setSuggestionIndex((suggestionIndex + 1) % suggestions.length);
   }
 
-  React.useEffect(() => {
-    const eventHandler = (event: any) => {
-      const message: MessageToWebView = event.data;
-      handleMessage(message);
+  const eventHandler = (event: MessageEvent) => {
+    const message: MessageToWebView = event.data;
+    handleMessage(message);
 
-      function handleMessage(message: MessageToWebView) {
-        console.log('CMD (webview)', message.type);
+    function handleMessage(message: MessageToWebView) {
+      console.log('CMD (webview)', message.type);
 
-        switch (message.type) {
-          case MessageToWebViewType.ClearAndFocusOnInput:
-            handleClearAndFocus();
-            break;
-          case MessageToWebViewType.ExecutionsUpdated:
-            handleExecutionsUpdated(message.executions);
-            break;
-          case MessageToWebViewType.ApiKeySet:
-            setApiKeySet(message.value);
-            break;
-          case MessageToWebViewType.ApiKeyMissingModels:
-            setMissingApiModels(message.models);
-            break;
-          case MessageToWebViewType.UpdateSidebarVisibility:
-            setIsSidebarVisible(message.value);
-            break;
-          case MessageToWebViewType.Suggestions:
-            if (message.forInput === userInputPrompt) {
-              setSuggestions(message.suggestions);
-              setSuggestionIndex(0);
-            }
-            break;
-          case MessageToWebViewType.ChosenCodeUpdated:
-            setSelectedCode(message.code);
-            break;
-        }
+      switch (message.type) {
+        case MessageToWebViewType.ClearAndFocusOnInput:
+          handleClearAndFocus();
+          break;
+        case MessageToWebViewType.ExecutionsUpdated:
+          handleExecutionsUpdated(message.executions);
+          break;
+        case MessageToWebViewType.ApiKeySet:
+          setApiKeySet(message.value);
+          break;
+        case MessageToWebViewType.ApiKeyMissingModels:
+          setMissingApiModels(message.models);
+          break;
+        case MessageToWebViewType.UpdateSidebarVisibility:
+          setIsSidebarVisible(message.value);
+          break;
+        case MessageToWebViewType.Suggestions:
+          if (message.forInput === userInputPrompt) {
+            setSuggestions(message.suggestions);
+            setSuggestionIndex(0);
+          }
+          break;
+        case MessageToWebViewType.ChosenCodeUpdated:
+          setSelectedCode(message.code);
+          break;
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     window.addEventListener('message', eventHandler);
 
     postMessageToVsCode({ type: MessageToVSCodeType.ReadyForMessages });
@@ -141,7 +140,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
     };
   }, [selectedCode, userInputPrompt]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (suggestionInputBase !== userInputPrompt) {
       setSuggestionInputBase(userInputPrompt);
       postMessageToVsCode({
@@ -152,6 +151,48 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
   }, [userInputPrompt, suggestionInputBase]);
 
   const userInputStartsSuggestion = userInputPrompt.length === 0; //suggestions[suggestionIndex] && suggestions[suggestionIndex].toLowerCase().startsWith(userInputPrompt.toLowerCase());
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Get current cursor position in textarea
+    const cursorPositionStart = e.currentTarget.selectionStart ?? 0;
+    const cursorPositionEnd = e.currentTarget.selectionEnd ?? 0;
+    const textAreaContent = e.currentTarget.value;
+
+    // If left arrow key pressed and cursor is at the beginning of the content
+    if (
+      (e.key === 'ArrowLeft' || e.key === 'ArrowUp') &&
+      cursorPositionStart === 0 &&
+      cursorPositionEnd === 0
+    ) {
+      handlePreviousSuggestion();
+    }
+    // If right arrow key pressed and cursor is at the end of the content
+    else if (
+      (e.key === 'ArrowRight' || e.key === 'ArrowDown') &&
+      cursorPositionStart === textAreaContent.length &&
+      cursorPositionEnd === textAreaContent.length
+    ) {
+      handleNextSuggestion();
+    }
+
+    // Check for Tab key and if the selectedSuggestion is valid
+    if (
+      e.key === 'Tab' &&
+      suggestions[suggestionIndex] &&
+      suggestions[suggestionIndex].length > 0
+    ) {
+      e.preventDefault(); // Prevent default tab behavior
+      handleSuggestionClick(suggestions[suggestionIndex]);
+    }
+    // Check for Enter key and if the Shift key is NOT pressed
+    else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent default line break behavior
+
+      if (justClickedGo) return; // Prevent double submission
+      // Submit userInputPrompt by calling postMessageToVsCode function
+      handleSubmitCommand();
+    }
+  };
 
   return (
     <div className="w-full">
@@ -206,49 +247,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                     onBlur={() => {
                       setIsTextAreaFocused(false);
                     }}
-                    onKeyDown={(e) => {
-                      // Get current cursor position in textarea
-                      const cursorPositionStart =
-                        e.currentTarget.selectionStart ?? 0;
-                      const cursorPositionEnd =
-                        e.currentTarget.selectionEnd ?? 0;
-                      const textAreaContent = e.currentTarget.value;
-
-                      // If left arrow key pressed and cursor is at the beginning of the content
-                      if (
-                        (e.key === 'ArrowLeft' || e.key === 'ArrowUp') &&
-                        cursorPositionStart === 0 &&
-                        cursorPositionEnd === 0
-                      ) {
-                        handlePreviousSuggestion();
-                      }
-                      // If right arrow key pressed and cursor is at the end of the content
-                      else if (
-                        (e.key === 'ArrowRight' || e.key === 'ArrowDown') &&
-                        cursorPositionStart === textAreaContent.length &&
-                        cursorPositionEnd === textAreaContent.length
-                      ) {
-                        handleNextSuggestion();
-                      }
-
-                      // Check for Tab key and if the selectedSuggestion is valid
-                      if (
-                        e.key === 'Tab' &&
-                        suggestions[suggestionIndex] &&
-                        suggestions[suggestionIndex].length > 0
-                      ) {
-                        e.preventDefault(); // Prevent default tab behavior
-                        handleSuggestionClick(suggestions[suggestionIndex]);
-                      }
-                      // Check for Enter key and if the Shift key is NOT pressed
-                      else if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault(); // Prevent default line break behavior
-
-                        if (justClickedGo) return; // Prevent double submission
-                        // Submit userInputPrompt by calling postMessageToVsCode function
-                        handleSubmitCommand();
-                      }
-                    }}
+                    onKeyDown={handleKeyDown}
                   />
 
                   <div
@@ -307,7 +306,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 handlePreviousSuggestion();
-                                textAreaRef.current!.focus();
+                                textAreaRef.current?.focus();
                               }}
                             >
                               {'< '}
@@ -318,7 +317,7 @@ export const SideBarWebViewInnerComponent: React.FC = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 handleNextSuggestion();
-                                textAreaRef.current!.focus();
+                                textAreaRef.current?.focus();
                               }}
                             >
                               {' >'}

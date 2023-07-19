@@ -1,10 +1,8 @@
 import { DEBUG_PROMPTS } from '../../const';
-import {
-  GptMode,
-  countTokens,
-  ensureIRunThisInRange,
-  gptExecute,
-} from '../../openai';
+import { gptExecute } from '../../openai';
+import { GptMode } from '../../types';
+import { countTokens } from '../../utils/countTokens';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
 
 export const AVAILABLE_COMMANDS = [
   `

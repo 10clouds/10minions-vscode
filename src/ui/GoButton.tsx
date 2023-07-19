@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
 
 export function GoButton({

@@ -1,6 +1,8 @@
 import { MinionTask } from '../../MinionTask';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
-import { countTokens, ensureIRunThisInRange, gptExecute } from '../../openai';
+import { gptExecute } from '../../openai';
+import { countTokens } from '../../utils/countTokens';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
 
 function createPrompt(
   selectedText: string,

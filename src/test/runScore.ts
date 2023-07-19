@@ -6,13 +6,15 @@ import ts from 'typescript';
 import { initCLISystems, setupCLISystemsForTest } from '../CLI/setupCLISystems';
 import { MinionTask } from '../MinionTask';
 import { getEditorManager } from '../managers/EditorManager';
-import { GptMode, gptExecute } from '../openai';
+import { gptExecute } from '../openai';
 import {
-  LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER,
   LOG_NO_FALLBACK_MARKER as LOG_NORMAL_MODIFICATION_MARKER,
   applyMinionTask,
 } from '../strategies/utils/applyMinionTask';
+
+import { LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER } from '../strategies/utils/applyFallback';
 import chalk from 'chalk';
+import { GptMode } from '../types';
 
 export type TestDefinition =
   | { type: 'gptAssert'; mode: GptMode; assertion: string }
