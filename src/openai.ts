@@ -312,8 +312,6 @@ export async function gptExecute({
     throw new Error('OpenAI API key not found. Please set it in the settings.');
   }
 
-  //console.log("Querying OpenAI");
-
   const requestData = {
     model,
     messages: [

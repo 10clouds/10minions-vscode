@@ -29,13 +29,13 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
         return this.stopped;
       },
     );
-
     this.modificationProcedure = result;
     this.totalCost += cost;
   } catch (error) {
     this.appendToLog(
       `Error while creating modification procedure:\n\n ${error}\n\n`,
     );
+    this.stopExecution((error as Error).message as string);
   }
 
   this.appendToLog('\n\n');
