@@ -145,8 +145,8 @@ const collectBaseTestData = async (): Promise<
   Omit<TestConfig, 'withSelectedText' | 'language'>
 > => {
   const testId = await input({
-    message: 'Enter Firestore test ID ( 20 characters a-zA-Z0-9 )',
-    validate: (value) => /^[a-zA-Z0-9]{20}$/g.test(value),
+    message: 'Enter Firestore test ID ( 36 characters a-zA-Z0-9 )',
+    validate: (value) => value.length === 36,
   });
   const testName = await input({
     message: 'Enter test name',
@@ -198,7 +198,7 @@ const prepareTestFiles = async () => {
     const minionTaskSnapshot = await admin
       .firestore()
       .collection('minionTasks')
-      .where('id', '==', '001279e4-8635-4d25-b9cd-8c3937693581')
+      .where('id', '==', testConfigBase.id)
       .limit(1)
       .get();
 

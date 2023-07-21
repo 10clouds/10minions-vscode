@@ -1,7 +1,8 @@
 import { MinionTask } from '../../MinionTask';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
-import { countTokens, ensureIRunThisInRange, gptExecute } from '../../openai';
-import { getFileInfo } from '../utils/getFileInfo';
+import { gptExecute } from '../../openai';
+import { countTokens } from '../../utils/countTokens';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
 
 function createPrompt(
   selectedText: string,
@@ -61,7 +62,6 @@ export async function stageCreateAnswer(this: MinionTask) {
   this.modificationDescription = '';
 
   const document = await this.document();
-  const classification = this.strategy;
   const userQuery = this.userQuery;
   const selectedText = this.selectedText;
   const fullFileContents = this.originalContent;

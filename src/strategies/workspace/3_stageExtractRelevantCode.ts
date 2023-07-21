@@ -1,7 +1,9 @@
 import { MinionTask } from '../../MinionTask';
 import { DEBUG_PROMPTS, DEBUG_RESPONSES } from '../../const';
 import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
-import { countTokens, ensureICanRunThis, gptExecute } from '../../openai';
+import { gptExecute } from '../../openai';
+import { countTokens } from '../../utils/countTokens';
+import { ensureICanRunThis } from '../../utils/ensureIcanRunThis';
 
 export function extractRelevantCodePrompt({
   userQuery,
