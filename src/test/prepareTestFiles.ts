@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { input, select, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
+import { extractFileNameFromPath } from '../strategies/utils/extractFileNameFromPath';
 
 interface TestRequiredData {
   selectedText: string;
@@ -12,6 +13,7 @@ interface TestRequiredData {
   userQuery: string;
   modificationProcedure: string;
   modificationDescription: string;
+  documentURI: string;
 }
 
 enum TestType {
@@ -90,8 +92,13 @@ const createScoreTestFiles = async (
   createTestFile(userQuery, `${testFileNamePrefix}userQuery.txt`);
   createTestFile(
     `[
-         { "type": "gptAssert", "mode": "FAST", "assertion": "The code is a valid ${config.language} code" }
-      ]`,
+      {
+        "type": "gptAssert",
+        "mode": "FAST",
+        "assertion": "The code is a valid typescript code"
+      }
+    ]
+    `,
     `${testFileNamePrefix}tests.json`,
   );
 };
@@ -108,15 +115,21 @@ const createProcedureTestFiles = async (
   } = testData;
   const testDirPath = createTestsDirectory(config.testType, config.testName);
   const testFileNamePrefix = `${testDirPath}/`;
+  const originalFileName = extractFileNameFromPath(testData.documentURI);
 
   if (config.testType === TestType.CREATE_PROCEDURE) {
     createTestFile(
       modificationDescription,
       `${testFileNamePrefix}modification.txt`,
     );
+    createTestFile(
+      originalContent,
+      `${testFileNamePrefix}${originalFileName}.original.txt`,
+    );
+  } else {
+    createTestFile(originalContent, `${testFileNamePrefix}original.txt`);
   }
 
-  createTestFile(originalContent, `${testFileNamePrefix}original.txt`);
   createTestFile(modificationProcedure, `${testFileNamePrefix}procedure.txt`);
   createTestFile(finalContent, `${testFileNamePrefix}result.txt`);
 };
@@ -145,8 +158,8 @@ const collectBaseTestData = async (): Promise<
   Omit<TestConfig, 'withSelectedText' | 'language'>
 > => {
   const testId = await input({
-    message: 'Enter Firestore test ID ( 20 characters a-zA-Z0-9 )',
-    validate: (value) => /^[a-zA-Z0-9]{20}$/g.test(value),
+    message: 'Enter Firestore test ID ( 36 characters a-zA-Z0-9 )',
+    validate: (value) => value.length === 36,
   });
   const testName = await input({
     message: 'Enter test name',
@@ -198,7 +211,7 @@ const prepareTestFiles = async () => {
     const minionTaskSnapshot = await admin
       .firestore()
       .collection('minionTasks')
-      .where('id', '==', '001279e4-8635-4d25-b9cd-8c3937693581')
+      .where('id', '==', testConfigBase.id)
       .limit(1)
       .get();
 

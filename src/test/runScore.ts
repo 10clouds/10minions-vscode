@@ -6,13 +6,15 @@ import ts from 'typescript';
 import { initCLISystems, setupCLISystemsForTest } from '../CLI/setupCLISystems';
 import { MinionTask } from '../MinionTask';
 import { getEditorManager } from '../managers/EditorManager';
-import { GptMode, gptExecute } from '../openai';
+import { gptExecute } from '../openai';
 import {
-  LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER,
   LOG_NO_FALLBACK_MARKER as LOG_NORMAL_MODIFICATION_MARKER,
   applyMinionTask,
 } from '../strategies/utils/applyMinionTask';
+
+import { LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER } from '../strategies/utils/applyFallback';
 import chalk from 'chalk';
+import { GptMode } from '../types';
 import { OptionValues, program } from 'commander';
 import { mapLimit } from 'async';
 
@@ -86,7 +88,7 @@ async function checkFunctionReturnType({
     // Create an in-memory compiler host
     const compilerHost: ts.CompilerHost = {
       ...ts.createCompilerHost({}),
-      getSourceFile: (fileName, languageVersion) =>
+      getSourceFile: (fileName) =>
         fileName === 'temp.ts' ? sourceFile : undefined,
       readFile: (fileName) => (fileName === 'temp.ts' ? code : undefined),
     };
@@ -230,6 +232,8 @@ async function runTest({
   fileName: string;
   iterations?: number;
 }) {
+  //TODO: fix this linter error
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const tests: TestDefinition[] = require(path.join(
     __dirname,
     'score',
@@ -303,7 +307,7 @@ async function runTest({
 
       selectedText: readSelectedText,
       minionIndex: 0,
-      onChanged: async (important) => {},
+      onChanged: async () => {},
     });
     await execution.run();
     await applyMinionTask(execution);

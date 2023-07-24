@@ -1,10 +1,4 @@
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/solid';
-import * as React from 'react';
-import { forwardRef } from 'react';
+import React, { useEffect, useLayoutEffect, forwardRef } from 'react';
 import { blendWithForeground, getBaseColor } from './utils/blendColors';
 import { ALL_MINION_ICONS_FILL } from './MinionIconsFill';
 import {
@@ -18,15 +12,31 @@ import { ProgressBar } from './ProgressBar';
 import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
 import { MessageToVSCodeType } from '../Messages';
 import { useUserQueryPreview } from './useUserQueryPreview';
-import { OutlineButton } from './OutlineButton';
-
-function adjustTextAreaHeight(target: HTMLTextAreaElement) {
-  target.style.height = 'auto';
-  target.style.height = target.scrollHeight + 'px';
-}
+import {
+  ApplyButton,
+  ChevronButton,
+  CloseButton,
+  DiffButton,
+  MarkAsReadButton,
+  OpenLogFileButton,
+  ReapplyModificationButton,
+  RetryButton,
+  StopButton,
+} from './MinionTaskButtons';
 
 // Constants
 export const MAX_PREVIEW_LENGTH = 100;
+const EDIT_TASK_TEXT_AREA_MIN_HEIGHT = 22;
+
+function adjustTextAreaHeight(target: HTMLTextAreaElement) {
+  const parent = target.parentElement;
+  const textAreaHeight = target.scrollHeight;
+  if (textAreaHeight > EDIT_TASK_TEXT_AREA_MIN_HEIGHT && parent) {
+    parent.style.maxHeight = `${textAreaHeight}px`;
+    target.style.height = `${textAreaHeight}px`;
+    target.style.marginTop = '-1px';
+  }
+}
 
 export const MinionTaskComponent = forwardRef(
   (
@@ -37,27 +47,37 @@ export const MinionTaskComponent = forwardRef(
     ref: React.ForwardedRef<HTMLDivElement>,
   ) => {
     const { className, ...propsWithoutClassName } = props;
-
-    const userQueryPreview = useUserQueryPreview(minionTask.userQuery);
+    const {
+      inlineMessage,
+      userQuery,
+      id: minionTaskId,
+      minionIndex,
+      stopped,
+      executionStage,
+      shortName,
+      selectedText,
+      modificationProcedure,
+      isError,
+      documentName,
+    } = minionTask;
+    const userQueryPreview = useUserQueryPreview(userQuery);
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     // State variables for managing the input field state
     const [isInputOpen, setIsInputOpen] = React.useState(false);
-    const [updatedPrompt, setUpdatedPrompt] = React.useState(
-      minionTask.userQuery,
-    );
+    const [updatedPrompt, setUpdatedPrompt] = React.useState(userQuery);
 
-    React.useEffect(() => {
-      if (!!minionTask.inlineMessage) {
+    useEffect(() => {
+      if (!!inlineMessage) {
         setIsExpanded(true);
       }
-    }, [!!minionTask.inlineMessage]);
+    }, [inlineMessage]);
 
-    React.useEffect(() => {
-      setUpdatedPrompt(minionTask.userQuery);
-    }, [minionTask.userQuery]);
+    useEffect(() => {
+      setUpdatedPrompt(userQuery);
+    }, [userQuery]);
 
-    React.useLayoutEffect(() => {
+    useLayoutEffect(() => {
       if (isInputOpen) {
         const textAreaElement = document.querySelector<HTMLTextAreaElement>(
           '.execution textarea',
@@ -79,146 +99,43 @@ export const MinionTaskComponent = forwardRef(
     }
 
     function handleRun() {
-      if (updatedPrompt !== minionTask.userQuery) {
+      if (updatedPrompt !== userQuery) {
         // Stop the current execution
         postMessageToVsCode({
           type: MessageToVSCodeType.StopExecution,
-          minionTaskId: minionTask.id,
+          minionTaskId,
         });
 
         // Retry the execution with the updated prompt
         postMessageToVsCode({
           type: MessageToVSCodeType.ReRunExecution,
-          minionTaskId: minionTask.id,
+          minionTaskId,
           newUserQuery: updatedPrompt, // Pass the updated prompt value
         });
       }
     }
 
-    const RobotIcon = ALL_MINION_ICONS_FILL[minionTask.minionIndex];
+    const RobotIcon = ALL_MINION_ICONS_FILL[minionIndex];
 
-    const stopButton = (
-      <OutlineButton
-        className="mb-2 ml-2"
-        title="Stop Execution"
-        description="Stop"
-        onClick={() => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.StopExecution,
-            minionTaskId: minionTask.id,
-          });
-        }}
-      />
-    );
+    const moveToSelection = () => {
+      postMessageToVsCode({
+        type: MessageToVSCodeType.OpenSelection,
+        minionTaskId,
+      });
+    };
 
-    const applyButton = (
-      <OutlineButton
-        className="mb-2 ml-2"
-        title="Apply and Review"
-        description="Apply"
-        onClick={(e) => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.ApplyAndReviewTask,
-            minionTaskId: minionTask.id,
-            reapply: false,
-          });
-          setIsExpanded(true);
-          e.stopPropagation();
-        }}
-      />
-    );
+    const recalculateTextAreaHeight = (
+      event: React.FormEvent<HTMLTextAreaElement>,
+    ) => adjustTextAreaHeight(event.target as HTMLTextAreaElement);
 
-    const markAsReadButton = (
-      <OutlineButton
-        className="mb-2 ml-2"
-        title="Mark as read"
-        description="Acknowledge"
-        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.MarkAsApplied,
-            minionTaskId: minionTask.id,
-          });
-          setIsExpanded(true);
-          e.stopPropagation();
-        }}
-      />
-    );
+    const handleTextAreaBlur = () => {
+      setIsInputOpen(false);
+      handleRun();
+    };
 
-    const chevronButton = isExpanded ? (
-      <ChevronDownIcon className="h-6 w-6 min-w-min ml-2" />
-    ) : (
-      <ChevronUpIcon className="h-6 w-6 min-w-min ml-2" />
-    );
-
-    const closeButton = (
-      <XMarkIcon
-        title="Close Execution"
-        onClick={(e) => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.CloseExecution,
-            minionTaskId: minionTask.id,
-          });
-          e.stopPropagation();
-        }}
-        className="h-6 w-6 min-w-min cursor-pointer ml-2"
-      />
-    );
-
-    const retryButton = (
-      <OutlineButton
-        title="Retry Execution"
-        description="Retry"
-        onClick={() => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.ReRunExecution,
-            minionTaskId: minionTask.id,
-          });
-        }}
-      />
-    );
-
-    const diffButton = (
-      <OutlineButton
-        title="Review changes since before application"
-        description="Review"
-        onClick={(e) => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.ShowDiff,
-            minionTaskId: minionTask.id,
-          });
-
-          e.stopPropagation();
-        }}
-      />
-    );
-
-    const reapplyModificationButton = (
-      <OutlineButton
-        title="Reapply Modification"
-        description="Reapply"
-        onClick={() => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.ApplyAndReviewTask,
-            minionTaskId: minionTask.id,
-            reapply: true,
-          });
-        }}
-      />
-    );
-
-    const openLogFileButton = (
-      <OutlineButton
-        title="Open Log"
-        description="Open Log file"
-        onClick={() => {
-          postMessageToVsCode({
-            type: MessageToVSCodeType.OpenLog,
-            minionTaskId: minionTask.id,
-          });
-        }}
-      />
-    );
-
+    const minionTaskColor = blendWithForeground(getBaseColor(minionTask));
+    const isRobotBusy = !stopped || executionStage === APPLYING_STAGE_NAME;
+    const isFinishedStage = executionStage === FINISHED_STAGE_NAME;
     return (
       <div
         ref={ref}
@@ -227,7 +144,7 @@ export const MinionTaskComponent = forwardRef(
           color: 'var(--vscode-editor-foreground)',
           borderColor: 'var(--vscode-focusBorder)',
         }}
-        key={minionTask.id}
+        key={minionTaskId}
         className={`execution mb-4 overflow-hidden rounded flex flex-col ${className}`}
         {...propsWithoutClassName}
       >
@@ -241,44 +158,42 @@ export const MinionTaskComponent = forwardRef(
           >
             <div
               className={`w-6 h-6 mr-2 transition-color ${
-                !minionTask.stopped ||
-                minionTask.executionStage === APPLYING_STAGE_NAME
-                  ? 'busy-robot'
-                  : ''
-              } ${
-                minionTask.executionStage === FINISHED_STAGE_NAME
-                  ? 'motion-safe:animate-bounce'
-                  : ''
-              } ${minionTask.isError ? 'error-robot' : ''}`}
+                isRobotBusy ? 'busy-robot' : ''
+              } ${isFinishedStage ? 'motion-safe:animate-bounce' : ''} ${
+                isError ? 'error-robot' : ''
+              }`}
               style={{
-                color: blendWithForeground(getBaseColor(minionTask)),
+                color: minionTaskColor,
               }}
             >
               <RobotIcon
                 className={`w-6 h-6 inline-flex ${
-                  !minionTask.stopped ||
-                  minionTask.executionStage === APPLYING_STAGE_NAME
-                    ? 'busy-robot-extra'
-                    : ''
+                  isRobotBusy ? 'busy-robot-extra' : ''
                 }`}
               />
             </div>
             <div className="text-base font-semibold flex-grow flex-shrink truncate">
-              <span className="truncate">{minionTask.shortName}</span>
+              <span className="truncate">{shortName}</span>
             </div>
-            {minionTask.inlineMessage &&
-              minionTask.executionStage === FINISHED_STAGE_NAME &&
-              markAsReadButton}
-            {minionTask.modificationProcedure &&
-              minionTask.executionStage === FINISHED_STAGE_NAME &&
-              applyButton}
-            {(minionTask.executionStage === CANCELED_STAGE_NAME ||
-              minionTask.isError) &&
-              retryButton}
+            {inlineMessage && isFinishedStage && (
+              <MarkAsReadButton
+                minionTaskId={minionTaskId}
+                setIsExpanded={setIsExpanded}
+              />
+            )}
+            {modificationProcedure && isFinishedStage && (
+              <ApplyButton
+                minionTaskId={minionTaskId}
+                setIsExpanded={setIsExpanded}
+              />
+            )}
+            {(executionStage === CANCELED_STAGE_NAME || isError) && (
+              <RetryButton minionTaskId={minionTaskId} />
+            )}
 
-            {!minionTask.stopped ? stopButton : <> </>}
-            {chevronButton}
-            {closeButton}
+            {!stopped ? <StopButton minionTaskId={minionTaskId} /> : null}
+            <ChevronButton isExpanded={isExpanded} />
+            <CloseButton minionTaskId={minionTaskId} />
           </div>
 
           {!isExpanded ? (
@@ -286,17 +201,17 @@ export const MinionTaskComponent = forwardRef(
           ) : (
             <>
               <div className="pl-3 pr-3 pb-3">
-                {minionTask.inlineMessage ? (
-                  <pre style={{ whiteSpace: 'pre-wrap' }}>
-                    {minionTask.inlineMessage}
-                  </pre>
+                {inlineMessage ? (
+                  <pre style={{ whiteSpace: 'pre-wrap' }}>{inlineMessage}</pre>
                 ) : (
                   <></>
                 )}
               </div>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 mt-4 pb-3 pl-3 pr-3 overflow-auto">
                 <div className="mb-2">Log:</div>
-                <span className="mb-2">{openLogFileButton}</span>
+                <span className="mb-2">
+                  <OpenLogFileButton minionTaskId={minionTaskId} />
+                </span>
 
                 <div className="mb-2">File:</div>
 
@@ -307,89 +222,86 @@ export const MinionTaskComponent = forwardRef(
                     onClick={() => {
                       postMessageToVsCode({
                         type: MessageToVSCodeType.OpenDocument,
-                        minionTaskId: minionTask.id,
+                        minionTaskId,
                       });
                     }}
                   >
-                    {minionTask.documentName}{' '}
-                    {minionTask.executionStage === APPLIED_STAGE_NAME &&
-                      minionTask.modificationProcedure &&
-                      diffButton}
+                    {documentName}{' '}
+                    {executionStage === APPLIED_STAGE_NAME &&
+                      modificationProcedure && (
+                        <DiffButton minionTaskId={minionTaskId} />
+                      )}
                   </span>
                 </span>
 
                 <div className="mb-2">Status:</div>
 
                 <span className="mb-2">
-                  {minionTask.executionStage}{' '}
-                  {minionTask.executionStage === APPLIED_STAGE_NAME &&
-                    reapplyModificationButton}
+                  {executionStage}{' '}
+                  {executionStage === APPLIED_STAGE_NAME && (
+                    <ReapplyModificationButton minionTaskId={minionTaskId} />
+                  )}
                 </span>
 
                 <div className="mb-2">Task:</div>
 
-                <div className="mb-2">
+                <div
+                  style={{ minHeight: `${EDIT_TASK_TEXT_AREA_MIN_HEIGHT}px` }}
+                >
                   {isInputOpen ? (
                     <textarea
                       style={{
                         backgroundColor: 'inherit',
                         color: 'inherit',
-                        border: 'none',
                         outline: 'none',
                         width: '100%', // Make it span the entire line
                         resize: 'none', // Disable the resizing of the textarea
                         margin: 0,
                         padding: 0,
+                        minHeight: `${EDIT_TASK_TEXT_AREA_MIN_HEIGHT}px`,
+                        lineHeight: '20.5px',
+                        height: `${EDIT_TASK_TEXT_AREA_MIN_HEIGHT}px`,
+                        border: 'none',
                       }}
                       value={updatedPrompt}
                       onChange={(event) => setUpdatedPrompt(event.target.value)}
                       onKeyDown={handleKeyDown}
-                      onBlur={() => {
-                        setIsInputOpen(false);
-                        handleRun();
-                      }}
+                      onBlur={handleTextAreaBlur}
+                      onFocus={recalculateTextAreaHeight}
                       autoFocus
-                      onInput={(
-                        event: React.FormEvent<HTMLTextAreaElement>,
-                      ) => {
-                        adjustTextAreaHeight(
-                          event.target as HTMLTextAreaElement,
-                        );
-                      }}
+                      onInput={recalculateTextAreaHeight}
                     />
                   ) : (
                     // Wrap the userQueryPreview inside a div with the same line-height as the textarea
                     // Apply required padding and margin in this div
-                    <div>
-                      <span
+                    <>
+                      <div
                         title="Edit task"
+                        style={{
+                          minHeight: `${EDIT_TASK_TEXT_AREA_MIN_HEIGHT}px`,
+                        }}
                         onClick={() => setIsInputOpen(true)}
                       >
                         {userQueryPreview}{' '}
-                      </span>
-                      {minionTask.stopped && retryButton}
-                    </div>
+                        {stopped && <RetryButton minionTaskId={minionTaskId} />}
+                      </div>
+                    </>
                   )}
                 </div>
 
-                {minionTask.selectedText && <div>Selection:</div>}
-                {minionTask.selectedText && (
+                {selectedText && <div>Selection:</div>}
+                {selectedText && (
                   <div
                     className="text-xs cursor-pointer"
-                    onClick={() => {
-                      postMessageToVsCode({
-                        type: MessageToVSCodeType.OpenSelection,
-                        minionTaskId: minionTask.id,
-                      });
-                    }}
+                    onClick={moveToSelection}
                     style={{
                       whiteSpace: 'pre',
                     }}
                   >
                     <pre>
-                      {minionTask.selectedText.includes('\n')
-                        ? minionTask.selectedText
-                        : minionTask.selectedText.trim()}
+                      {selectedText.includes('\n')
+                        ? selectedText
+                        : selectedText.trim()}
                     </pre>
                   </div>
                 )}

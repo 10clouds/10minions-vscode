@@ -36,13 +36,13 @@ export function activate(context: vscode.ExtensionContext) {
   const openAiCacheManager = new SimpleOpenAICacheManager();
   setOpenAICacheManager(openAiCacheManager);
 
-  const originalContentProvider = new VSOriginalContentProvider(context);
-  const logProvider = new VSLogProvider(context);
-  const viewProvider = new VSViewProvider(context);
-  const commandHistoryManager = new VSCommandHistoryManager(context);
-  const editorManager = new VSEditorManager(context);
-  const executionsManager = new VSMinionTasksManager(context);
-  const codeActionProvider = new VSCodeActionProvider(context);
+  new VSOriginalContentProvider(context);
+  new VSLogProvider(context);
+  new VSViewProvider(context);
+  new VSCommandHistoryManager(context);
+  new VSEditorManager();
+  new VSMinionTasksManager(context);
+  new VSCodeActionProvider(context);
   //const taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner
 
   context.subscriptions.push(
