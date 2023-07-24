@@ -1,4 +1,4 @@
-import { MinionTask } from '../../MinionTask';
+import { ApplicationStatus, MinionTask } from '../../MinionTask';
 import { getEditorManager } from '../../managers/EditorManager';
 import { decomposeMarkdownString } from './decomposeMarkdownString';
 
@@ -20,6 +20,7 @@ ${minionTask.modificationDescription}
   minionTask.appendToLog(LOG_PLAIN_COMMENT_MARKER);
 
   minionTask.originalContent = document.getText();
+  minionTask.aplicationStatus = ApplicationStatus.APPLIED_AS_FALLBACK;
 
   await getEditorManager().applyWorkspaceEdit(async (edit) => {
     edit.insert(
@@ -28,7 +29,6 @@ ${minionTask.modificationDescription}
       decomposedString + '\n',
     );
   });
-
   getEditorManager().showInformationMessage(
     `Modification applied successfully.`,
   );

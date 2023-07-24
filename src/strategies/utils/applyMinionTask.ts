@@ -1,4 +1,4 @@
-import { MinionTask } from '../../MinionTask';
+import { ApplicationStatus, MinionTask } from '../../MinionTask';
 import {
   APPLIED_STAGE_NAME,
   APPLYING_STAGE_NAME,
@@ -15,6 +15,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
 
   if (minionTask.executionStage !== FINISHED_STAGE_NAME) {
     getEditorManager().showErrorMessage(`Cannot apply unfinished task.`);
+    minionTask.aplicationStatus = ApplicationStatus.NOT_APPLIED;
     return;
   }
 
@@ -53,6 +54,7 @@ export async function applyMinionTask(minionTask: MinionTask) {
       minionTask.modificationProcedure,
       document.languageId,
     );
+    minionTask.aplicationStatus = ApplicationStatus.APPLIED;
 
     await getEditorManager().applyWorkspaceEdit(async (edit) => {
       edit.replace(
@@ -85,7 +87,6 @@ export async function applyMinionTask(minionTask: MinionTask) {
   minionTask.progress = 1;
   minionTask.appendToLog(LOG_NO_FALLBACK_MARKER);
   minionTask.onChanged(true);
-
   getEditorManager().showInformationMessage(
     `Modification applied successfully.`,
   );

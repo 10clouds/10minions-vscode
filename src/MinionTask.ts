@@ -18,6 +18,11 @@ import {
   getEditorManager,
 } from './managers/EditorManager';
 
+export enum ApplicationStatus {
+  APPLIED = 'applied',
+  NOT_APPLIED = 'not applied',
+  APPLIED_AS_FALLBACK = 'applied as fallback',
+}
 export class MinionTask {
   readonly userQuery: string;
   readonly id: string;
@@ -85,6 +90,7 @@ export class MinionTask {
   logContent = '';
   stages: Stage[] = PRE_STAGES;
   totalCost: number;
+  aplicationStatus?: ApplicationStatus;
 
   constructor({
     id,
@@ -108,6 +114,7 @@ export class MinionTask {
     strategy = undefined,
     logContent = '',
     totalCost = 0,
+    aplicationStatus = ApplicationStatus.NOT_APPLIED,
   }: {
     id: string;
     minionIndex: number;
@@ -128,6 +135,7 @@ export class MinionTask {
     strategy?: TASK_STRATEGY_ID;
     logContent?: string;
     totalCost?: number;
+    aplicationStatus?: ApplicationStatus;
   }) {
     this.id = id;
     this.minionIndex = minionIndex;
@@ -148,6 +156,7 @@ export class MinionTask {
     this.strategy = strategy;
     this.logContent = logContent;
     this.totalCost = totalCost;
+    this.aplicationStatus = aplicationStatus;
   }
 
   get logURI() {
