@@ -1,7 +1,7 @@
-import { MinionTask } from "./MinionTask";
-import { getEditorManager } from "./managers/EditorManager";
-import { getMinionTasksManager } from "./managers/MinionTasksManager";
-import { TASK_STRATEGY_ID } from "./strategies/strategies";
+import { ApplicationStatus, MinionTask } from './MinionTask';
+import { getEditorManager } from './managers/EditorManager';
+import { getMinionTasksManager } from './managers/MinionTasksManager';
+import { TASK_STRATEGY_ID } from './strategies/strategies';
 
 export type SerializedMinionTask = {
   id: string;
@@ -26,9 +26,12 @@ export type SerializedMinionTask = {
   strategy: TASK_STRATEGY_ID | null;
   logContent: string;
   contentWhenDismissed: string;
+  aplicationStatus?: ApplicationStatus;
 };
 
-export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTask {
+export function serializeMinionTask(
+  minionTask: MinionTask,
+): SerializedMinionTask {
   return {
     id: minionTask.id,
     minionIndex: minionTask.minionIndex,
@@ -52,11 +55,12 @@ export function serializeMinionTask(minionTask: MinionTask): SerializedMinionTas
     strategy: minionTask.strategy === undefined ? null : minionTask.strategy,
     logContent: minionTask.logContent,
     contentWhenDismissed: minionTask.contentWhenDismissed,
+    aplicationStatus: minionTask.aplicationStatus,
   };
 }
 
 export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
-  let minionTask = new MinionTask({
+  const minionTask = new MinionTask({
     id: data.id,
     minionIndex: data.minionIndex || 0,
     documentURI: getEditorManager().createUri(data.documentURI),
@@ -86,6 +90,7 @@ export function deserializeMinionTask(data: SerializedMinionTask): MinionTask {
     },
     logContent: data.logContent,
     contentWhenDismissed: data.contentWhenDismissed,
+    aplicationStatus: data.aplicationStatus,
   });
 
   return minionTask;

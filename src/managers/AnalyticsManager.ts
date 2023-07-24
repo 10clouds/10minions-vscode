@@ -1,20 +1,26 @@
-import { MinionTask } from "../MinionTask";
+import { MinionTask } from '../MinionTask';
 
-import { initializeApp } from "firebase/app";
-import { addDoc, collection, doc, getFirestore, setDoc } from "firebase/firestore";
-import { serializeMinionTask } from "../SerializedMinionTask";
+import { initializeApp } from 'firebase/app';
+import {
+  addDoc,
+  collection,
+  doc,
+  getFirestore,
+  setDoc,
+} from 'firebase/firestore';
+import { serializeMinionTask } from '../SerializedMinionTask';
 
-import * as crypto from "crypto";
+import * as crypto from 'crypto';
 
-import * as packageJson from "../../package.json";
+import * as packageJson from '../../package.json';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk",
-  authDomain: "minions-diagnostics.firebaseapp.com",
-  projectId: "minions-diagnostics",
-  storageBucket: "minions-diagnostics.appspot.com",
-  messagingSenderId: "898843723711",
-  appId: "1:898843723711:web:6c12aca67575a0bea0030a",
+  apiKey: 'AIzaSyCM95vbb8kEco1Tyq23wd_7ryVgbzQiCqk',
+  authDomain: 'minions-diagnostics.firebaseapp.com',
+  projectId: 'minions-diagnostics',
+  storageBucket: 'minions-diagnostics.appspot.com',
+  messagingSenderId: '898843723711',
+  appId: '1:898843723711:web:6c12aca67575a0bea0030a',
 };
 
 // Initialize Firebase Admin
@@ -24,7 +30,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const firestore = getFirestore(firebaseApp);
 
 export class AnalyticsManager {
-    private sendDiagnosticsData: boolean = true;
+  private sendDiagnosticsData = true;
 
   constructor(private installationId: string, private vsCodeVersion: string) {
     // Retrieve or generate a unique installation Id
@@ -32,11 +38,15 @@ export class AnalyticsManager {
 
     //console.log(`Installation Id: ${this.installationId}`);
 
-    this.reportEvent("extensionActivated");
-
+    this.reportEvent('extensionActivated');
   }
 
-  private commonAnalyticsData(): { installationId: string; vsCodeVersion: string; pluginVersion: string; timestamp: Date } {
+  private commonAnalyticsData(): {
+    installationId: string;
+    vsCodeVersion: string;
+    pluginVersion: string;
+    timestamp: Date;
+  } {
     return {
       installationId: this.installationId,
       vsCodeVersion: this.vsCodeVersion,
@@ -49,7 +59,11 @@ export class AnalyticsManager {
     this.sendDiagnosticsData = value;
   }
 
-  public async reportEvent(eventName: string, eventProperties?: { [key: string]: string | number | boolean }, forceSendEvenIfNotEnabled: boolean = false): Promise<void> {
+  public async reportEvent(
+    eventName: string,
+    eventProperties?: { [key: string]: string | number | boolean },
+    forceSendEvenIfNotEnabled = false,
+  ): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
     if (!forceSendEvenIfNotEnabled && !this.sendDiagnosticsData) {
       return;
@@ -64,7 +78,7 @@ export class AnalyticsManager {
 
     // Store the event data in Firestore
     try {
-      await addDoc(collection(firestore, "events"), eventData);
+      await addDoc(collection(firestore, 'events'), eventData);
     } catch (error) {
       console.error(`Error adding event to Firestore: ${error}`);
     }
@@ -86,19 +100,27 @@ export class AnalyticsManager {
 
     // Store the data in Firestore
     try {
-      await setDoc(doc(firestore, "minionTasks", serializedMinionTask.id), firestoreData, { merge: true });
+      await setDoc(
+        doc(firestore, 'minionTasks', serializedMinionTask.id),
+        firestoreData,
+        { merge: true },
+      );
     } catch (error) {
       console.error(`Error updating minion task in Firestore: ${error}`);
     }
   }
-
-  public getRequestHash(requestData: any): string {
+  // TODO: replace unknown with generic type
+  public getRequestHash(requestData: unknown): string {
     const hash = crypto.createHash('sha256');
     hash.update(JSON.stringify(requestData));
     return hash.digest('hex');
   }
 
-  public async reportOpenAICall(requestData: any, responseData: any): Promise<void> {
+  // TODO: replace unknown with generic type
+  public async reportOpenAICall(
+    requestData: unknown,
+    responseData: unknown,
+  ): Promise<void> {
     // Check if sending diagnostics data is allowed by the user settings
     if (!this.sendDiagnosticsData) {
       return;
@@ -115,7 +137,7 @@ export class AnalyticsManager {
 
     // Store the OpenAI call event data in Firestore
     try {
-      await addDoc(collection(firestore, "openAICalls"), openAICallData);
+      await addDoc(collection(firestore, 'openAICalls'), openAICallData);
     } catch (error) {
       console.error(`Error adding OpenAI call event to Firestore: ${error}`);
     }
@@ -126,7 +148,6 @@ export class AnalyticsManager {
     return this.installationId;
   }
 }
-
 
 let globalManager: AnalyticsManager | undefined = undefined;
 

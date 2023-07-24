@@ -1,7 +1,9 @@
-import { MinionTask } from "../../MinionTask";
-import { DEBUG_PROMPTS, DEBUG_RESPONSES } from "../../const";
-import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
-import { countTokens, ensureICanRunThis, gptExecute } from "../../openai";
+import { MinionTask } from '../../MinionTask';
+import { DEBUG_PROMPTS, DEBUG_RESPONSES } from '../../const';
+import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
+import { gptExecute } from '../../openai';
+import { countTokens } from '../../utils/countTokens';
+import { ensureICanRunThis } from '../../utils/ensureIcanRunThis';
 
 export function extractRelevantCodePrompt({
   userQuery,
@@ -21,16 +23,18 @@ You are a line assesment AI system for automatic software development with an IQ
 You are about to cut out all irrelevant code from the file below, so a further part of the system can analyse and execute the TASK on them.
 The task to be performed is provided below in TASK section.
 
-# TASK ${selectedText ? `(resolve in context of SELECTED CODE)` : ""}
+# TASK ${selectedText ? `(resolve in context of SELECTED CODE)` : ''}
 ${userQuery}
 
 ${
   selectedText
     ? `
-# SELECTED CODE (starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file) 
+# SELECTED CODE (starts on line ${selectionPosition.line + 1} column: ${
+        selectionPosition.character + 1
+      } in the file) 
 ${selectedText}
 `
-    : ""
+    : ''
 }
 
 # FILE (Language: ${document.languageId}) 
@@ -47,37 +51,46 @@ export async function stageExtractRelevantCode(this: MinionTask) {
   const selectedText = this.selectedText;
   const fullFileContents = this.originalContent;
 
-  let promptWithContext = extractRelevantCodePrompt({ userQuery, selectedText, fullFileContents, selectionPosition, document });
+  const promptWithContext = extractRelevantCodePrompt({
+    userQuery,
+    selectedText,
+    fullFileContents,
+    selectionPosition,
+    document,
+  });
 
   if (DEBUG_PROMPTS) {
     this.reportSmallProgress();
     this.appendSectionToLog(this.executionStage);
-    this.appendToLog("<<<< PROMPT >>>>\n\n");
-    this.appendToLog(promptWithContext + "\n\n");
-    this.appendToLog("<<<< EXECUTION >>>>\n\n");
+    this.appendToLog('<<<< PROMPT >>>>\n\n');
+    this.appendToLog(promptWithContext + '\n\n');
+    this.appendToLog('<<<< EXECUTION >>>>\n\n');
   }
 
-  let tokensNeeded = countTokens(fullFileContents, "QUALITY");
-  
+  const tokensNeeded = countTokens(fullFileContents, 'QUALITY');
 
-  ensureICanRunThis({ prompt: promptWithContext, mode: "QUALITY", maxTokens: tokensNeeded });
+  ensureICanRunThis({
+    prompt: promptWithContext,
+    mode: 'QUALITY',
+    maxTokens: tokensNeeded,
+  });
 
-  let {cost} = await gptExecute({
+  const { cost } = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.reportSmallProgress();
       if (DEBUG_RESPONSES) {
         this.appendToLog(chunk);
       } else {
-        this.appendToLog(".");
+        this.appendToLog('.');
       }
     },
     isCancelled: () => {
       return this.stopped;
     },
     maxTokens: tokensNeeded,
-    mode: "FAST",
-    outputType: "string" /*{
+    mode: 'FAST',
+    outputType: 'string' /*{
       name: "codeSegments",
       description: "Provided code segments",
       parameters: {
@@ -98,5 +111,5 @@ export async function stageExtractRelevantCode(this: MinionTask) {
 
   this.totalCost += cost;
 
-  this.appendToLog( "\n\n");
+  this.appendToLog('\n\n');
 }

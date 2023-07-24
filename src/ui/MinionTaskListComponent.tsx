@@ -1,33 +1,37 @@
-import * as React from "react";
-import FlipMove from "react-flip-move";
-import { MinionTaskComponent } from "./MinionTaskComponent";
-import { MinionTaskUIInfo } from "./MinionTaskUIInfo";
+import React from 'react';
+import FlipMove from 'react-flip-move';
+import { MinionTaskComponent } from './MinionTaskComponent';
+import { MinionTaskUIInfo } from './MinionTaskUIInfo';
 
-export function MinionTaskListComponent({ executionList }: { executionList: MinionTaskUIInfo[] }) {
+export function MinionTaskListComponent({
+  executionList,
+}: {
+  executionList: MinionTaskUIInfo[];
+}) {
   return (
     <FlipMove
       enterAnimation={{
         from: {
-          transform: "translateY(-10%)",
-          animationTimingFunction: "cubic-bezier(0.8, 0, 1, 1)",
-          opacity: "0.1",
+          transform: 'translateY(-10%)',
+          animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+          opacity: '0.1',
         },
         to: {
-          transform: "translateY(0)",
-          animationTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
-          opacity: "1",
+          transform: 'translateY(0)',
+          animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+          opacity: '1',
         },
       }}
       leaveAnimation={{
         from: {
-          transform: "translateY(0)",
-          animationTimingFunction: "cubic-bezier(0, 0, 0.2, 1)",
-          opacity: "1",
+          transform: 'translateY(0)',
+          animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
+          opacity: '1',
         },
         to: {
-          transform: "translateY(-10%)",
-          animationTimingFunction: "cubic-bezier(0.8, 0, 1, 1)",
-          opacity: "0.1",
+          transform: 'translateY(-10%)',
+          animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
+          opacity: '0.1',
         },
       }}
     >

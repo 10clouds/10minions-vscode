@@ -1,14 +1,28 @@
-import { randomUUID } from "crypto";
-import * as path from "path";
-import { getLogProvider } from "./managers/LogProvider";
-import { getOriginalContentProvider } from "./managers/OriginalContentProvider";
-import { gptExecute } from "./openai";
-import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from "./strategies/strategies";
-import { APPLIED_STAGE_NAME, APPLYING_STAGE_NAME, CANCELED_STAGE_NAME, FINISHED_STAGE_NAME } from "./ui/MinionTaskUIInfo";
-import { calculateAndFormatExecutionTime } from "./utils/calculateAndFormatExecutionTime";
-import { EditorDocument, EditorRange, EditorUri, getEditorManager } from "./managers/EditorManager";
+import { randomUUID } from 'crypto';
+import * as path from 'path';
+import { getLogProvider } from './managers/LogProvider';
+import { getOriginalContentProvider } from './managers/OriginalContentProvider';
+import { gptExecute } from './openai';
+import { PRE_STAGES, Stage, TASK_STRATEGY_ID } from './strategies/strategies';
+import {
+  APPLIED_STAGE_NAME,
+  APPLYING_STAGE_NAME,
+  CANCELED_STAGE_NAME,
+  FINISHED_STAGE_NAME,
+} from './ui/MinionTaskUIInfo';
+import { calculateAndFormatExecutionTime } from './utils/calculateAndFormatExecutionTime';
+import {
+  EditorDocument,
+  EditorRange,
+  EditorUri,
+  getEditorManager,
+} from './managers/EditorManager';
 
-
+export enum ApplicationStatus {
+  APPLIED = 'applied',
+  NOT_APPLIED = 'not applied',
+  APPLIED_AS_FALLBACK = 'applied as fallback',
+}
 export class MinionTask {
   readonly userQuery: string;
   readonly id: string;
@@ -64,18 +78,19 @@ export class MinionTask {
 
   contentAfterApply: string;
   contentWhenDismissed: string;
-  currentStageIndex: number = 0;
+  currentStageIndex = 0;
   startTime: number;
   modificationDescription: string;
   modificationProcedure: string;
-  stopped: boolean = true;
-  progress: number = 1;
+  stopped = true;
+  progress = 1;
   executionStage: string;
   strategy?: TASK_STRATEGY_ID;
   inlineMessage: string;
-  logContent: string = "";
+  logContent = '';
   stages: Stage[] = PRE_STAGES;
   totalCost: number;
+  aplicationStatus?: ApplicationStatus;
 
   constructor({
     id,
@@ -85,20 +100,21 @@ export class MinionTask {
     selection,
     selectedText,
     originalContent,
-    finalContent = "",
-    contentWhenDismissed = "",
+    finalContent = '',
+    contentWhenDismissed = '',
     startTime,
-    onChanged = async (important: boolean) => {
-      throw new Error("Should be implemented");
+    onChanged = async () => {
+      throw new Error('Should be implemented');
     },
-    shortName = "",
-    modificationDescription = "",
-    modificationProcedure = "",
-    inlineMessage = "",
-    executionStage = "",
+    shortName = '',
+    modificationDescription = '',
+    modificationProcedure = '',
+    inlineMessage = '',
+    executionStage = '',
     strategy = undefined,
-    logContent = "",
+    logContent = '',
     totalCost = 0,
+    aplicationStatus = ApplicationStatus.NOT_APPLIED,
   }: {
     id: string;
     minionIndex: number;
@@ -119,6 +135,7 @@ export class MinionTask {
     strategy?: TASK_STRATEGY_ID;
     logContent?: string;
     totalCost?: number;
+    aplicationStatus?: ApplicationStatus;
   }) {
     this.id = id;
     this.minionIndex = minionIndex;
@@ -139,14 +156,21 @@ export class MinionTask {
     this.strategy = strategy;
     this.logContent = logContent;
     this.totalCost = totalCost;
+    this.aplicationStatus = aplicationStatus;
   }
 
   get logURI() {
-    return `10minions-log:minionTaskId/${this.id}/${("[" + this.shortName + "].md").replace(/ /g, "%20")}`;
+    return `10minions-log:minionTaskId/${this.id}/${(
+      '[' +
+      this.shortName +
+      '].md'
+    ).replace(/ /g, '%20')}`;
   }
 
   get originalContentURI() {
-    return `10minions-originalContent:minionTaskId/${this.id}/${(this.shortName + ".txt").replace(/ /g, "%20")}`;
+    return `10minions-originalContent:minionTaskId/${this.id}/${(
+      this.shortName + '.txt'
+    ).replace(/ /g, '%20')}`;
   }
 
   appendToLog(content: string): void {
@@ -161,12 +185,12 @@ export class MinionTask {
         `////////////////////////////////////////////////////////////////////////////////`,
         `// ${section}`,
         `////////////////////////////////////////////////////////////////////////////////`,
-      ].join("\n") + "\n\n"
+      ].join('\n') + '\n\n',
     );
   }
 
   clearLog() {
-    this.logContent = "";
+    this.logContent = '';
     getLogProvider().reportChange(this.logURI);
   }
 
@@ -206,11 +230,13 @@ export class MinionTask {
   }
 
   public async document() {
-    let document = await getEditorManager().openTextDocument(this.documentURI);
+    const document = await getEditorManager().openTextDocument(
+      this.documentURI,
+    );
     return document;
   }
 
-  public async stopExecution(error?: string, important: boolean = true) {
+  public async stopExecution(error?: string, important = true) {
     if (this.stopped) {
       return;
     }
@@ -233,7 +259,7 @@ export class MinionTask {
     return this.stages.reduce((total, stage) => total + stage.weight, 0);
   }
 
-  public reportSmallProgress(fractionOfBigTask: number = 0.005) {
+  public reportSmallProgress(fractionOfBigTask = 0.005) {
     const weigtsNextStepTotal = this.stages.reduce((acc, stage, index) => {
       if (index > this.currentStageIndex) {
         return acc;
@@ -241,11 +267,12 @@ export class MinionTask {
       return acc + stage.weight;
     }, 0);
 
-    const remainingProgress = (1.0 * weigtsNextStepTotal) / this.calculateTotalWeights();
+    const remainingProgress =
+      (1.0 * weigtsNextStepTotal) / this.calculateTotalWeights();
     const currentProgress = this.progress;
 
     const totalPending = remainingProgress - currentProgress;
-    let increment = totalPending * fractionOfBigTask;
+    const increment = totalPending * fractionOfBigTask;
     this.progress = this.progress + increment;
     this.onChanged(false);
   }
@@ -272,12 +299,15 @@ export class MinionTask {
             break;
           }
 
-          const weigtsNextStepTotal = this.stages.reduce((acc, stage, index) => {
-            if (index > this.currentStageIndex) {
-              return acc;
-            }
-            return acc + stage.weight;
-          }, 0);
+          const weigtsNextStepTotal = this.stages.reduce(
+            (acc, stage, index) => {
+              if (index > this.currentStageIndex) {
+                return acc;
+              }
+              return acc + stage.weight;
+            },
+            0,
+          );
 
           this.progress = weigtsNextStepTotal / this.calculateTotalWeights();
           this.onChanged(false);
@@ -286,15 +316,20 @@ export class MinionTask {
       } catch (error) {
         if (error !== CANCELED_STAGE_NAME) {
           getEditorManager().showErrorMessage(`Error in execution: ${error}`);
-          console.error("Error in execution", error);
+          console.error('Error in execution', error);
         }
 
-        this.stopExecution(error instanceof Error ? `Error: ${error.message}` : String(error));
+        this.stopExecution(
+          error instanceof Error ? `Error: ${error.message}` : String(error),
+        );
       } finally {
         const executionTime = Date.now() - this.startTime;
-        const formattedExecutionTime = calculateAndFormatExecutionTime(executionTime);
+        const formattedExecutionTime =
+          calculateAndFormatExecutionTime(executionTime);
 
-        this.appendToLog(`${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`);
+        this.appendToLog(
+          `${this.executionStage} (Execution Time: ${formattedExecutionTime})\n\n`,
+        );
 
         this.progress = 1;
       }
@@ -302,8 +337,8 @@ export class MinionTask {
   }
 
   private async setShortName() {
-    this.shortName = "...";
-    let context = this.selectedText
+    this.shortName = '...';
+    const context = this.selectedText
       ? `
 ==== WHAT USER SELECTED ====
 ${this.selectedText}
@@ -314,7 +349,7 @@ ${this.baseName}
       `.trim();
 
     await gptExecute({
-      mode: "FAST",
+      mode: 'FAST',
       maxTokens: 20,
       fullPrompt: `
 User just created a task, he said what the task is, but also selected the code and file this task refers to.
@@ -330,8 +365,8 @@ ${this.userQuery}
 ${context}
       
       `.trim(),
-      outputType: "string",
-    }).then(({result, cost}) => {
+      outputType: 'string',
+    }).then(({ result, cost }) => {
       this.shortName = result || this.baseName;
       this.totalCost += cost;
       this.onChanged(true);

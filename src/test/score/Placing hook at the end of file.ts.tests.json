@@ -1,0 +1,4 @@
+[
+  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid javascript code" },
+  { "type": "gptAssert", "mode": "QUALITY", "assertion": "The export function useMetaData(topic: string) is inserted at the end of the file" }
+]

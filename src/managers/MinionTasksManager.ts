@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
-import { MinionTask } from "../MinionTask";
+import * as vscode from 'vscode';
+import { MinionTask } from '../MinionTask';
 
 export interface MinionTasksManager {
   saveExecutions(): Promise<void>;
@@ -12,15 +12,25 @@ export interface MinionTasksManager {
   addExecution(execution: MinionTask): void;
   removeExecution(id: string): void;
   getExecutionById(minionTaskId: string): MinionTask | undefined;
-  getExecutionByUserQueryAndDoc(task: string, document: vscode.TextDocument): MinionTask | undefined;
+  getExecutionByUserQueryAndDoc(
+    task: string,
+    document: vscode.TextDocument,
+  ): MinionTask | undefined;
   clearExecutions(): void;
-  runMinionOnCurrentSelectionAndEditor(userQuery: string, customDocument?: vscode.TextDocument, customSelection?: vscode.Selection): Promise<void>;
+  runMinionOnCurrentSelectionAndEditor(
+    userQuery: string,
+    customDocument?: vscode.TextDocument,
+    customSelection?: vscode.Selection,
+  ): Promise<void>;
   acquireMinionIndex(): number;
   notifyExecutionsUpdated(minionTask: MinionTask): void;
-  reRunExecution(minionTaskId: any, newUserQuery?: string): Promise<void>;
-  notifyExecutionsUpdatedImmediate(minionTask?: MinionTask, importantChange?: boolean): void;
-  stopExecution(minionTaskId: any): void;
-  closeExecution(minionTaskId: any): Promise<void>;
+  reRunExecution(minionTaskId: string, newUserQuery?: string): Promise<void>;
+  notifyExecutionsUpdatedImmediate(
+    minionTask?: MinionTask,
+    importantChange?: boolean,
+  ): void;
+  stopExecution(minionTaskId: string): void;
+  closeExecution(minionTaskId: string): Promise<void>;
 }
 
 let globalManager: MinionTasksManager | undefined = undefined;

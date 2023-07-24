@@ -1,8 +1,8 @@
-import * as assert from "assert";
-import { decomposeMarkdownString } from "../../strategies/utils/decomposeMarkdownString";
+import * as assert from 'assert';
+import { decomposeMarkdownString } from '../../strategies/utils/decomposeMarkdownString';
 
-suite("Decomposer Test Suite", () => {
-  test("Basic test case", () => {
+suite('Decomposer Test Suite', () => {
+  test('Basic test case', () => {
     const currentCode = `
 Task: Implement this
 
@@ -48,7 +48,7 @@ if (minionTask) {
 \`\`\`
 
 `;
-    
+
     const expectedOutput = `/*
 Task: Implement this
 
@@ -97,10 +97,7 @@ if (minionTask) {
 // ...
 `;
 
-    let result = decomposeMarkdownString(currentCode, "tsx").join("\n");
+    const result = decomposeMarkdownString(currentCode, 'tsx').join('\n');
     assert.strictEqual(result, expectedOutput);
   });
 });
-
-
-

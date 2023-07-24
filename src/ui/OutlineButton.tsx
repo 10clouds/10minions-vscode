@@ -1,7 +1,10 @@
-import * as React from "react";
+import React from 'react';
 
 export function OutlineButton({
-  title, onClick, description, className = "",
+  title,
+  onClick,
+  description,
+  className = '',
 }: {
   description: string;
   title: string;
@@ -13,9 +16,9 @@ export function OutlineButton({
       title={title}
       onClick={onClick}
       style={{
-        borderColor: "var(--vscode-button-separator)",
+        borderColor: 'var(--vscode-button-separator)',
       }}
-      className={"cursor-pointer border rounded px-2 " + className}
+      className={'cursor-pointer border rounded px-2 ' + className}
     >
       {description}
     </button>

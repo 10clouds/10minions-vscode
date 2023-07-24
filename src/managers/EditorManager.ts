@@ -1,4 +1,3 @@
-
 export type EditorPosition = {
   readonly line: number;
   readonly character: number;
@@ -25,9 +24,8 @@ export type EditorDocument = {
   };
 };
 
-export type EditorTextEdit = {
-
-};
+// TODO: replace this any type
+export type EditorTextEdit = any;
 
 export interface WorkspaceEdit {
   replace(uri: EditorUri, range: EditorRange, newText: string): void;
@@ -51,7 +49,7 @@ export function setEditorManager(editorManager: EditorManager | undefined) {
     globalEditorManger = undefined;
     return;
   }
-  
+
   if (globalEditorManger) {
     throw new Error(`EditorManager is already set.`);
   }

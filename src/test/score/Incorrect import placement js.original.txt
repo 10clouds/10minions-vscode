@@ -1,0 +1,100 @@
+"use client";
+import Image from "next/image";
+import { fetchRecentVideos, useChannelList } from "./useChannelList";
+import { progressVideos, useVideos } from "./videos";
+import { PlayIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/solid";
+export function MediaMonitoringUI() {
+  let { videos, addVideo, removeVideo } = useVideos();
+  const { channels, addChannel, removeChannel } = useChannelList();
+  return (
+    <main className="grid grid-cols-1 gap-4 min-h-screen items-center justify-between p-24">
+      <h2 className="text-center mb-5 text-3xl font-semibold"> 10Clouds AI Media Engine </h2>
+      <div>
+        <h1>YouTube Videos</h1>
+        <div className="flex flex-row gap-4">
+          <button
+            className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
+            onClick={async () => {
+              for (let channel of channels) {
+                let videos = await fetchRecentVideos(channel.name);
+                for (let { videoId, publishedAt } of videos) {
+                  console.log("FOUND VIDEO: ", videoId);
+                  addVideo(videoId, publishedAt);
+                }
+              }
+            }}
+          >
+            <PlayIcon className="h-5 w-5 inline-block" /> Process channels
+          </button>
+          <button className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700" onClick={() => progressVideos(videos)}>
+            Process All Videos
+          </button>
+          <div>
+            <input type="text" id="new-video-url" placeholder="Video url" className="p-2 bg-gray-200 text-gray-700 rounded" />
+            <button
+              className="px-3 py-2 ml-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
+              onClick={() => {
+                const url = (document.getElementById("new-video-url") as HTMLInputElement)?.value;
+                addVideo(url);
+              }}
+            >
+              <PlusIcon className="h-5 w-5 inline-block" /> Add Video
+            </button>
+          </div>
+        </div>
+        <ul>
+          {videos.map((video) => (
+            <li key={video.id} className="p-5 m-5 bg-slate-800 rounded shadow">
+              <a href={video.url} className="text-sm bg-blue-500 text-white rounded hover:bg-blue-700">
+                {video.thumbnail ? (
+                  <Image src={video.thumbnail.url} alt={video.title || ""} width={160} height={90} className="rounded inline-block" />
+                ) : (
+                  <span className="p-1">{video.url}</span>
+                )}
+              </a>
+              <p className="pt-3 text-lg font-semibold">{video.title}</p> 
+              <p className="pt-3 text-md font-medium">{video.aiTitle}</p>
+              <p className="pt-3 whitespace-pre-wrap">{video.aiSummary}</p> 
+              <p className="pt-3 text-xs">{video.publishedAt?.toString()}</p>
+              <div className="flex flex-row gap-4 p-4">
+                <button className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700" onClick={() => progressVideos([video])}>
+                  <PlayIcon className="h-5 w-5 inline-block" /> Process Video
+                </button>
+                <button className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-700" onClick={() => removeVideo(video.id)}>
+                  <TrashIcon className="h-5 w-5 inline-block" /> Remove Video
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <br />
+      <div>
+        <h1>YouTube Channels</h1>
+        <ul>
+          {channels.map((channel) => (
+            <li key={channel.id}>
+              {channel.name}
+              <button onClick={() => removeChannel(channel.id)}>
+                <TrashIcon className="h-5 w-5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div>
+          <input type="text" id="new-channel-name" placeholder="Channel name" className="p-2 bg-gray-200 text-gray-700 rounded" />
+          <button
+            className="px-3 py-2 ml-2 bg-indigo-500 text-white rounded hover:bg-indigo-700"
+            onClick={() => {
+              const name = (document.getElementById("new-channel-name") as HTMLInputElement)?.value;
+              addChannel(name);
+            }}
+          >
+            <PlusIcon className="h-5 w-5 inline-block" /> Add Channel
+          </button>
+        </div>
+      </div>
+      <br />
+    </main>
+  );
+}

@@ -1,12 +1,17 @@
-import { EditorDocument, EditorManager, EditorUri, WorkspaceEdit } from "../managers/EditorManager";
-import { CLIWorkspaceEdit } from "./CLIWorkspaceEdit";
-import { CLIEditorDocument } from "./CLIEditorDocument";
+import {
+  EditorDocument,
+  EditorManager,
+  EditorUri,
+  WorkspaceEdit,
+} from '../managers/EditorManager';
+import { CLIWorkspaceEdit } from './CLIWorkspaceEdit';
+import { CLIEditorDocument } from './CLIEditorDocument';
 
 export class CLIEditorManager implements EditorManager {
   openDocuments: EditorDocument[] = [];
 
   applyWorkspaceEdit(fillEdit: (edit: WorkspaceEdit) => Promise<void>) {
-    let edit = new CLIWorkspaceEdit();
+    const edit = new CLIWorkspaceEdit();
     fillEdit(edit);
     this.applyEdit(edit);
   }
@@ -25,9 +30,9 @@ export class CLIEditorManager implements EditorManager {
         };
         const text = edit.text;
 
-        if (edit.action === "replace") {
+        if (edit.action === 'replace') {
           document.replace(range, text);
-        } else if (edit.action === "insert") {
+        } else if (edit.action === 'insert') {
           document.insert(range.start, text);
         }
       });
@@ -37,24 +42,26 @@ export class CLIEditorManager implements EditorManager {
     await Promise.all(promises);
   }
 
-  showInformationMessage(message: string) { }
+  showErrorMessage(message: string): void {}
+
+  showInformationMessage(message: string): void {}
 
   async openTextDocument(uri: EditorUri) {
-    let existingDocument = this.openDocuments.find((doc) => doc.uri.toString() === uri.toString());
+    const existingDocument = this.openDocuments.find(
+      (doc) => doc.uri.toString() === uri.toString(),
+    );
     if (existingDocument) {
       return existingDocument;
     }
 
-    let document = new CLIEditorDocument(uri);
+    const document = new CLIEditorDocument(uri);
     this.openDocuments.push(document);
     return document;
   }
 
-  showErrorMessage(message: string): void { }
-
   createUri(uri: string): EditorUri {
     return {
-      fsPath: uri + ".original.txt",
+      fsPath: uri + '.original.txt',
       toString: () => uri,
     };
   }

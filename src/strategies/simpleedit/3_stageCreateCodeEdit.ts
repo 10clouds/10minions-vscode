@@ -1,11 +1,20 @@
-import { MinionTask } from "../../MinionTask";
-import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
-import { TASK_STRATEGY_ID } from "../strategies";
-import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
+import { MinionTask } from '../../MinionTask';
+import { gptExecute } from '../../openai';
+import { TASK_STRATEGY_ID } from '../strategies';
+import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
+import { countTokens } from '../../utils/countTokens';
 
-
-function createPrompt(classification: TASK_STRATEGY_ID, selectedText: string, document: EditorDocument, fullFileContents: string, selectionPosition: EditorPosition, userQuery: string) {
-    const settingsKeyword = "TODO"; //vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
+function createPrompt(
+  classification: TASK_STRATEGY_ID,
+  selectedText: string,
+  document: EditorDocument,
+  fullFileContents: string,
+  selectionPosition: EditorPosition,
+  userQuery: string,
+  fileName: string,
+) {
+  const settingsKeyword = 'TODO'; //vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
 
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
@@ -38,20 +47,29 @@ If asked to write documentation, write nice comment at the top and consise to th
 If asked to remove comments, don't add your own comments as this is probably not what your college wants.
 If asked to perform a task from a "${settingsKeyword}:" comment, perform the task and remove the comment.
 
-${selectedText
-      ? `
+${
+  selectedText
+    ? `
 ==== FILE CONTEXT (Language: ${document.languageId}) ====
 ${fullFileContents}  
 `
-      : ""}
+    : ''
+}
 
-===== CODE SNIPPET ${selectedText
-      ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)`
-      : `(Language: ${document.languageId})`} ====
+===== CODE SNIPPET ${
+    selectedText
+      ? `(starts on line ${selectionPosition.line + 1} column: ${
+          selectionPosition.character + 1
+        } in the file)`
+      : `(Language: ${document.languageId})`
+  } ====
 ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
 ${userQuery}
+
+If the task is not clear or there is lack of details try to generate response base on file name.
+File name: ${fileName}
 
 Let's take it step by step.
 `.trim();
@@ -59,10 +77,10 @@ Let's take it step by step.
 
 export async function stageCreateModification(this: MinionTask) {
   if (this.strategy === undefined) {
-    throw new Error("Classification is undefined");
+    throw new Error('Classification is undefined');
   }
 
-  this.modificationDescription = "";
+  this.modificationDescription = '';
 
   const document = await this.document();
   const classification = this.strategy;
@@ -73,20 +91,28 @@ export async function stageCreateModification(this: MinionTask) {
     return this.stopped;
   };
 
-  let promptWithContext = createPrompt(classification, selectedText, document, fullFileContents, this.selection.start, userQuery);
+  const promptWithContext = createPrompt(
+    classification,
+    selectedText,
+    document,
+    fullFileContents,
+    this.selection.start,
+    userQuery,
+    this.baseName,
+  );
 
-  let tokensCode = countTokens(promptWithContext, "QUALITY");
-  let luxiouriosTokens = tokensCode * 1.5;
-  let absoluteMinimumTokens = tokensCode;
+  const tokensCode = countTokens(promptWithContext, 'QUALITY');
+  const luxiouriosTokens = tokensCode * 1.5;
+  const absoluteMinimumTokens = tokensCode;
 
-  let tokensToUse = ensureIRunThisInRange({
+  const tokensToUse = ensureIRunThisInRange({
     prompt: promptWithContext,
-    mode: "QUALITY",
+    mode: 'QUALITY',
     preferedTokens: luxiouriosTokens,
     minTokens: absoluteMinimumTokens,
   });
 
-  let {result, cost} = await gptExecute({
+  const { result, cost } = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.modificationDescription += chunk;
@@ -94,15 +120,15 @@ export async function stageCreateModification(this: MinionTask) {
       this.reportSmallProgress();
     },
     isCancelled,
-    mode: "QUALITY",
+    mode: 'QUALITY',
     maxTokens: tokensToUse,
     controller: new AbortController(),
-    outputType: "string",
+    outputType: 'string',
   });
 
   this.modificationDescription = result;
   this.totalCost += cost;
 
   this.reportSmallProgress();
-  this.appendToLog("\n\n");
+  this.appendToLog('\n\n');
 }

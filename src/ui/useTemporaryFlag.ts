@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 type TemporaryFlagHook = Readonly<[boolean, () => void]>;
 
 function resetFlagAfterDuration(
   flag: boolean,
   duration: number,
-  setFlag: (value: boolean) => void
+  setFlag: (value: boolean) => void,
 ) {
   if (!flag) return;
 
@@ -24,12 +24,12 @@ function resetFlagAfterDuration(
  * @returns {Readonly<[boolean, () => void]>} An array with the flag value and a function to trigger the temporary change.
  */
 
-export function useTemporaryFlag(duration: number = 1000): TemporaryFlagHook {
+export function useTemporaryFlag(duration = 1000): TemporaryFlagHook {
   const [flag, setFlag] = useState(false);
 
   useEffect(
     () => resetFlagAfterDuration(flag, duration, setFlag),
-    [flag, duration]
+    [flag, duration],
   );
 
   return [flag, () => setFlag(true)];

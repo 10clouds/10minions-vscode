@@ -1,12 +1,21 @@
-import * as vscode from "vscode";
-import { extractExecutionIdFromUri } from "./utils/extractExecutionIdFromUri";
-import { getMinionTasksManager } from "../managers/MinionTasksManager";
-import { OriginalContentProvider, setOriginalContentProvider } from "../managers/OriginalContentProvider";
+import * as vscode from 'vscode';
+import { extractExecutionIdFromUri } from './utils/extractExecutionIdFromUri';
+import { getMinionTasksManager } from '../managers/MinionTasksManager';
+import {
+  OriginalContentProvider,
+  setOriginalContentProvider,
+} from '../managers/OriginalContentProvider';
 
-export class VSOriginalContentProvider implements OriginalContentProvider, vscode.TextDocumentContentProvider {
-
+export class VSOriginalContentProvider
+  implements OriginalContentProvider, vscode.TextDocumentContentProvider
+{
   constructor(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider("10minions-originalContent", this));
+    context.subscriptions.push(
+      vscode.workspace.registerTextDocumentContentProvider(
+        '10minions-originalContent',
+        this,
+      ),
+    );
 
     setOriginalContentProvider(this);
   }
@@ -25,6 +34,6 @@ export class VSOriginalContentProvider implements OriginalContentProvider, vscod
     const textKey = extractExecutionIdFromUri(uri);
     const execution = getMinionTasksManager().getExecutionById(textKey);
     const originalContent = execution?.originalContent;
-    return originalContent || "";
+    return originalContent || '';
   }
 }

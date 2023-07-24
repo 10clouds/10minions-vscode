@@ -1,8 +1,17 @@
-import { MinionTask } from "../../MinionTask";
-import { EditorDocument, EditorPosition } from "../../managers/EditorManager";
-import { countTokens, ensureIRunThisInRange, gptExecute } from "../../openai";
+import { MinionTask } from '../../MinionTask';
+import { EditorDocument, EditorPosition } from '../../managers/EditorManager';
+import { gptExecute } from '../../openai';
+import { countTokens } from '../../utils/countTokens';
+import { ensureIRunThisInRange } from '../../utils/ensureIRunThisInRange';
 
-function createPrompt(selectedText: string, document: EditorDocument, fullFileContents: string, selectionPosition: EditorPosition, userQuery: string) {
+function createPrompt(
+  selectedText: string,
+  document: EditorDocument,
+  fullFileContents: string,
+  selectionPosition: EditorPosition,
+  userQuery: string,
+  fileName: string,
+) {
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to tell him about something, the task is provided below in TASK section.
@@ -16,20 +25,29 @@ Take this step by step, and describe your reasoning along the way.
 
 At the end provide your final answer, this is the only thing that will be supplied to your collegue as a result of this task.
 
-${selectedText
-      ? `
+${
+  selectedText
+    ? `
 ==== FILE CONTEXT (Language: ${document.languageId}) ====
 ${fullFileContents}  
 `
-      : ""}
+    : ''
+}
 
-===== CODE SNIPPET ${selectedText
-      ? `(starts on line ${selectionPosition.line + 1} column: ${selectionPosition.character + 1} in the file)`
-      : `(Language: ${document.languageId})`} ====
+===== CODE SNIPPET ${
+    selectedText
+      ? `(starts on line ${selectionPosition.line + 1} column: ${
+          selectionPosition.character + 1
+        } in the file)`
+      : `(Language: ${document.languageId})`
+  } ====
 ${selectedText ? selectedText : fullFileContents}
 
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
 ${userQuery}
+
+If the task is not clear or there is lack of details try to generate response base on file name.
+File name: ${fileName}
 
 Let's take it step by step.
 `.trim();
@@ -37,13 +55,12 @@ Let's take it step by step.
 
 export async function stageCreateAnswer(this: MinionTask) {
   if (this.strategy === undefined) {
-    throw new Error("Classification is undefined");
+    throw new Error('Classification is undefined');
   }
 
-  this.modificationDescription = "";
+  this.modificationDescription = '';
 
   const document = await this.document();
-  const classification = this.strategy;
   const userQuery = this.userQuery;
   const selectedText = this.selectedText;
   const fullFileContents = this.originalContent;
@@ -51,20 +68,27 @@ export async function stageCreateAnswer(this: MinionTask) {
     return this.stopped;
   };
 
-  let promptWithContext = createPrompt(selectedText, document, fullFileContents, this.selection.start, userQuery);
+  const promptWithContext = createPrompt(
+    selectedText,
+    document,
+    fullFileContents,
+    this.selection.start,
+    userQuery,
+    this.baseName,
+  );
 
-  let tokensCode = countTokens(promptWithContext, "FAST");
-  let luxiouriosTokens = tokensCode * 1.5;
-  let absoluteMinimumTokens = tokensCode;
+  const tokensCode = countTokens(promptWithContext, 'FAST');
+  const luxiouriosTokens = tokensCode * 1.5;
+  const absoluteMinimumTokens = tokensCode;
 
-  let tokensToUse = ensureIRunThisInRange({
+  const tokensToUse = ensureIRunThisInRange({
     prompt: promptWithContext,
-    mode: "FAST",
+    mode: 'FAST',
     preferedTokens: luxiouriosTokens,
     minTokens: absoluteMinimumTokens,
   });
 
-  let {result, cost} = await gptExecute({
+  const { result, cost } = await gptExecute({
     fullPrompt: promptWithContext,
     onChunk: async (chunk: string) => {
       this.inlineMessage += chunk;
@@ -72,15 +96,15 @@ export async function stageCreateAnswer(this: MinionTask) {
       this.reportSmallProgress();
     },
     isCancelled,
-    mode: "FAST",
+    mode: 'FAST',
     maxTokens: tokensToUse,
     controller: new AbortController(),
-    outputType: "string",
+    outputType: 'string',
   });
 
   this.inlineMessage = result;
   this.totalCost += cost;
 
   this.reportSmallProgress();
-  this.appendToLog("\n\n");
+  this.appendToLog('\n\n');
 }
