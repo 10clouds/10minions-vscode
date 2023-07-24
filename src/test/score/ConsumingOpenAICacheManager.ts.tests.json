@@ -1,7 +1,27 @@
 [
-  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid typescript code" },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "The cache is get from firestore, at most, once per each command." },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "Each call getCachedResult consumes one item from the cache, and persists state on what items are left." },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "If all items have been consumed by previous call to getCachedResult, undefined is returned." },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "If there are 3 cached items for a given requestData, after 3 calls to getCachedResult for this requestData, all subsequent calls will return undefined." }
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The code is valid typescript code"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The cache is get from firestore, at most, once per each command."
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "Each call getCachedResult consumes one item from the cache, and persists state on what items are left."
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "If all items have been consumed by previous call to getCachedResult, undefined is returned."
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "If there are 3 cached items for a given requestData, after 3 calls to getCachedResult for this requestData, all subsequent calls will return undefined."
+  }
 ]

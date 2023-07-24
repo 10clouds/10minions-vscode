@@ -229,7 +229,7 @@ async function gptAssert({
 
 async function runTest({
   fileName,
-  iterations = 10,
+  iterations = defaultIternationsNumber,
 }: {
   fileName: string;
   iterations?: number;
@@ -412,7 +412,7 @@ async function runScoring(options: ScoringTestOptions): Promise<void> {
     })
     // Remove the '.original.txt' postfix from the file names
     .map((fileName) => fileName.slice(0, -TEST_FILE_POSTFIX.length));
-
+  console.log(testBaseNames);
   await mapLimit(
     testBaseNames.map((fileName) => ({ fileName })),
     options.concurrency,

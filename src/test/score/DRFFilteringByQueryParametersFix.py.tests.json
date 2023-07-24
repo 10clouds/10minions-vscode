@@ -1,11 +1,27 @@
 [
-  { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid Python code" },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "The brands and categories values strings are converted to lists with `.split(',')`" },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The code is valid Python code"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The brands and categories values strings are converted to lists with .split(',')"
+  },
   {
     "type": "gptAssert",
     "mode": "FAST",
     "assertion": "The attributes filters value is parsed from JSON string to Python dictionary using json package and the dictionary values are split by comma"
   },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "The import for new json package is added at the global scope" },
-  { "type": "gptAssert", "mode": "FAST", "assertion": "get_products function returns Response type on success" }
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The import for new json package is added at the global scope"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "get_products function returns Response type on success"
+  }
 ]
