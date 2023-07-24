@@ -10,9 +10,8 @@ function createPrompt(
   fullFileContents: string,
   selectionPosition: EditorPosition,
   userQuery: string,
+  fileName: string,
 ) {
-  const { fileName } = getFileInfo();
-
   return `
 You are an expert senior software architect, with 10 years of experience, experience in numerous projects and up to date knowledge and an IQ of 200.
 Your collegue asked you to tell him about something, the task is provided below in TASK section.
@@ -75,6 +74,7 @@ export async function stageCreateAnswer(this: MinionTask) {
     fullFileContents,
     this.selection.start,
     userQuery,
+    this.baseName,
   );
 
   const tokensCode = countTokens(promptWithContext, 'FAST');

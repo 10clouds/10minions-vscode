@@ -99,6 +99,7 @@ export async function createModificationProcedure(
   modification: string,
   onChunk: (chunk: string) => Promise<void>,
   isCancelled: () => boolean,
+  fileName: string,
 ) {
   //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
   modification = modification.replace(
@@ -108,9 +109,7 @@ export async function createModificationProcedure(
       return `#${p2}`;
     },
   );
-
-  const promptWithContext = createPrompt(refCode, modification);
-
+  const promptWithContext = createPrompt(refCode, modification, fileName);
   //console.log("Prompt with context:");
   //console.log(promptWithContext);
 
@@ -141,9 +140,7 @@ export async function createModificationProcedure(
     outputType: 'string',
   });
 }
-function createPrompt(refCode: string, modification: string) {
-  const { fileName } = getFileInfo();
-
+function createPrompt(refCode: string, modification: string, fileName: string) {
   return `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 

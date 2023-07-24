@@ -28,6 +28,7 @@ export async function stageCreateModificationProcedure(this: MinionTask) {
       () => {
         return this.stopped;
       },
+      this.baseName,
     );
     this.modificationProcedure = result;
     this.totalCost += cost;

@@ -6,7 +6,7 @@ import * as path from 'path';
 import { setupCLISystemsForTest } from '../../CLI/setupCLISystems';
 import { applyModificationProcedure } from '../../strategies/utils/applyModificationProcedure';
 import { createModificationProcedure } from '../../strategies/utils/createModificationProcedure';
-import { ErrorResponse } from 'openai';
+import { extractFileNameFromPath } from '../../strategies/utils/extractFileNameFromPath';
 
 suite('Create procedure test suite', () => {
   const baseDir = path.resolve(__dirname);
@@ -18,10 +18,17 @@ suite('Create procedure test suite', () => {
 
   for (const testDir of testDirs) {
     test(testDir, async () => {
-      const currentCode = readFileSync(
-        path.resolve(baseDir, testDir, 'original.txt'),
-        'utf8',
-      );
+      const testOriginalFilePath = glob.sync(`${testDir}/*.original.txt`, {
+        cwd: path.join(__dirname, testDir),
+      })[0];
+
+      const originalFileURI = testOriginalFilePath
+        ? testOriginalFilePath
+        : path.resolve(baseDir, testDir, 'original.txt');
+      const filename = testOriginalFilePath
+        ? extractFileNameFromPath(testOriginalFilePath)
+        : '';
+      const currentCode = readFileSync(originalFileURI, 'utf8');
       const modification = readFileSync(
         path.resolve(baseDir, testDir, 'modification.txt'),
         'utf8',
@@ -31,11 +38,12 @@ suite('Create procedure test suite', () => {
         'utf8',
       );
 
-      const { result: procedure, cost } = await createModificationProcedure(
+      const { result: procedure } = await createModificationProcedure(
         currentCode,
         modification,
-        async (chunk) => {},
+        async () => {},
         () => false,
+        filename,
       );
 
       fs.writeFileSync(
