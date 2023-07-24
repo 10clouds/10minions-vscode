@@ -136,7 +136,7 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
     "test": "tsx ./src/test/runTest.ts",
-    "score": "tsx ./src/test/runScore.ts",
+    "test-score": "tsx ./src/test/runScore.ts",
     "prepareTest": "tsx ./src/test/prepareTestFiles.ts"
   },
   "devDependencies": {
@@ -147,6 +147,7 @@
     "@inquirer/confirm": "^2.0.4",
     "@inquirer/prompts": "^2.3.0",
     "@inquirer/select": "^1.2.3",
+    "@types/async": "^3.2.20",
     "@types/async-lock": "^1.4.0",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
@@ -158,8 +159,10 @@
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
     "@vscode/test-electron": "^2.3.0",
+    "async": "^3.2.4",
     "babel-loader": "^9.1.2",
     "chalk": "^5.3.0",
+    "commander": "^11.0.0",
     "eslint": "^8.39.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",

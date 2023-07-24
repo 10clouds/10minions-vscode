@@ -15,6 +15,8 @@ import {
 import { LOG_PLAIN_COMMENT_MARKER as LOG_FALLBACK_COMMENT_MARKER } from '../strategies/utils/applyFallback';
 import chalk from 'chalk';
 import { GptMode } from '../types';
+import { OptionValues, program } from 'commander';
+import { mapLimit } from 'async';
 
 export type TestDefinition =
   | { type: 'gptAssert'; mode: GptMode; assertion: string }
@@ -24,6 +26,12 @@ export type TestDefinition =
       functionName: string;
       expectedType: string;
     };
+
+interface ScoringTestOptions extends OptionValues {
+  iterations: number;
+  pattern?: string;
+  concurrency: number;
+}
 
 const gptAssertSchema = {
   properties: {
@@ -188,19 +196,19 @@ async function gptAssert({
   assertion: string;
 }) {
   const response = await gptExecute({
-    fullPrompt: `Original code:\n${originalCode}\n\nResulting code:\n${resultingCode}\n\nPlease analyse the resulting code and answer: does the resulting code passess this test: "${assertion}"\n\n`,
+    fullPrompt: `Original code:\n${originalCode}\n\nResulting code:\n${resultingCode}\n\nPlease analyse the resulting code and answer: does the resulting code passes this test: "${assertion}"\n\n`,
     maxTokens: 100,
     mode,
     outputType: {
       name: 'reportTestResult',
-      description: `Report a result of the test, whanever the resulting code meets the criteria: ${assertion}, provide a comment explaining why it does not meet the criteria`,
+      description: `Report a result of the test, whenever the resulting code meets the criteria: ${assertion}, provide a comment explaining why it does not meet the criteria`,
       parameters: {
         type: 'object',
         properties: {
           comment: {
             type: 'string',
             description:
-              'Desribe the reason for why the code passed (or did not pass) the test.',
+              'Describe the reason for why the code passed (or did not pass) the test.',
           },
           passessTest: { type: 'boolean' },
         },
@@ -385,7 +393,7 @@ async function runTest({
   logToFile(`'${fileName}' score: ${score}%`);
 }
 
-async function runScoring(): Promise<void> {
+async function runScoring(options: ScoringTestOptions): Promise<void> {
   console.log('Running tests...');
   console.log(`Log file: ${logFilePath}`);
 
@@ -397,22 +405,58 @@ async function runScoring(): Promise<void> {
 
   // Use glob to get all .original.txt file paths from the 'score' directory
   const testBaseNames = glob
-    .sync(`**/*${TEST_FILE_POSTFIX}`, {
+    .sync(`**/${options.pattern}${TEST_FILE_POSTFIX}`, {
       cwd: path.join(__dirname, 'score'),
     })
     // Remove the '.original.txt' postfix from the file names
     .map((fileName) => fileName.slice(0, -TEST_FILE_POSTFIX.length));
 
-  for (const baseName of testBaseNames) {
-    // should run pseudo-concurrently to speed up the process and not waste time on waiting for the previous test to finish
-    await runTest({ fileName: baseName });
-  }
+  await mapLimit(
+    testBaseNames.map((fileName) => ({ fileName })),
+    options.concurrency,
+    runTest,
+  );
 
   console.log(`Log file: ${logFilePath}`);
   console.log('Done!');
+  return;
 }
 
-runScoring().catch((e) => {
-  console.log(e);
-  process.exit(1);
-});
+// TODO: move it to the isolated scope
+program
+  .name('AI score testing')
+  .description('AI score testing ( beta )')
+  .version('0.0.1')
+  .option(
+    '-i, --iterations <iterations>',
+    'Number of iterations',
+    (value) => parseInt(value),
+    1,
+  )
+  .option('-p, --pattern <pattern>', 'File patterns to run tests on', '*')
+  .option(
+    '-c, --concurrency <concurency>',
+    'Number of concurrent tests',
+    (value) => parseInt(value),
+    1,
+  )
+  .addHelpText(
+    'after',
+    `
+  Examples:
+    $ yarn <package.json script name> // runs all tests
+    $ yarn <package.json script name> -p "test*" // runs all tests that match the pattern
+    $ yarn <package.json script name> -p "test*" -c 2 // runs all tests that match the pattern with concurrency of 2
+  `,
+  )
+  .parse();
+
+program.parse(process.argv);
+runScoring(program.opts<ScoringTestOptions>())
+  .catch((e) => {
+    console.log(e);
+    process.exit(1);
+  })
+  .then(() => {
+    process.exit(0);
+  });
