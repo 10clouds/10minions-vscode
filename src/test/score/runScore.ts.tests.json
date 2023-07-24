@@ -1,4 +1,12 @@
 [
-    { "type": "gptAssert", "mode": "FAST", "assertion": "The code is valid typescript code" },
-    { "type": "gptAssert", "mode": "QUALITY", "assertion": "path.basename(fullName).split('.').slice(0, -2).join('.') has been simplfied to something that just removes tha trailing .original.txt, such as: path.basename(fullName).replace('.original.txt', '');" }
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The code is valid typescript code"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "path.basename(fullName).split('.').slice(0, -2).join('.') has been simplfied to something that just removes tha trailing .original.txt, such as: path.basename(fullName).replace('.original.txt', '');"
+  }
 ]

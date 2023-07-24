@@ -1,0 +1,42 @@
+[
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The code is valid Python code"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "The filtering calls are extracted as a separate function or functions (one for each filtered field)"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "All possible errors from accessing, modifying and parsing filters dictionry values are handled, especially ValueError and JSONDecodeError"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "Error Response is returned to the client with descriptive error message on any handled errors"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "Duplicated logic of filtering by brands and categories is simplified"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "The possible KeyError on request.GET.pop('keyword') is handled with using .get() instead, providing default value or other solution to avoid KeyError"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "QUALITY",
+    "assertion": "Initial Products __icontains=keyword filter on name, description and category__name is skipped if keyword is not provided or keyword values is empty"
+  },
+  {
+    "type": "gptAssert",
+    "mode": "FAST",
+    "assertion": "get_products function returns Response type on success"
+  }
+]

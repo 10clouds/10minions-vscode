@@ -39,7 +39,6 @@ export function initCLISystems() {
 
 const reportChange = (uri: string) => {
   // TODO
-  console.log(uri);
 };
 
 export function setupCLISystemsForTest() {

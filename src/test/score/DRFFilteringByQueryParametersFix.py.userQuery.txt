@@ -1,0 +1,1 @@
+Filtering does not work with query parameters `?keyword=reliable&max_price=70000&brands=toyota,volvo&categories=suv,crossover&attributes='{"year":"2012,2013,2014","colors":"red,yellow,blue","has_sunroof":"yes"}'`. Fix the fitlering logic.
