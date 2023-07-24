@@ -1,1 +1,0 @@
-Convert this to a set of functions not enclosed in YoutubeTranscript class

@@ -1,1 +1,0 @@
-This shows as: Timestamp(seconds=1685602821, nanoseconds=0) And this is gotten from firestore, how to convert it to readable date? Preferably in a format "3 hours ago"? Fix this.

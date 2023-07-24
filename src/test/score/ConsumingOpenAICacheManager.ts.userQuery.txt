@@ -1,1 +1,0 @@
-Rework this so cache from firestore is recovered once and then subsequent get cache results consume that cache, if you run out of previous results, return no cached result.

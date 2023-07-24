@@ -1,15 +1,13 @@
 {
-  "name": "10minions",
+  "name": "10minions-vscode",
   "displayName": "10Minions (GPT-4 enabled)",
   "description": "Your Army of GPT-4 Powered Coding Buddies.",
   "publisher": "10Clouds",
   "icon": "resources/ext-icon.png",
   "pricing": "Free",
-  "license": "MIT",
   "repository": {
-    "url": "https://github.com/10clouds/10Minions",
-    "issues": "https://github.com/10clouds/10Minions/issues",
-    "discord": "https://discord.gg/your_invite_link"
+    "url": "https://github.com/10clouds/10minions-vscode",
+    "issues": "https://github.com/10clouds/10minions-vscode/issues"
   },
   "version": "0.9.12-dev",
   "engines": {

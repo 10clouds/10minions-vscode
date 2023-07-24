@@ -1,1 +1,0 @@
-Junior zrobił PR do funkcjonalności, która na podstawie zawartości formularza sprawdza, czy użytkownikowi trzeba pokazać jakiś komunikat. Formularz ma dwa checkboxy (tu wymyślam jakie mają znaczenie, chodzi o to, żeby tknęło kandydata o słabe nazwy zmiennych). Kod działa poprawnie, bo był pisany pod okiem PO i ma testy. Robisz code review, zaproponuj zmiany.

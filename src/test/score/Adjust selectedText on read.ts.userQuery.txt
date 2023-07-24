@@ -1,1 +1,0 @@
-If selectedText is read, adjust the selection as well

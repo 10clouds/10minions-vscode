@@ -1,1 +1,0 @@
-create useMetaData hook, that gets an object located under /topics/[topic]/meta/data, also use onSnapshot to monitor the object.
