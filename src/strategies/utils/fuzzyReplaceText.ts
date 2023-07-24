@@ -86,7 +86,6 @@ function findIndentationDifference(
   currentSlice: string[],
   replaceTextLines: string[],
   similarityFunction: (a: string, b: string) => number,
-  matchAllLines = false,
 ) {
   const indentations: string[] = [];
 
@@ -335,6 +334,7 @@ export const coreSimilarityFunction = (
 
   {
     // Just for testing
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const similartyWithWsDistance = exactLinesSimilarityAndMap(
       original,
       replacement,
@@ -346,6 +346,7 @@ export const coreSimilarityFunction = (
         ),
     ).similiarity;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const similarityNotIgnoringWhitespace = exactLinesSimilarityAndMap(
       normalizeIndent(stripAllComments(original)),
       normalizeIndent(stripAllComments(replacement)),

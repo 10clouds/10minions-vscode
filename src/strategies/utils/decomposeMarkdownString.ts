@@ -57,6 +57,7 @@ export function decomposeMarkdownString(
 ): string[] {
   const lines = markdownString.split('\n');
   let inCodeBlock = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let codeLanguage = '';
 
   const decomposedStringParts: string[] = [];
@@ -92,6 +93,7 @@ export function decomposeMarkdownString(
  * @param {string[]} lines The input array of lines.
  * @returns {string[]} The output array with empty lines removed from the beginning and end.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function trimEmptyLines(lines: string[]): string[] {
   let start = 0;
   let end = lines.length - 1;

@@ -123,8 +123,9 @@ const COMMAND_STRUCTURE: CommandSegment[] = [
     followedBy: [
       {
         name: 'END_RENAME',
-        execute: async (currentContent, languageId, params) => {
-          const context = params.RENAME.trim();
+        execute: async (currentContent) => {
+          //function params: languageId, params
+          // const context = params.RENAME.trim();
 
           return currentContent;
 
@@ -209,8 +210,8 @@ export async function applyModificationProcedure(
               followedBy.name.startsWith('END_') && followedBy.execute,
           );
 
-          if (findEnd) {
-            currentCode = await findEnd.execute!(
+          if (findEnd && findEnd.execute) {
+            currentCode = await findEnd.execute(
               currentCode,
               languageId,
               params,

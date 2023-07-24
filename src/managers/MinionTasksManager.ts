@@ -24,13 +24,13 @@ export interface MinionTasksManager {
   ): Promise<void>;
   acquireMinionIndex(): number;
   notifyExecutionsUpdated(minionTask: MinionTask): void;
-  reRunExecution(minionTaskId: any, newUserQuery?: string): Promise<void>;
+  reRunExecution(minionTaskId: string, newUserQuery?: string): Promise<void>;
   notifyExecutionsUpdatedImmediate(
     minionTask?: MinionTask,
     importantChange?: boolean,
   ): void;
-  stopExecution(minionTaskId: any): void;
-  closeExecution(minionTaskId: any): Promise<void>;
+  stopExecution(minionTaskId: string): void;
+  closeExecution(minionTaskId: string): Promise<void>;
 }
 
 let globalManager: MinionTasksManager | undefined = undefined;

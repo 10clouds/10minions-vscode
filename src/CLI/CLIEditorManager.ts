@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import {
   EditorDocument,
   EditorManager,
@@ -42,7 +43,13 @@ export class CLIEditorManager implements EditorManager {
     await Promise.all(promises);
   }
 
-  showInformationMessage(message: string) {}
+  showErrorMessage(message: string): void {
+    vscode.window.showErrorMessage(message);
+  }
+
+  showInformationMessage(message: string): void {
+    vscode.window.showInformationMessage(message);
+  }
 
   async openTextDocument(uri: EditorUri) {
     const existingDocument = this.openDocuments.find(
@@ -56,8 +63,6 @@ export class CLIEditorManager implements EditorManager {
     this.openDocuments.push(document);
     return document;
   }
-
-  showErrorMessage(message: string): void {}
 
   createUri(uri: string): EditorUri {
     return {

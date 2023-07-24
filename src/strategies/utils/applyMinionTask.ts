@@ -4,42 +4,11 @@ import {
   APPLYING_STAGE_NAME,
   FINISHED_STAGE_NAME,
 } from '../../ui/MinionTaskUIInfo';
-import { decomposeMarkdownString } from './decomposeMarkdownString';
 import { applyModificationProcedure } from './applyModificationProcedure';
 import { getEditorManager } from '../../managers/EditorManager';
+import { applyFallback } from './applyFallback';
 
-export const LOG_PLAIN_COMMENT_MARKER = `\nPLAIN COMMENT FALLBACK\n`;
 export const LOG_NO_FALLBACK_MARKER = `Applied changes for user review.\n\n`;
-
-async function applyFallback(minionTask: MinionTask) {
-  const document = await minionTask.document();
-  const language = document.languageId || 'javascript';
-
-  const decomposedString = decomposeMarkdownString(
-    `
-Task: ${minionTask.userQuery}
-
-${minionTask.modificationDescription}
-`.trim(),
-    language,
-  ).join('\n');
-
-  minionTask.appendToLog(LOG_PLAIN_COMMENT_MARKER);
-
-  minionTask.originalContent = document.getText();
-  minionTask.aplicationStatus = ApplicationStatus.APPLIED_AS_FALLBACK;
-
-  await getEditorManager().applyWorkspaceEdit(async (edit) => {
-    edit.insert(
-      minionTask.documentURI,
-      { line: 0, character: 0 },
-      decomposedString + '\n',
-    );
-  });
-  getEditorManager().showInformationMessage(
-    `Modification applied successfully.`,
-  );
-}
 
 export async function applyMinionTask(minionTask: MinionTask) {
   const document = await minionTask.document();
@@ -101,8 +70,6 @@ export async function applyMinionTask(minionTask: MinionTask) {
       );
     });
   } catch (error) {
-    //console.log(`Failed to apply modification: ${String(error)}`);
-
     await applyFallback(minionTask);
 
     minionTask.executionStage = APPLIED_STAGE_NAME;
