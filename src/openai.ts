@@ -4,8 +4,8 @@ import { getAnalyticsManager } from './managers/AnalyticsManager';
 import { getOpenAICacheManager } from './managers/OpenAICacheManager';
 import { AVAILABLE_MODELS, GptMode, OutputType } from './types';
 import { ensureICanRunThis } from './utils/ensureIcanRunThis';
-import { countTokens } from './utils/countTokens';
 import { processOpenAIResponseStream } from './utils/processOpenAIResponseStream';
+import { calculateCosts } from './utils/calculateCosts';
 
 let openAIApiKey: string | undefined;
 
@@ -107,21 +107,11 @@ export async function gptExecute({
       });
 
       getAnalyticsManager().reportOpenAICall(requestData, result);
-
-      const inputTokens =
-        countTokens(JSON.stringify(requestData.messages), mode) +
-        (outputType === 'string'
-          ? 0
-          : countTokens(JSON.stringify(requestData.functions), mode));
-      const outputTokens = requestData.max_tokens; //TODO: Is the actuall dolar cost on the OpenAI side is based max_tokens or actual tokens returned?
-      const inputCost = (inputTokens / 1000) * MODEL_DATA[model].inputCostPer1K;
-      const outputCost =
-        (outputTokens / 1000) * MODEL_DATA[model].outputCostPer1K;
-      const totalCost = inputCost + outputCost;
+      const cost = calculateCosts(model, outputType, requestData, result, mode);
 
       return {
-        result: result,
-        cost: totalCost,
+        result,
+        cost,
       };
     } catch (error) {
       console.error(`Error on attempt ${attempt}: ${error}`);
