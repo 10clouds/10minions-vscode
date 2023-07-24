@@ -37,17 +37,22 @@ export function initCLISystems() {
   setAnalyticsManager(analyticsManager);
 }
 
+const reportChange = (uri: string) => {
+  // TODO
+  console.log(uri);
+};
+
 export function setupCLISystemsForTest() {
   setLogProvider(undefined);
   setOriginalContentProvider(undefined);
   setEditorManager(undefined);
 
   setLogProvider({
-    reportChange: (uri: string) => {},
+    reportChange,
   });
 
   setOriginalContentProvider({
-    reportChange: (uri: string) => {},
+    reportChange,
   });
 
   setEditorManager(new CLIEditorManager());

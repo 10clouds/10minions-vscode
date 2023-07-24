@@ -3,6 +3,7 @@ import path from 'path';
 import * as vscode from 'vscode';
 import { getMinionTasksManager } from '../managers/MinionTasksManager';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const settings = `
 "10minions.taskCommentKeyword": {
   "type": "string",
@@ -159,8 +160,5 @@ export class MinionTaskAutoRunner {
     if (!taskCommentKeyword || !document) {
       return;
     }
-
-    const pattern = new RegExp(`(${taskCommentKeyword}: .*)`, 'g');
-    const lines = document.getText().split('\n');
   }
 }

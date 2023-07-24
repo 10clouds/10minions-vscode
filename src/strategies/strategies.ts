@@ -1,6 +1,5 @@
 import { stageStarting } from './pre/stageStarting';
 import { stageChooseStrategy } from './pre/stageChooseStrategy';
-import { stageExtractRelevantCode } from './workspace/3_stageExtractRelevantCode';
 import { stageCreateModificationProcedure } from './simpleedit/4_stageCreateModificationProcedure';
 import { stageFinishing } from './common/stageFinishing';
 import { stageCreateModification } from './simpleedit/3_stageCreateCodeEdit';

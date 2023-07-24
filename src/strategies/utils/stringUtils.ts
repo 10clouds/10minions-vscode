@@ -58,7 +58,7 @@ export function removeIndent(slice: string[], indent?: string) {
     return slice;
   }
 
-  return slice.map((line) => line.slice(indent!.length));
+  return slice.map((line) => line.slice(indent?.length));
 }
 
 export function applyIndent(slice: string[], indent: string) {
