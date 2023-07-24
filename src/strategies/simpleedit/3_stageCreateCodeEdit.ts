@@ -12,6 +12,7 @@ function createPrompt(
   fullFileContents: string,
   selectionPosition: EditorPosition,
   userQuery: string,
+  fileName: string,
 ) {
   const settingsKeyword = 'TODO'; //vscode.workspace.getConfiguration('10minions').get('taskCommentKeyword') || "TODO";
 
@@ -67,6 +68,9 @@ ${selectedText ? selectedText : fullFileContents}
 ===== TASK (applies to CODE SNIPPET section only, not the entire FILE CONTEXT) ====
 ${userQuery}
 
+If the task is not clear or there is lack of details try to generate response base on file name.
+File name: ${fileName}
+
 Let's take it step by step.
 `.trim();
 }
@@ -94,6 +98,7 @@ export async function stageCreateModification(this: MinionTask) {
     fullFileContents,
     this.selection.start,
     userQuery,
+    this.baseName,
   );
 
   const tokensCode = countTokens(promptWithContext, 'QUALITY');

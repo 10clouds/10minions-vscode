@@ -99,6 +99,7 @@ export async function createModificationProcedure(
   modification: string,
   onChunk: (chunk: string) => Promise<void>,
   isCancelled: () => boolean,
+  fileName: string,
 ) {
   //replace any lines with headers in format ===== HEADER ==== (must start and end the line without any additioanl characters) with # HEADER
   modification = modification.replace(
@@ -108,9 +109,7 @@ export async function createModificationProcedure(
       return `#${p2}`;
     },
   );
-
-  const promptWithContext = createPrompt(refCode, modification);
-
+  const promptWithContext = createPrompt(refCode, modification, fileName);
   //console.log("Prompt with context:");
   //console.log(promptWithContext);
 
@@ -141,7 +140,7 @@ export async function createModificationProcedure(
     outputType: 'string',
   });
 }
-function createPrompt(refCode: string, modification: string) {
+function createPrompt(refCode: string, modification: string, fileName: string) {
   return `
 You are a higly intelligent AI file composer tool, you can take a piece of text and a modification described in natural langue, and return a consolidated answer.
 
@@ -149,7 +148,8 @@ You are a higly intelligent AI file composer tool, you can take a piece of text 
 ${OUTPUT_FORMAT} 
 
 ==== THINGS TO TAKE INTO CONSIDERATION ====
-
+* If you are not sure what is the TASK or TASK details are not specified, try to generate response based on FILENAME: '${fileName}'.
+* ALWAYS use FILENAME as a hint when you answering the question.
 * You have been provided an exact modification (REQUESTED MODIFICATION section) that needs to be applied to the code (ORIGINAL CODE section).
 * Make sure to exactly match the structure of the original and exactly the intention of the modification.
 * You MUST ALWAYS expand all comments like "// ...", "/* remainig code */" or "// ...rest of the code remains the same..." to the exact code that they refer to. You are producting final production ready code, so you need complete code.
