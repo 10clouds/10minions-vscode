@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
-import { fuzzyFindText } from '../../strategies/utils/fuzzyReplaceText';
-import { EditorDocument, EditorRange } from '../../managers/EditorManager';
+import { fuzzyFindText } from '10minions-engine/dist/strategies/utils/fuzzyReplaceText';
+import {
+  EditorDocument,
+  EditorRange,
+} from '10minions-engine/dist/managers/EditorManager';
 
 export async function findNewPositionForOldSelection(
   selection: EditorRange,

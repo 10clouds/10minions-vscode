@@ -1,16 +1,16 @@
 import React, { useEffect, useLayoutEffect, forwardRef } from 'react';
 import { blendWithForeground, getBaseColor } from './utils/blendColors';
 import { ALL_MINION_ICONS_FILL } from './MinionIconsFill';
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 import {
   APPLIED_STAGE_NAME,
   APPLYING_STAGE_NAME,
   CANCELED_STAGE_NAME,
   FINISHED_STAGE_NAME,
-  MinionTaskUIInfo,
-} from './MinionTaskUIInfo';
+} from '10minions-engine/dist/const';
 import { ProgressBar } from './ProgressBar';
 import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
-import { MessageToVSCodeType } from '../Messages';
+import { MessageToVSCodeType } from '10minions-engine/dist/Messages';
 import { useUserQueryPreview } from './useUserQueryPreview';
 import {
   ApplyButton,

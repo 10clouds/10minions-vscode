@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { MessageToWebViewType } from '../Messages';
+import { MessageToWebViewType } from '10minions-engine/dist/Messages';
 import {
   CommandHistoryManager,
   setCommandHistoryManager,
-} from '../managers/CommandHistoryManager';
-import { getViewProvider } from '../managers/ViewProvider';
+} from '10minions-engine/dist/managers/CommandHistoryManager';
+import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
 
 const BASE_COMMANDS = [
   { command: 'Refactor this' },

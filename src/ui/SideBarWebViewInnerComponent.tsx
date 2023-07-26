@@ -5,14 +5,14 @@ import {
   MessageToVSCodeType,
   MessageToWebView,
   MessageToWebViewType,
-} from '../Messages';
+} from '10minions-engine/dist/Messages';
 import { MissingApiKeyInfoMessage } from './MissingApiKeyInfoMessage';
 import { GoButton } from './GoButton';
 import { Header } from './Header';
 import { Logo } from './Logo';
 import { ALL_MINION_ICONS_OUTLINE } from './MinionIconsOutline';
 import { MinionTaskListComponent } from './MinionTaskListComponent';
-import { MinionTaskUIInfo } from './MinionTaskUIInfo';
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 import { useTemporaryFlag } from './useTemporaryFlag';
 
 declare const acquireVsCodeApi: any;

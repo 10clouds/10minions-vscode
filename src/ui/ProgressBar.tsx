@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MinionTaskUIInfo } from './MinionTaskUIInfo';
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 import {
   blendWithForeground,
   getBaseColor,

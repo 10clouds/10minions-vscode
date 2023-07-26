@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageToVSCodeType } from '../Messages';
+import { MessageToVSCodeType } from '10minions-engine/dist/Messages';
 import { OutlineButton } from './OutlineButton';
 import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
 import ChevronDownIcon from '@heroicons/react/24/solid/ChevronDownIcon';

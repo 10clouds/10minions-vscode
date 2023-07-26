@@ -1,7 +1,7 @@
 import React from 'react';
 import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
 import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
-import { MessageToVSCodeType } from '../Messages';
+import { MessageToVSCodeType } from '10minions-engine/dist/Messages';
 
 export function MissingApiKeyInfoMessage({
   missingModels,

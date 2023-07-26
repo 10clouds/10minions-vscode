@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import { extractExecutionIdFromUri } from './utils/extractExecutionIdFromUri';
-import { getMinionTasksManager } from '../managers/MinionTasksManager';
-import { LogProvider, setLogProvider } from '../managers/LogProvider';
+import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import {
+  LogProvider,
+  setLogProvider,
+} from '10minions-engine/dist/managers/LogProvider';
 
 export class VSLogProvider
   implements vscode.TextDocumentContentProvider, LogProvider
