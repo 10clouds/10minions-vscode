@@ -1,27 +1,27 @@
 import { basename } from 'path';
 import * as vscode from 'vscode';
-import { MessageToWebViewType } from '../Messages';
-import { MinionTask } from '../MinionTask';
+import { MessageToWebViewType } from '10minions-engine/dist/Messages';
+import { MinionTask } from '10minions-engine/dist/MinionTask';
 import {
   SerializedMinionTask,
   deserializeMinionTask,
   serializeMinionTask,
-} from '../SerializedMinionTask';
+} from '10minions-engine/dist/SerializedMinionTask';
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 import {
   APPLIED_STAGE_NAME,
   CANCELED_STAGE_NAME,
   FINISHED_STAGE_NAME,
-  MinionTaskUIInfo,
-} from '../ui/MinionTaskUIInfo';
-import { applyMinionTask } from '../strategies/utils/applyMinionTask';
+} from '10minions-engine/dist/const';
+import { applyMinionTask } from '10minions-engine/dist/strategies/utils/applyMinionTask';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
-import { getViewProvider } from '../managers/ViewProvider';
-import { getAnalyticsManager } from '../managers/AnalyticsManager';
+import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
+import { getAnalyticsManager } from '10minions-engine/dist/managers/AnalyticsManager';
 import {
   MinionTasksManager,
   setMinionTasksManager,
-} from '../managers/MinionTasksManager';
+} from '10minions-engine/dist/managers/MinionTasksManager';
 
 export class VSMinionTasksManager implements MinionTasksManager {
   private minionTasks: MinionTask[] = [];

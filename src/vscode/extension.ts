@@ -3,13 +3,13 @@ import {
   AnalyticsManager,
   getAnalyticsManager,
   setAnalyticsManager,
-} from '../managers/AnalyticsManager';
-import { SimpleOpenAICacheManager } from '../managers/SimpleOpenAICacheManager';
-import { getViewProvider } from '../managers/ViewProvider';
+} from '10minions-engine/dist/managers/AnalyticsManager';
+import { SimpleOpenAICacheManager } from '10minions-engine/dist/managers/SimpleOpenAICacheManager';
+import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
 import {
   initPlayingSounds,
   setCompletionSoundsEnabled,
-} from '../utils/playSound';
+} from '10minions-engine/dist/utils/playSound';
 import { VSCodeActionProvider } from './VSCodeActionProvider';
 import { VSCommandHistoryManager } from './VSCommandHistoryManager';
 import { VSEditorManager } from './VSEditorManager';
@@ -17,7 +17,7 @@ import { VSLogProvider } from './VSLogProvider';
 import { VSMinionTasksManager } from './VSMinionTasksManager';
 import { VSOriginalContentProvider } from './VSOriginalContentProvider';
 import { VSViewProvider } from './VSViewProvider';
-import { setOpenAICacheManager } from '../managers/OpenAICacheManager';
+import { setOpenAICacheManager } from '10minions-engine/dist/managers/OpenAICacheManager';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('10Minions is now active');

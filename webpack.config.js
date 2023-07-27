@@ -39,7 +39,10 @@ const extensionConfig = {
         exclude: /node_modules/,
         use: [
           {
-            loader: "ts-loader",
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-env", "@babel/preset-typescript"],
+            },
           },
         ],
       },

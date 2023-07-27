@@ -1,11 +1,10 @@
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 import {
   CANCELED_STAGE_NAME,
-  MinionTaskUIInfo,
   FINISHED_STAGE_NAME,
   APPLIED_STAGE_NAME,
   APPLYING_STAGE_NAME,
-} from '../MinionTaskUIInfo';
-
+} from '10minions-engine/dist/const';
 export const BRAND_COLOR = '#5e20e5';
 export const ERROR_COLOR = '#D8595A';
 export const SUCCESS_COLOR = '#2AB678';

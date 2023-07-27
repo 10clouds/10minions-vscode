@@ -4,15 +4,18 @@ import {
   MessageToVSCodeType,
   MessageToWebView,
   MessageToWebViewType,
-} from '../Messages';
-import { setOpenAIApiKey } from '../openai';
+} from '10minions-engine/dist/Messages';
+import { setOpenAIApiKey } from '10minions-engine/dist/openai';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
-import { getAnalyticsManager } from '../managers/AnalyticsManager';
-import { getCommandHistoryManager } from '../managers/CommandHistoryManager';
-import { getMinionTasksManager } from '../managers/MinionTasksManager';
-import { ViewProvider, setViewProvider } from '../managers/ViewProvider';
-import { getMissingOpenAIModels } from '../utils/getMissingOpenAIModels';
+import { getAnalyticsManager } from '10minions-engine/dist/managers/AnalyticsManager';
+import { getCommandHistoryManager } from '10minions-engine/dist/managers/CommandHistoryManager';
+import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import {
+  ViewProvider,
+  setViewProvider,
+} from '10minions-engine/dist/managers/ViewProvider';
+import { getMissingOpenAIModels } from '10minions-engine/dist/utils/getMissingOpenAIModels';
 
 export class VSViewProvider
   implements vscode.WebviewViewProvider, ViewProvider

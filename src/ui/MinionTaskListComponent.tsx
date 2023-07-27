@@ -1,7 +1,7 @@
 import React from 'react';
 import FlipMove from 'react-flip-move';
 import { MinionTaskComponent } from './MinionTaskComponent';
-import { MinionTaskUIInfo } from './MinionTaskUIInfo';
+import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
 
 export function MinionTaskListComponent({
   executionList,

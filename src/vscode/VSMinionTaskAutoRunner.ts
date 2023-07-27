@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
-import { getMinionTasksManager } from '../managers/MinionTasksManager';
+import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const settings = `
