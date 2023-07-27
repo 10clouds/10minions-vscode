@@ -19,7 +19,6 @@ export function MissingApiKeyInfoMessage({
           in order to finish setting up 10Minions.
         </p>
       )}
-
       {missingModels && (
         <>
           <p className="mb-4">
@@ -42,7 +41,6 @@ export function MissingApiKeyInfoMessage({
           </p>
         </>
       )}
-
       <p className="mb-2">Required steps:</p>
       <ol className="list-decimal list-inside mb-4">
         <li className="mb-2">

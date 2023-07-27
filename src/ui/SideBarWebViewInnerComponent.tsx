@@ -23,7 +23,7 @@ export function postMessageToVsCode(message: MessageToVSCode) {
   vscode.postMessage(message);
 }
 
-const [RobotIcon1, RobotIcon2] = () => {
+const getRobotIcons = () => {
   const randomIndex = Math.floor(
     Math.random() * ALL_MINION_ICONS_OUTLINE.length,
   );
@@ -35,6 +35,8 @@ const [RobotIcon1, RobotIcon2] = () => {
     ],
   ];
 };
+
+const [RobotIcon1, RobotIcon2] = getRobotIcons();
 
 export const SideBarWebViewInnerComponent = () => {
   const [userInputPrompt, setUserInputPrompt] = useState('');
