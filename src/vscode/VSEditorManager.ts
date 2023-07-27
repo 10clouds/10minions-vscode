@@ -6,7 +6,7 @@ import {
   EditorUri,
   setEditorManager,
 } from '10minions-engine/dist/managers/EditorManager';
-import AsyncLock = require('async-lock');
+import AsyncLock from 'async-lock';
 
 export const editorLock = new AsyncLock();
 
