@@ -1,7 +1,7 @@
 import {
   EditorRange,
   EditorUri,
-} from '10minions-engine/dist/managers/EditorManager';
+} from '10minions-engine/dist/src/managers/EditorManager';
 import * as vscode from 'vscode';
 
 export function convertSelection(selection: EditorRange) {

@@ -1,27 +1,29 @@
 import { basename } from 'path';
 import * as vscode from 'vscode';
-import { MessageToWebViewType } from '10minions-engine/dist/Messages';
-import { MinionTask } from '10minions-engine/dist/MinionTask';
+import { MessageToWebViewType } from '10minions-engine/dist/src/managers/Messages';
+import { MinionTask } from '10minions-engine/dist/src/minionTasks/MinionTask';
 import {
   SerializedMinionTask,
   deserializeMinionTask,
   serializeMinionTask,
-} from '10minions-engine/dist/SerializedMinionTask';
-import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
+} from '10minions-engine/dist/src/minionTasks/SerializedMinionTask';
+import { MinionTaskUIInfo } from '10minions-engine/dist/src/managers/MinionTaskUIInfo';
 import {
   APPLIED_STAGE_NAME,
-  CANCELED_STAGE_NAME,
   FINISHED_STAGE_NAME,
-} from '10minions-engine/dist/const';
-import { applyMinionTask } from '10minions-engine/dist/strategies/utils/applyMinionTask';
+} from '10minions-engine/dist/src/tasks/stageNames';
+import { mutatorApplyMinionTask } from '10minions-engine/dist/src/minionTasks/mutators/mutateApplyMinionTask';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
-import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
-import { getAnalyticsManager } from '10minions-engine/dist/managers/AnalyticsManager';
+import { getViewProvider } from '10minions-engine/dist/src/managers/ViewProvider';
+import { getAnalyticsManager } from '10minions-engine/dist/src/managers/AnalyticsManager';
 import {
   MinionTasksManager,
   setMinionTasksManager,
-} from '10minions-engine/dist/managers/MinionTasksManager';
+} from '10minions-engine/dist/src/managers/MinionTasksManager';
+import { mutateRunTaskStages } from '10minions-engine/dist/src/tasks/mutators/mutateRunTaskStages';
+import { mutateExecuteMinionTaskStages } from '10minions-engine/dist/src/minionTasks/mutateExecuteMinionTaskStages';
+import { mutateStopExecution } from '10minions-engine/dist/src/tasks/mutators/mutateStopExecution';
 
 export class VSMinionTasksManager implements MinionTasksManager {
   private minionTasks: MinionTask[] = [];
@@ -39,6 +41,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     this.minionTasks = serializedExecutions.map((data: SerializedMinionTask) =>
       deserializeMinionTask(data),
     );
+
     setMinionTasksManager(this);
   }
 
@@ -86,7 +89,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
       if (reapply) {
         minionTask.executionStage = FINISHED_STAGE_NAME;
       }
-      await applyMinionTask(minionTask);
+      await mutatorApplyMinionTask(minionTask);
       await this.showDiff(minionTaskId);
     }
   }
@@ -103,7 +106,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     const minionTask = this.getExecutionById(minionTaskId);
     if (minionTask) {
       minionTask.executionStage = APPLIED_STAGE_NAME;
-      await minionTask.onChanged(true);
+      await minionTask.onChange(true);
     }
   }
 
@@ -111,7 +114,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     const minionTask = this.getExecutionById(minionTaskId);
 
     if (minionTask) {
-      const documentURI = vscode.Uri.parse(minionTask.logURI);
+      const documentURI = vscode.Uri.parse(minionTask.documentURI.fsPath);
       await vscode.workspace.openTextDocument(documentURI);
       await vscode.window.showTextDocument(documentURI);
     }
@@ -200,7 +203,17 @@ export class VSMinionTasksManager implements MinionTasksManager {
 
     this.minionTasks = [execution, ...this.minionTasks];
 
-    await execution.run();
+    const workspaceFiles = this._context.globalState.get(
+      'workspaceFiles',
+      null,
+    );
+    console.log('WORKSPACE FILES ', workspaceFiles);
+
+    await mutateRunTaskStages(
+      execution,
+      mutateExecuteMinionTaskStages,
+      workspaceFiles || [],
+    );
 
     this.notifyExecutionsUpdatedImmediate(execution, true);
   }
@@ -208,10 +221,9 @@ export class VSMinionTasksManager implements MinionTasksManager {
   acquireMinionIndex(): number {
     const NUM_TOTAL_ROBOTS = 10;
     //get all free indices
-    const ALL_FILL_ROBOT_ICONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const freeIndices = ALL_FILL_ROBOT_ICONS.map((e, i) => i).filter(
-      (i) => !this.minionTasks.find((e) => e.minionIndex === i),
-    );
+    const freeIndices = Array.from({ length: NUM_TOTAL_ROBOTS })
+      .map((e, i) => i)
+      .filter((i) => !this.minionTasks.find((e) => e.minionIndex === i));
 
     //return random
     if (freeIndices.length > 0) {
@@ -279,7 +291,16 @@ export class VSMinionTasksManager implements MinionTasksManager {
         ...this.minionTasks.filter((e) => e.id !== minionTaskId),
       ];
 
-      await newMinionTask.run();
+      const workspaceFiles = this._context.globalState.get(
+        'workspaceFiles',
+        null,
+      );
+
+      await mutateRunTaskStages(
+        newMinionTask,
+        mutateExecuteMinionTaskStages,
+        workspaceFiles || [],
+      );
 
       this.notifyExecutionsUpdatedImmediate(newMinionTask, true);
     }, 500);
@@ -299,7 +320,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
       documentURI: e.documentURI.toString(),
       progress: e.progress,
       stopped: e.stopped,
-      classification: e.strategy,
+      classification: e.strategyId,
       modificationDescription: e.modificationDescription,
       modificationProcedure: e.modificationProcedure,
       inlineMessage: e.inlineMessage,
@@ -309,7 +330,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     }));
 
     getViewProvider().postMessageToWebView({
-      type: MessageToWebViewType.ExecutionsUpdated,
+      type: MessageToWebViewType.EXECUTIONS_UPDATED,
       executions: executionInfo,
     });
 
@@ -331,7 +352,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     const execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {
-      execution.stopExecution(CANCELED_STAGE_NAME);
+      mutateStopExecution(execution);
     } else {
       console.error('No execution found for id', minionTaskId);
     }
@@ -341,7 +362,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     const execution = this.minionTasks.find((e) => e.id === minionTaskId);
 
     if (execution) {
-      await execution.stopExecution(CANCELED_STAGE_NAME, false);
+      mutateStopExecution(execution);
       execution.contentWhenDismissed = execution.logContent;
       this.minionTasks = this.minionTasks.filter((e) => e.id !== minionTaskId);
       this.notifyExecutionsUpdatedImmediate(execution, true);

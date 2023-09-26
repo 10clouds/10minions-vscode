@@ -1,10 +1,10 @@
 import React from 'react';
-import { MessageToVSCodeType } from '10minions-engine/dist/Messages';
+import { MessageToVSCodeType } from '10minions-engine/dist/src/managers/Messages';
 import { OutlineButton } from './OutlineButton';
-import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
 import ChevronDownIcon from '@heroicons/react/24/solid/ChevronDownIcon';
 import ChevronUpIcon from '@heroicons/react/24/solid/ChevronUpIcon';
 import XMarkIcon from '@heroicons/react/24/solid/XMarkIcon';
+import { postMessageToVsCode } from './utils/postMessageToVsCode';
 
 interface MinionTaskButtonProps {
   minionTaskId: string;
@@ -18,7 +18,7 @@ export const StopButton = ({ minionTaskId }: MinionTaskButtonProps) => (
     description="Stop"
     onClick={() => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.StopExecution,
+        type: MessageToVSCodeType.STOP_EXECUTION,
         minionTaskId,
       });
     }}
@@ -35,7 +35,7 @@ export const ApplyButton = ({
     description="Apply"
     onClick={(e) => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.ApplyAndReviewTask,
+        type: MessageToVSCodeType.APPLY_AND_REVIEW_TASK,
         minionTaskId,
         reapply: false,
       });
@@ -55,7 +55,7 @@ export const MarkAsReadButton = ({
     description="Acknowledge"
     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.MarkAsApplied,
+        type: MessageToVSCodeType.MARK_AS_APPLIED,
         minionTaskId,
       });
       setIsExpanded?.(true);
@@ -76,7 +76,7 @@ export const CloseButton = ({ minionTaskId }: MinionTaskButtonProps) => (
     title="Close Execution"
     onClick={(e) => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.CloseExecution,
+        type: MessageToVSCodeType.CLOSE_EXECUTION,
         minionTaskId,
       });
       e.stopPropagation();
@@ -91,7 +91,7 @@ export const RetryButton = ({ minionTaskId }: MinionTaskButtonProps) => (
     description="Retry"
     onClick={() => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.ReRunExecution,
+        type: MessageToVSCodeType.RERUN_EXECUTION,
         minionTaskId,
       });
     }}
@@ -104,7 +104,7 @@ export const DiffButton = ({ minionTaskId }: MinionTaskButtonProps) => (
     description="Review"
     onClick={(e) => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.ShowDiff,
+        type: MessageToVSCodeType.SHOW_DIFF,
         minionTaskId,
       });
 
@@ -121,7 +121,7 @@ export const ReapplyModificationButton = ({
     description="Reapply"
     onClick={() => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.ApplyAndReviewTask,
+        type: MessageToVSCodeType.APPLY_AND_REVIEW_TASK,
         minionTaskId,
         reapply: true,
       });
@@ -135,7 +135,7 @@ export const OpenLogFileButton = ({ minionTaskId }: MinionTaskButtonProps) => (
     description="Open Log file"
     onClick={() => {
       postMessageToVsCode({
-        type: MessageToVSCodeType.OpenLog,
+        type: MessageToVSCodeType.OPEN_LOG,
         minionTaskId,
       });
     }}

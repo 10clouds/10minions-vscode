@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
-import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import { getMinionTasksManager } from '10minions-engine/dist/src/managers/MinionTasksManager';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const settings = `
@@ -17,6 +17,8 @@ const settings = `
   "markdownDescription": "Specify the glob pattern that 10minions will use to scan for tasks in files. \n Default includes common programming language files, but not text files.",
   "order": 4
 }`;
+
+const supportedExtensions = ['.ts, .tsx, .js, .jsx'];
 
 class TodoCodeLensProvider implements vscode.CodeLensProvider {
   public provideCodeLenses(document: vscode.TextDocument): vscode.CodeLens[] {
@@ -81,7 +83,7 @@ export class MinionTaskAutoRunner {
   scanTODOComments(rootDir: string) {
     const tsFiles = fs
       .readdirSync(rootDir)
-      .filter((file) => path.extname(file) === '.ts');
+      .filter((file) => supportedExtensions.includes(path.extname(file)));
 
     tsFiles.forEach((file: string) => {
       const lines = fs
@@ -90,7 +92,7 @@ export class MinionTaskAutoRunner {
         .split('\n');
 
       lines.forEach((line: string, lineNumber: number) => {
-        if (line.includes('//TODO:')) {
+        if (/\/\/ ?TODO:/.test(line)) {
           const diagnostic = new vscode.Diagnostic(
             new vscode.Range(lineNumber, 0, lineNumber, 0),
             line.trim(),

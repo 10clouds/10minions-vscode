@@ -5,7 +5,7 @@ import {
   EditorManager,
   EditorUri,
   setEditorManager,
-} from '10minions-engine/dist/managers/EditorManager';
+} from '10minions-engine/dist/src/managers/EditorManager';
 import AsyncLock from 'async-lock';
 
 export const editorLock = new AsyncLock();

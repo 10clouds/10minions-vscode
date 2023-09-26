@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { extractExecutionIdFromUri } from './utils/extractExecutionIdFromUri';
-import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import { getMinionTasksManager } from '10minions-engine/dist/src/managers/MinionTasksManager';
 import {
   OriginalContentProvider,
   setOriginalContentProvider,
-} from '10minions-engine/dist/managers/OriginalContentProvider';
+} from '10minions-engine/dist/src/managers/OriginalContentProvider';
 
 export class VSOriginalContentProvider
   implements OriginalContentProvider, vscode.TextDocumentContentProvider

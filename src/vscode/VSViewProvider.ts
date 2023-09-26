@@ -4,18 +4,18 @@ import {
   MessageToVSCodeType,
   MessageToWebView,
   MessageToWebViewType,
-} from '10minions-engine/dist/Messages';
-import { setOpenAIApiKey } from '10minions-engine/dist/openai';
+} from '10minions-engine/dist/src/managers/Messages';
+import { setOpenAIApiKey } from '10minions-engine/dist/src/gpt/gptExecute';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
-import { getAnalyticsManager } from '10minions-engine/dist/managers/AnalyticsManager';
-import { getCommandHistoryManager } from '10minions-engine/dist/managers/CommandHistoryManager';
-import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import { getAnalyticsManager } from '10minions-engine/dist/src/managers/AnalyticsManager';
+import { getCommandHistoryManager } from '10minions-engine/dist/src/managers/CommandHistoryManager';
+import { getMinionTasksManager } from '10minions-engine/dist/src/managers/MinionTasksManager';
 import {
   ViewProvider,
   setViewProvider,
-} from '10minions-engine/dist/managers/ViewProvider';
-import { getMissingOpenAIModels } from '10minions-engine/dist/utils/getMissingOpenAIModels';
+} from '10minions-engine/dist/src/managers/ViewProvider';
+import { getMissingOpenAIModels } from '10minions-engine/dist/src/gpt/getMissingOpenAIModels';
 
 export class VSViewProvider
   implements vscode.WebviewViewProvider, ViewProvider
@@ -62,14 +62,19 @@ export class VSViewProvider
       vscode.workspace.getConfiguration('10minions').get('apiKey') || '';
     setOpenAIApiKey(apiKey);
     this.postMessageToWebView({
-      type: MessageToWebViewType.ApiKeySet,
+      type: MessageToWebViewType.API_KEY_SET,
       value: !!vscode.workspace.getConfiguration('10minions').get('apiKey'),
     });
 
     this.postMessageToWebView({
-      type: MessageToWebViewType.ApiKeyMissingModels,
+      type: MessageToWebViewType.API_KEY_MISSING_MODELS,
       models: await getMissingOpenAIModels(apiKey),
     });
+    const workspaceFiles = this.context.globalState.get('workspaceFiles', []);
+
+    if (apiKey !== '' && workspaceFiles.length === 0) {
+      vscode.commands.executeCommand('10minions.getKnowledge');
+    }
   }
 
   public postMessageToWebView(message: MessageToWebView) {
@@ -128,7 +133,7 @@ export class VSViewProvider
     }
 
     this.postMessageToWebView({
-      type: MessageToWebViewType.ClearAndFocusOnInput,
+      type: MessageToWebViewType.CLEAR_AND_FOCUS_ON_INPUT,
     });
   }
 
@@ -158,7 +163,7 @@ export class VSViewProvider
         activeEditor?.document.getText(activeEditor.selection) || '';
 
       this.postMessageToWebView({
-        type: MessageToWebViewType.ChosenCodeUpdated,
+        type: MessageToWebViewType.CHOSEN_CODE_UPDATED,
         code: selectedText
           ? selectedText
           : activeEditor?.document.getText() || '',
@@ -168,7 +173,7 @@ export class VSViewProvider
 
   private updateSidebarVisibility(visible: boolean) {
     this.postMessageToWebView({
-      type: MessageToWebViewType.UpdateSidebarVisibility,
+      type: MessageToWebViewType.UPDATE_SIDEBAR_VISIBILITY,
       value: visible,
     });
   }
@@ -177,7 +182,7 @@ export class VSViewProvider
     console.log('CMD', data);
 
     switch (data.type) {
-      case MessageToVSCodeType.NewMinionTask: {
+      case MessageToVSCodeType.NEW_MINION_TASK: {
         const prompt = data.value ? data.value : 'Refactor this code';
 
         await getCommandHistoryManager().updateCommandHistory(prompt);
@@ -185,11 +190,11 @@ export class VSViewProvider
         getMinionTasksManager().runMinionOnCurrentSelectionAndEditor(prompt);
         break;
       }
-      case MessageToVSCodeType.OpenDocument: {
+      case MessageToVSCodeType.OPEN_DOCUMENT: {
         getMinionTasksManager().openDocument(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.OpenSelection: {
+      case MessageToVSCodeType.OPEN_SELECTION: {
         const minionTask = getMinionTasksManager().getExecutionById(
           data.minionTaskId,
         );
@@ -217,53 +222,53 @@ export class VSViewProvider
         }
         break;
       }
-      case MessageToVSCodeType.OpenLog: {
+      case MessageToVSCodeType.OPEN_LOG: {
         getMinionTasksManager().openLog(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.ShowDiff: {
+      case MessageToVSCodeType.SHOW_DIFF: {
         getMinionTasksManager().showDiff(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.MarkAsApplied: {
+      case MessageToVSCodeType.MARK_AS_APPLIED: {
         getMinionTasksManager().markAsApplied(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.ApplyAndReviewTask: {
+      case MessageToVSCodeType.APPLY_AND_REVIEW_TASK: {
         getMinionTasksManager().applyAndReviewTask(
           data.minionTaskId,
           data.reapply,
         );
         break;
       }
-      case MessageToVSCodeType.ReRunExecution: {
+      case MessageToVSCodeType.RERUN_EXECUTION: {
         getMinionTasksManager().reRunExecution(
           data.minionTaskId,
           data.newUserQuery,
         );
         break;
       }
-      case MessageToVSCodeType.StopExecution: {
+      case MessageToVSCodeType.STOP_EXECUTION: {
         getMinionTasksManager().stopExecution(data.minionTaskId);
         break;
       }
-      case MessageToVSCodeType.EditApiKey: {
+      case MessageToVSCodeType.EDIT_API_KEY: {
         vscode.commands.executeCommand(
           'workbench.action.openSettings',
           '10minions.apiKey',
         );
         break;
       }
-      case MessageToVSCodeType.SuggestionGet: {
+      case MessageToVSCodeType.SUGGESTION_GET: {
         getCommandHistoryManager().sendCommandSuggestions(data.input);
         break;
       }
-      case MessageToVSCodeType.CloseExecution: {
+      case MessageToVSCodeType.CLOSE_EXECUTION: {
         const minionTaskId = data.minionTaskId;
         getMinionTasksManager().closeExecution(minionTaskId);
         break;
       }
-      case MessageToVSCodeType.ReadyForMessages: {
+      case MessageToVSCodeType.READY_FOR_MESSAGES: {
         this.updateApiKeyAndModels();
 
         //update initial executions
