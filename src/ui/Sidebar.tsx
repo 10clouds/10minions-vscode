@@ -17,11 +17,20 @@ import SidebarSuggestions from './SidebarSuggestions';
 import { postMessageToVsCode } from './utils/postMessageToVsCode';
 import SidebarFooter from './SidebarFooter';
 import Spinner from './Spinner';
+import { ProgressBar } from './ProgressBar';
 
 const [RobotIcon1, RobotIcon2] = getRobotOutlineIcons();
 // TODO: Make styles refactor
 export const Sidebar = () => {
   const [userInputPrompt, setUserInputPrompt] = useState('');
+  const [progressData, setProgressData] = useState<{
+    progress: number;
+    inProgress: boolean;
+    currentFilePath?: string;
+  }>({ progress: 0, inProgress: false });
+
+  const { progress, inProgress } = progressData;
+
   const {
     handleSuggestionClick,
     nextSuggestion,
@@ -46,6 +55,12 @@ export const Sidebar = () => {
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    if (apiKeySet) {
+      postMessageToVsCode({ type: MessageToVSCodeType.GET_WORKSPACE_FILES });
+    }
+  }, [apiKeySet]);
+
   function clearAndFocusTextarea() {
     setUserInputPrompt('');
     textAreaRef.current?.focus();
@@ -66,9 +81,8 @@ export const Sidebar = () => {
     clearSuggestions();
   };
 
-  function handleMessage(event: MessageEvent<MessageToWebView>) {
+  const handleMessage = (event: MessageEvent<MessageToWebView>) => {
     const message = event.data;
-
     console.log('CMD (webview)', message.type);
 
     switch (message.type) {
@@ -82,7 +96,15 @@ export const Sidebar = () => {
         setApiKeySet(message.value);
         break;
       case MessageToWebViewType.API_KEY_MISSING_MODELS:
+        console.log('api models');
         setMissingApiModels(message.models);
+        break;
+      case MessageToWebViewType.UPDATE_FILE_LOADING_STATUS:
+        console.log('UI: ', message.progress, message.inProgress);
+        setProgressData({
+          progress: message.progress,
+          inProgress: message.inProgress,
+        });
         break;
       case MessageToWebViewType.SUGGESTIONS:
         if (message.forInput === userInputPrompt) {
@@ -94,7 +116,7 @@ export const Sidebar = () => {
         break;
       default:
     }
-  }
+  };
 
   useEffect(() => {
     window.addEventListener('message', handleMessage);
@@ -104,9 +126,10 @@ export const Sidebar = () => {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCode, userInputPrompt]);
 
-  const apiKeySetContentHanlder = () => {
+  const apiKeySetContentHandler = () => {
     switch (apiKeySet) {
       case undefined:
         return <Spinner />;
@@ -115,12 +138,26 @@ export const Sidebar = () => {
       case true:
         return missingApiModels && missingApiModels?.length > 0 ? (
           <MissingApiKeyInfoMessage missingModels={missingApiModels} />
+        ) : inProgress ? (
+          <>
+            <div className="flex items-center mt-3">
+              <div
+                className="w-full"
+                title="Fetching information about project"
+              >
+                <ProgressBar progress={progress} stopped={!inProgress} />
+              </div>
+            </div>
+            <p className="text-sm mt-3 italic">
+              Gathering knowledge about your project, it may take a while, don't
+              worry this is a one-time procedure.
+            </p>
+          </>
         ) : (
           <>
-            <div className="mb-2">
+            <div className="mb-2 text-sm">
               Summon a Minion! Jot down your coding task and delegate to your
-              loyal Minion. Remember, each Minion lives in a context of a
-              specific file. For pinpoint precision, select the code involved.{' '}
+              loyal Minion. For pinpoint precision, select the code involved.{' '}
             </div>
             <div style={{ position: 'relative' }}>
               <div
@@ -141,6 +178,7 @@ export const Sidebar = () => {
                 >
                   <textarea
                     ref={textAreaRef}
+                    disabled={inProgress}
                     style={{
                       position: 'relative',
                       height: '12rem',
@@ -154,18 +192,17 @@ export const Sidebar = () => {
                     }}
                     onKeyDown={handleKeyDown(submitCommand)}
                   />
-
-                  <SidebarSuggestions
-                    suggestionIndex={suggestionIndex}
-                    suggestions={suggestions}
-                    previousSuggestion={previousSuggestion}
-                    nextSuggestion={nextSuggestion}
-                    textAreaRef={textAreaRef}
-                    onClick={handleSuggestionClick}
-                    userInputPrompt={userInputPrompt}
-                    currentSuggestion={currentSuggestion}
-                  />
                 </div>
+                <SidebarSuggestions
+                  suggestionIndex={suggestionIndex}
+                  suggestions={suggestions}
+                  previousSuggestion={previousSuggestion}
+                  nextSuggestion={nextSuggestion}
+                  textAreaRef={textAreaRef}
+                  onClick={handleSuggestionClick}
+                  userInputPrompt={userInputPrompt}
+                  currentSuggestion={currentSuggestion}
+                />
                 <GoButton onClick={submitCommand} clicked={isGoClicked} />
                 <MinionTasksList executionList={executionList} />
               </div>
@@ -181,7 +218,7 @@ export const Sidebar = () => {
     <div className="w-full">
       <div className="p-4 mb-16 w-full">
         <Header leftIcon={RobotIcon1} rightIcon={RobotIcon2} />
-        {apiKeySetContentHanlder()}
+        {apiKeySetContentHandler()}
       </div>
       <SidebarFooter />
     </div>

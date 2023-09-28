@@ -18,7 +18,7 @@ const Spinner = () => (
         fill="currentFill"
       />
     </svg>
-    <span className="block text-lg ext-gray-600 text-center mt-2">
+    <span className="block text-sm ext-gray-600 text-center mt-2">
       Loading resources...
     </span>
   </div>

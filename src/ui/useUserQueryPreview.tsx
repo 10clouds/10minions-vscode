@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MAX_PREVIEW_LENGTH } from './MinionTaskListItem';
 
 export function useUserQueryPreview(userQuery: string) {

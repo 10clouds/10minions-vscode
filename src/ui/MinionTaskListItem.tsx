@@ -1,8 +1,13 @@
-import React, { useEffect, forwardRef, useState } from 'react';
+import React, { useEffect, forwardRef, useState, useMemo } from 'react';
 import { MinionTaskUIInfo } from '10minions-engine/dist/src/managers/MinionTaskUIInfo';
 import { ProgressBar } from './ProgressBar';
 import MinionTaskCollapseContent from './MinionTaskCollapseContent';
 import MinionTaskCollapseHeader from './MinionTaskCollapseHeader';
+import {
+  blendWithForeground,
+  getBaseColor,
+  getOpacity,
+} from './utils/blendColors';
 
 export const MAX_PREVIEW_LENGTH = 100;
 
@@ -17,9 +22,14 @@ export const MinionTaskListItem = forwardRef(
     const { className, ...propsWithoutClassName } = props;
     const { inlineMessage, id: minionTaskId } = minionTask;
     const [isExpanded, setIsExpanded] = useState(false);
+    const opacity = useMemo(() => getOpacity(minionTask), [minionTask]);
+    const color = useMemo(
+      () => blendWithForeground(getBaseColor(minionTask)),
+      [minionTask],
+    );
 
     useEffect(() => {
-      if (!!inlineMessage) {
+      if (inlineMessage) {
         setIsExpanded(true);
       }
     }, [inlineMessage]);
@@ -50,10 +60,17 @@ export const MinionTaskListItem = forwardRef(
         </div>
         <div className="flex items-center">
           <div className="w-full" title="Task Progress">
-            <ProgressBar execution={minionTask} />
+            <ProgressBar
+              progress={minionTask.progress}
+              stopped={minionTask.stopped}
+              opacity={opacity}
+              color={color}
+            />
           </div>
         </div>
       </div>
     );
   },
 );
+
+MinionTaskListItem.displayName = 'MinionTaskListItem';
