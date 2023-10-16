@@ -1,7 +1,7 @@
 import {
   EditorRange,
   EditorUri,
-} from '10minions-engine/dist/managers/EditorManager';
+} from '10minions-engine/dist/src/managers/EditorManager';
 import * as vscode from 'vscode';
 
 export function convertSelection(selection: EditorRange) {
@@ -22,5 +22,9 @@ export function convertUri(uri: EditorUri) {
     return uri;
   }
 
-  return vscode.Uri.parse(uri.toString());
+  if (typeof uri === 'string') {
+    return vscode.Uri.parse(uri);
+  }
+
+  throw new Error(`Invalid uri: ${uri}`);
 }

@@ -3,13 +3,13 @@ import {
   AnalyticsManager,
   getAnalyticsManager,
   setAnalyticsManager,
-} from '10minions-engine/dist/managers/AnalyticsManager';
-import { SimpleOpenAICacheManager } from '10minions-engine/dist/managers/SimpleOpenAICacheManager';
-import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
+} from '10minions-engine/dist/src/managers/AnalyticsManager';
+import { SimpleOpenAICacheManager } from '10minions-engine/dist/src/managers/SimpleOpenAICacheManager';
+import { getViewProvider } from '10minions-engine/dist/src/managers/ViewProvider';
 import {
   initPlayingSounds,
   setCompletionSoundsEnabled,
-} from '10minions-engine/dist/utils/playSound';
+} from '10minions-engine/dist/src/utils/playSound';
 import { VSCodeActionProvider } from './VSCodeActionProvider';
 import { VSCommandHistoryManager } from './VSCommandHistoryManager';
 import { VSEditorManager } from './VSEditorManager';
@@ -17,9 +17,9 @@ import { VSLogProvider } from './VSLogProvider';
 import { VSMinionTasksManager } from './VSMinionTasksManager';
 import { VSOriginalContentProvider } from './VSOriginalContentProvider';
 import { VSViewProvider } from './VSViewProvider';
-import { setOpenAICacheManager } from '10minions-engine/dist/managers/OpenAICacheManager';
+import { setOpenAICacheManager } from '10minions-engine/dist/src/managers/OpenAICacheManager';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   console.log('10Minions is now active');
 
   initPlayingSounds(context.extensionPath);
@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
   new VSLogProvider(context);
   new VSViewProvider(context);
   new VSCommandHistoryManager(context);
-  new VSEditorManager();
+  const editorManager = new VSEditorManager();
   new VSMinionTasksManager(context);
   new VSCodeActionProvider(context);
   //const taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner

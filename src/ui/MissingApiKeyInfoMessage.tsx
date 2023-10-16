@@ -1,7 +1,7 @@
 import React from 'react';
 import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
-import { postMessageToVsCode } from './SideBarWebViewInnerComponent';
-import { MessageToVSCodeType } from '10minions-engine/dist/Messages';
+import { MessageToVSCodeType } from '10minions-engine/dist/src/managers/Messages';
+import { postMessageToVsCode } from './utils/postMessageToVsCode';
 
 export function MissingApiKeyInfoMessage({
   missingModels,
@@ -62,7 +62,7 @@ export function MissingApiKeyInfoMessage({
             className="underline cursor-pointer font-semibold"
             style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}
             onClick={() => {
-              postMessageToVsCode({ type: MessageToVSCodeType.EditApiKey });
+              postMessageToVsCode({ type: MessageToVSCodeType.EDIT_API_KEY });
             }}
           >
             Settings

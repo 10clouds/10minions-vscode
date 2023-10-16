@@ -1,19 +1,20 @@
-import React, { useMemo } from 'react';
-import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
-import {
-  blendWithForeground,
-  getBaseColor,
-  getOpacity,
-} from './utils/blendColors';
+import React from 'react';
+import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
 
-export function ProgressBar({ execution }: { execution: MinionTaskUIInfo }) {
-  const percentage = `${(execution.progress * 100).toFixed(1)}%`;
+interface ProgressBarProps {
+  progress: number;
+  stopped: boolean;
+  opacity?: number;
+  color?: string;
+}
 
-  const opacity = useMemo(() => getOpacity(execution), [execution]);
-  const color = useMemo(
-    () => blendWithForeground(getBaseColor(execution)),
-    [execution],
-  );
+export function ProgressBar({
+  progress,
+  opacity = 1,
+  color = BRAND_COLOR,
+  stopped,
+}: ProgressBarProps) {
+  const percentage = `${(progress * 100).toFixed(1)}%`;
 
   return (
     <div
@@ -22,7 +23,7 @@ export function ProgressBar({ execution }: { execution: MinionTaskUIInfo }) {
     >
       <div
         className={`absolute top-0 left-0 flex h-full items-center justify-center transition-all duration-1000 ease-in-out ${
-          !execution.stopped ? 'wave-animation' : ''
+          !stopped ? 'wave-animation' : ''
         }`}
         style={{ width: percentage, backgroundColor: color }}
       ></div>

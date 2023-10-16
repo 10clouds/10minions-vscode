@@ -10,10 +10,7 @@ Experience increased productivity, better code quality, and seamless integration
 
 Code smarter, not harder!
 
-
 <p align="center"><img src="https://github.com/10clouds/10Minions/assets/135703473/bf840ad9-6c19-4fe5-a574-4696a3a720c0"></p>
-
-
 
 ## 💡 Key Features
 
@@ -29,18 +26,16 @@ Code smarter, not harder!
 
 10Minions works with any programming language and seamlessly integrates with Visual Studio Code, making it an invaluable tool for developers, data scientists, and other professionals working with code.
 
-
 ## 🌐 Limitations
 
 Please note that 10Minions plugin is currently in its Alpha version and under continuous improvement hence has certain limitations. It's good to bear in mind that:
 
 - Minions work within the scope of a single file only. They may not comprehend or factor in the context of the rest of your code in other files.
 - Minions do have a limit on how big of a file or selection they can work on. Attempting to process a file or selection above this size limitation will produce an error.
-
-We are actively working on overcoming these restrictions for a more personalized experience.
+- Minions working speed is mainly limited by the speed of OpenAI GPT-4 API.
+  We are actively working on overcoming these restrictions for a more personalized experience.
 
 The users' feedback is key to its development and adjustments according to specific requirements. Feel free to share your thoughts, every review is a price and leads us to create a better product!
-
 
 ## 🚀 Getting Started
 
@@ -48,7 +43,6 @@ The users' feedback is key to its development and adjustments according to speci
 2. Update Visual Studio Code to its latest version
 3. Set up keybindings for 10Minions commands (refer to the Keybindings section below for more details)
 4. Remember that GPT-4 API Access is required for usage
-
 
 ## ⌨️ Keybindings
 
@@ -58,7 +52,6 @@ The users' feedback is key to its development and adjustments according to speci
 - For Mac: `Cmd+Shift+A`
 
 The `10minions.ask` command can be triggered when your text cursor is focused within the editor.
-
 
 ## 📚 Use Cases
 
@@ -79,43 +72,33 @@ The `10minions.ask` command can be triggered when your text cursor is focused wi
 
 And many more!
 
-
 ## 🛠️ Extension Settings
 
 Configurable settings:
 
 - `10minions.apiKey`: OpenAI API key (requires your own key, no data sent to 10Clouds)
 
-
 ## 📸 Examples
-
 
 Create a better quality code with 10Minions. Here you can find some examples.
 
-
-**Fix issues** 
+**Fix issues**
 
 ![10C-minions-use-case-1](https://github.com/10clouds/10Minions/assets/135703473/1230cbda-c159-4791-841c-cd4f88437502)
-
 
 **Write test cases**
 
 ![10C-minions-use-case-2](https://github.com/10clouds/10Minions/assets/135703473/94372102-f83c-4236-9b1c-50a6d79e0932)
 
-
-**Cleanup** 
+**Cleanup**
 
 ![10C-minions-use-case-3](https://github.com/10clouds/10Minions/assets/135703473/b6b75a77-497a-428d-a78d-234e9fa32f43)
-
 
 **Add new states**
 
 ![10C-minions-use-case-4](https://github.com/10clouds/10Minions/assets/135703473/0898ef73-c180-4478-81ed-791a2869f594)
 
-
-
 Feel free to prompt it yourself or use suggestions from the tool!
-
 
 ## ⭐ Testimonials
 
@@ -125,14 +108,9 @@ Our users love 10Minions! See what they have to say:
 - “Great tool for developers – a must-have!"
 - "The integration with Visual Studio Code is impressive."
 
-
 ## 💼 Resources and Links
 
 - [Official GitHub Repository](https://github.com/10clouds/10Minions)
 - [10Minions in Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=10clouds.10Minions)
 - [Official Discord Channel](https://discord.gg/CGSX4Btamx)
 - [10Clouds webpage](https://10clouds.com)
-
-
-
-

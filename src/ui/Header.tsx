@@ -2,17 +2,17 @@ import React from 'react';
 import { BRAND_COLOR, blendWithForeground } from './utils/blendColors';
 
 export function Header({
-  RobotIcon1,
-  RobotIcon2,
+  leftIcon: LeftIcon,
+  rightIcon: RightIcon,
 }: {
-  RobotIcon1: React.ElementType;
-  RobotIcon2: React.ElementType;
+  leftIcon: React.ElementType;
+  rightIcon: React.ElementType;
 }) {
   return (
     <>
       <h1 className="text-4xl font-bold text-center mb-2 text-primary">
         <div className="flex items-center justify-center">
-          <RobotIcon1
+          <LeftIcon
             style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}
             className="w-8 h-8 inline-flex align-middle mr-2"
           />
@@ -20,7 +20,7 @@ export function Header({
             10
           </span>
           Minions
-          <RobotIcon2
+          <RightIcon
             style={{ color: blendWithForeground(BRAND_COLOR, 0.75) }}
             className="w-8 h-8 inline-flex align-middle ml-2"
           />

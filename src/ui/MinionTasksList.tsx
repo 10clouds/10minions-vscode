@@ -1,13 +1,13 @@
 import React from 'react';
 import FlipMove from 'react-flip-move';
-import { MinionTaskComponent } from './MinionTaskComponent';
-import { MinionTaskUIInfo } from '10minions-engine/dist/managers/MinionTaskUIInfo';
+import { MinionTaskListItem } from './MinionTaskListItem';
+import { MinionTaskUIInfo } from '10minions-engine/dist/src/managers/MinionTaskUIInfo';
 
-export function MinionTaskListComponent({
+export const MinionTasksList = ({
   executionList,
 }: {
   executionList: MinionTaskUIInfo[];
-}) {
+}) => {
   return (
     <FlipMove
       enterAnimation={{
@@ -42,8 +42,8 @@ export function MinionTaskListComponent({
       )}
 
       {executionList.map((execution) => (
-        <MinionTaskComponent key={execution.id} minionTask={execution} />
+        <MinionTaskListItem key={execution.id} minionTask={execution} />
       ))}
     </FlipMove>
   );
-}
+};

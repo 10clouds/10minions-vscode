@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { extractExecutionIdFromUri } from './utils/extractExecutionIdFromUri';
-import { getMinionTasksManager } from '10minions-engine/dist/managers/MinionTasksManager';
+import { getMinionTasksManager } from '10minions-engine/dist/src/managers/MinionTasksManager';
 import {
   LogProvider,
   setLogProvider,
-} from '10minions-engine/dist/managers/LogProvider';
+} from '10minions-engine/dist/src/managers/LogProvider';
 
 export class VSLogProvider
   implements vscode.TextDocumentContentProvider, LogProvider
@@ -22,6 +22,7 @@ export class VSLogProvider
 
     setLogProvider(this);
   }
+  reportChangeInTask(taskId: string): void {}
 
   // Use the getter to expose the onDidChange event using EventEmitter's event property
   get onDidChange(): vscode.Event<vscode.Uri> | undefined {

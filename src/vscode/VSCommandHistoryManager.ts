@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { MessageToWebViewType } from '10minions-engine/dist/Messages';
+import { MessageToWebViewType } from '10minions-engine/dist/src/managers/Messages';
 import {
   CommandHistoryManager,
   setCommandHistoryManager,
-} from '10minions-engine/dist/managers/CommandHistoryManager';
-import { getViewProvider } from '10minions-engine/dist/managers/ViewProvider';
+} from '10minions-engine/dist/src/managers/CommandHistoryManager';
+import { getViewProvider } from '10minions-engine/dist/src/managers/ViewProvider';
 
 const BASE_COMMANDS = [
   { command: 'Refactor this' },
@@ -125,7 +125,7 @@ export class VSCommandHistoryManager implements CommandHistoryManager {
     const suggestions = this.getRelatedPreviousCommands(input) || '';
 
     getViewProvider().postMessageToWebView({
-      type: MessageToWebViewType.Suggestions,
+      type: MessageToWebViewType.SUGGESTIONS,
       suggestions,
       forInput: input,
     });
