@@ -24,6 +24,8 @@ import {
 import { mutateRunTaskStages } from '10minions-engine/dist/src/tasks/mutators/mutateRunTaskStages';
 import { mutateExecuteMinionTaskStages } from '10minions-engine/dist/src/minionTasks/mutateExecuteMinionTaskStages';
 import { mutateStopExecution } from '10minions-engine/dist/src/tasks/mutators/mutateStopExecution';
+import { getKnowledge } from './utils/fileMenager';
+import { WorkspaceFilesKnowledge } from '10minions-engine/dist/src/minionTasks/generateDescriptionForWorkspaceFiles';
 
 export class VSMinionTasksManager implements MinionTasksManager {
   private minionTasks: MinionTask[] = [];
@@ -202,17 +204,19 @@ export class VSMinionTasksManager implements MinionTasksManager {
     });
 
     this.minionTasks = [execution, ...this.minionTasks];
+    const minionDoc = await execution.document();
 
-    const workspaceFiles = this._context.globalState.get(
-      'workspaceFiles',
-      null,
-    );
-    console.log('WORKSPACE FILES ', workspaceFiles);
+    const getFilesKnowledge = async (): Promise<WorkspaceFilesKnowledge[]> =>
+      (await getKnowledge(
+        this._context,
+        execution.documentURI.fsPath,
+        minionDoc.getText(),
+      )) || [];
 
     await mutateRunTaskStages(
       execution,
       mutateExecuteMinionTaskStages,
-      workspaceFiles || [],
+      getFilesKnowledge,
     );
 
     this.notifyExecutionsUpdatedImmediate(execution, true);
@@ -274,10 +278,11 @@ export class VSMinionTasksManager implements MinionTasksManager {
           document,
         )
       : oldExecution.selection;
+
     setTimeout(async () => {
       const newMinionTask = await MinionTask.create({
         userQuery: newUserQuery || oldExecution.userQuery,
-        document: await oldExecution.document(),
+        document,
         selection: newSelection,
         selectedText: document.getText(convertSelection(newSelection)),
         minionIndex: oldExecution.minionIndex,
@@ -291,15 +296,17 @@ export class VSMinionTasksManager implements MinionTasksManager {
         ...this.minionTasks.filter((e) => e.id !== minionTaskId),
       ];
 
-      const workspaceFiles = this._context.globalState.get(
-        'workspaceFiles',
-        null,
-      );
+      const filesKnowledge = async (): Promise<WorkspaceFilesKnowledge[]> =>
+        (await getKnowledge(
+          this._context,
+          newMinionTask.documentURI.fsPath,
+          document.getText(),
+        )) || [];
 
       await mutateRunTaskStages(
         newMinionTask,
         mutateExecuteMinionTaskStages,
-        workspaceFiles || [],
+        filesKnowledge,
       );
 
       this.notifyExecutionsUpdatedImmediate(newMinionTask, true);
@@ -313,7 +320,7 @@ export class VSMinionTasksManager implements MinionTasksManager {
     const executionInfo: MinionTaskUIInfo[] = this.minionTasks.map((e) => ({
       id: e.id,
       minionIndex: e.minionIndex,
-      fullContent: e.originalContent,
+      fullContent: e.getOriginalContent,
       userQuery: e.userQuery,
       executionStage: e.executionStage,
       documentName: e.baseName,

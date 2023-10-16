@@ -1,10 +1,14 @@
 import React from 'react';
 
-const Spinner = () => (
+interface SpinnerProps {
+  text?: string;
+}
+
+const Spinner = ({ text = 'Loading...' }: SpinnerProps) => (
   <div role="status p-5 w-full flex flex-col items-center text-center">
     <svg
       aria-hidden="true"
-      className="block w-full h-12 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-purple-600 self-center"
+      className="block w-full h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-purple-600 self-center"
       viewBox="0 0 100 101"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -18,9 +22,7 @@ const Spinner = () => (
         fill="currentFill"
       />
     </svg>
-    <span className="block text-sm ext-gray-600 text-center mt-2">
-      Loading resources...
-    </span>
+    <span className="block text-sm ext-gray-600 text-center mt-2">{text}</span>
   </div>
 );
 

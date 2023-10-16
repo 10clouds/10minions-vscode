@@ -40,7 +40,7 @@ export async function activate(context: vscode.ExtensionContext) {
   new VSLogProvider(context);
   new VSViewProvider(context);
   new VSCommandHistoryManager(context);
-  new VSEditorManager();
+  const editorManager = new VSEditorManager();
   new VSMinionTasksManager(context);
   new VSCodeActionProvider(context);
   //const taskAutoRunner = new MinionTaskAutoRunner(context); // Initialized MinionTaskAutoRunner

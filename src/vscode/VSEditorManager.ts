@@ -4,6 +4,7 @@ import {
   EditorDocument,
   EditorManager,
   EditorUri,
+  WorkspaceEdit,
   setEditorManager,
 } from '10minions-engine/dist/src/managers/EditorManager';
 import AsyncLock from 'async-lock';
@@ -32,13 +33,16 @@ export class VSEditorManager implements EditorManager {
   showInformationMessage(message: string): void {
     vscode.window.showInformationMessage(message);
   }
-
-  async applyWorkspaceEdit(
-    edit: (edit: vscode.WorkspaceEdit) => Promise<void>,
-  ) {
-    await editorLock.acquire('streamLock', async () => {
+  applyWorkspaceEdit(edit: (edit: WorkspaceEdit) => Promise<void>) {
+    editorLock.acquire('streamLock', async () => {
       const workspaceEdit = new vscode.WorkspaceEdit();
-      await edit(workspaceEdit);
+      await edit({
+        replace: workspaceEdit.replace.bind(workspaceEdit),
+        insert: workspaceEdit.insert.bind(workspaceEdit),
+        getEntries: workspaceEdit.entries.bind(
+          workspaceEdit,
+        ) as unknown as WorkspaceEdit['getEntries'],
+      });
 
       try {
         await vscode.workspace.applyEdit(workspaceEdit);

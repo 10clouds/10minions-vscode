@@ -5,7 +5,7 @@ import {
   MessageToWebView,
   MessageToWebViewType,
 } from '10minions-engine/dist/src/managers/Messages';
-import { setOpenAIApiKey } from '10minions-engine/dist/src/gpt/gptExecute';
+import { setOpenAIApiKey } from '10minions-engine/dist/src/gpt/utils/setOpenAiKey';
 import { findNewPositionForOldSelection } from './utils/findNewPositionForOldSelection';
 import { convertSelection, convertUri } from './vscodeUtils';
 import { getAnalyticsManager } from '10minions-engine/dist/src/managers/AnalyticsManager';
@@ -15,9 +15,7 @@ import {
   ViewProvider,
   setViewProvider,
 } from '10minions-engine/dist/src/managers/ViewProvider';
-import { getMissingOpenAIModels } from '10minions-engine/dist/src/gpt/getMissingOpenAIModels';
-
-import { WorkspaceFilesUpdater } from './WorkspaceFilesUpdater';
+import { getMissingOpenAIModels } from '10minions-engine/dist/src/gpt/utils/getMissingOpenAIModels';
 
 export class VSViewProvider
   implements vscode.WebviewViewProvider, ViewProvider
@@ -55,7 +53,6 @@ export class VSViewProvider
         }
       }),
     );
-
     setViewProvider(this);
   }
 
@@ -119,45 +116,6 @@ export class VSViewProvider
     webviewView.webview.onDidReceiveMessage(
       async (data: MessageToVSCode) => await this.handleWebviewMessage(data),
     );
-  }
-
-  async getWorkspaceFiles() {
-    const onProcessEnd = (progress: number, inProgress: boolean) => {
-      return this.postMessageToWebView({
-        type: MessageToWebViewType.UPDATE_FILE_LOADING_STATUS,
-        inProgress,
-        progress,
-      });
-    };
-    const createProgressCountingFunction = (
-      totalFiles: number,
-      progress: number,
-      inProgress: boolean,
-    ) => {
-      const progressIncreaseValue = 1 / totalFiles;
-      return () => {
-        progress += progressIncreaseValue;
-        onProcessEnd(progress, inProgress);
-      };
-    };
-
-    const workspaceFilesUpdater = new WorkspaceFilesUpdater(
-      this.context,
-      createProgressCountingFunction,
-      onProcessEnd,
-    );
-    try {
-      await workspaceFilesUpdater.updateWorkspaceFiles();
-
-      vscode.window.showInformationMessage(
-        'Workspace files updated successfully!',
-      );
-    } catch (error) {
-      console.error('Error updating workspace files:', error);
-      vscode.window.showErrorMessage(
-        'An error occurred while updating workspace files.',
-      );
-    }
   }
 
   async clearAndfocusOnInput() {
@@ -310,11 +268,6 @@ export class VSViewProvider
         //update initial executions
         getMinionTasksManager().notifyExecutionsUpdatedImmediate();
 
-        break;
-      }
-
-      case MessageToVSCodeType.GET_WORKSPACE_FILES: {
-        await this.getWorkspaceFiles();
         break;
       }
     }

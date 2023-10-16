@@ -22,5 +22,9 @@ export function convertUri(uri: EditorUri) {
     return uri;
   }
 
-  return vscode.Uri.parse(uri.toString());
+  if (typeof uri === 'string') {
+    return vscode.Uri.parse(uri);
+  }
+
+  throw new Error(`Invalid uri: ${uri}`);
 }

@@ -17,19 +17,11 @@ import SidebarSuggestions from './SidebarSuggestions';
 import { postMessageToVsCode } from './utils/postMessageToVsCode';
 import SidebarFooter from './SidebarFooter';
 import Spinner from './Spinner';
-import { ProgressBar } from './ProgressBar';
 
 const [RobotIcon1, RobotIcon2] = getRobotOutlineIcons();
 // TODO: Make styles refactor
 export const Sidebar = () => {
   const [userInputPrompt, setUserInputPrompt] = useState('');
-  const [progressData, setProgressData] = useState<{
-    progress: number;
-    inProgress: boolean;
-    currentFilePath?: string;
-  }>({ progress: 0, inProgress: false });
-
-  const { progress, inProgress } = progressData;
 
   const {
     handleSuggestionClick,
@@ -54,12 +46,6 @@ export const Sidebar = () => {
   const [selectedCode, setSelectedCode] = useState('');
 
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (apiKeySet) {
-      postMessageToVsCode({ type: MessageToVSCodeType.GET_WORKSPACE_FILES });
-    }
-  }, [apiKeySet]);
 
   function clearAndFocusTextarea() {
     setUserInputPrompt('');
@@ -99,13 +85,7 @@ export const Sidebar = () => {
         console.log('api models');
         setMissingApiModels(message.models);
         break;
-      case MessageToWebViewType.UPDATE_FILE_LOADING_STATUS:
-        console.log('UI: ', message.progress, message.inProgress);
-        setProgressData({
-          progress: message.progress,
-          inProgress: message.inProgress,
-        });
-        break;
+
       case MessageToWebViewType.SUGGESTIONS:
         if (message.forInput === userInputPrompt) {
           setNewSuggestions(message.suggestions);
@@ -132,27 +112,12 @@ export const Sidebar = () => {
   const apiKeySetContentHandler = () => {
     switch (apiKeySet) {
       case undefined:
-        return <Spinner />;
+        return <Spinner text="Loading resources..." />;
       case false:
         return <MissingApiKeyInfoMessage />;
       case true:
         return missingApiModels && missingApiModels?.length > 0 ? (
           <MissingApiKeyInfoMessage missingModels={missingApiModels} />
-        ) : inProgress ? (
-          <>
-            <div className="flex items-center mt-3">
-              <div
-                className="w-full"
-                title="Fetching information about project"
-              >
-                <ProgressBar progress={progress} stopped={!inProgress} />
-              </div>
-            </div>
-            <p className="text-sm mt-3 italic">
-              Gathering knowledge about your project, it may take a while, don't
-              worry this is a one-time procedure.
-            </p>
-          </>
         ) : (
           <>
             <div className="mb-2 text-sm">
@@ -178,7 +143,6 @@ export const Sidebar = () => {
                 >
                   <textarea
                     ref={textAreaRef}
-                    disabled={inProgress}
                     style={{
                       position: 'relative',
                       height: '12rem',

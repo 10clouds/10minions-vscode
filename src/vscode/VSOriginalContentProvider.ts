@@ -33,7 +33,7 @@ export class VSOriginalContentProvider
   provideTextDocumentContent(uri: vscode.Uri): string {
     const textKey = extractExecutionIdFromUri(uri);
     const execution = getMinionTasksManager().getExecutionById(textKey);
-    const originalContent = execution?.originalContent;
+    const originalContent = execution?.getOriginalContent;
     return originalContent || '';
   }
 }

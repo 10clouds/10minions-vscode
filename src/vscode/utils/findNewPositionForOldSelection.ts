@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { fuzzyFindText } from '10minions-engine/dist/src/utils/code/fuzzyReplaceText';
+import { fuzzyFindText } from '10minions-engine/dist/src/utils/code/fuzzyFindText';
 import {
   EditorDocument,
   EditorRange,
