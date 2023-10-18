@@ -64,7 +64,7 @@ The `10minions.ask` command can be triggered when your text cursor is focused wi
 5. Requesting fixes for specific component code sections
 6. Explaining the code
 7. Adding error handling to the code
-8. Makeing your code more robust
+8. Making your code more robust
 9. Check if this is most performant solution and if not change it with performance in mind
 10. Documenting the code
 11. Checking if your code can be written using other library
